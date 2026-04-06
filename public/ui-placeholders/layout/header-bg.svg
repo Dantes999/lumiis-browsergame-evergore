@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" fill="none">
+  <defs>
+    <linearGradient id="headerBg" x1="0" y1="0" x2="1600" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4B1B12"/>
+      <stop offset="0.5" stop-color="#24100B"/>
+      <stop offset="1" stop-color="#120807"/>
+    </linearGradient>
+    <radialGradient id="headerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 0) rotate(90) scale(260 940)">
+      <stop stop-color="#E5BE7D" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#E5BE7D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="420" rx="36" fill="url(#headerBg)"/>
+  <rect width="1600" height="420" rx="36" fill="url(#headerGlow)"/>
+  <path d="M0 330C210 278 432 248 662 248C955 248 1198 296 1600 376V420H0V330Z" fill="#0F0908" fill-opacity="0.78"/>
+  <rect x="26" y="26" width="1548" height="368" rx="22" stroke="#E6D1A0" stroke-opacity="0.28" stroke-width="2" stroke-dasharray="10 12"/>
+  <text x="800" y="178" fill="#FFF2D0" font-family="Arial, sans-serif" font-size="44" font-weight="700" letter-spacing="12" text-anchor="middle">HEADER BACKGROUND PLACEHOLDER</text>
+  <text x="800" y="228" fill="#E0C68F" font-family="Arial, sans-serif" font-size="22" letter-spacing="6" text-anchor="middle">REPLACE THIS FILE ONLY</text>
+</svg>

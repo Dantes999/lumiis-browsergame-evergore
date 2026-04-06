@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+  <defs>
+    <linearGradient id="statBg" x1="0" y1="0" x2="900" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#522217"/>
+      <stop offset="1" stop-color="#160B08"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" rx="28" fill="url(#statBg)"/>
+  <rect x="16" y="16" width="868" height="488" rx="18" stroke="#F0D59F" stroke-opacity="0.2" stroke-width="2" stroke-dasharray="10 12"/>
+  <text x="450" y="246" fill="#FFF0C8" font-family="Arial, sans-serif" font-size="32" font-weight="700" letter-spacing="8" text-anchor="middle">STAT SURFACE</text>
+  <text x="450" y="292" fill="#DABC81" font-family="Arial, sans-serif" font-size="18" letter-spacing="4" text-anchor="middle">SMALL STATUS / HUD CARD</text>
+</svg>

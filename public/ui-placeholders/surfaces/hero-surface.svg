@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" fill="none">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6D2518"/>
+      <stop offset="0.52" stop-color="#27120D"/>
+      <stop offset="1" stop-color="#120808"/>
+    </linearGradient>
+    <radialGradient id="heroGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1160 168) rotate(136) scale(408 560)">
+      <stop stop-color="#F0CB85" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#F0CB85" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" rx="40" fill="url(#heroBg)"/>
+  <rect width="1600" height="900" rx="40" fill="url(#heroGlow)"/>
+  <rect x="28" y="28" width="1544" height="844" rx="24" stroke="#F5DEAD" stroke-opacity="0.24" stroke-width="2" stroke-dasharray="12 14"/>
+  <text x="800" y="416" fill="#FFF2D0" font-family="Arial, sans-serif" font-size="48" font-weight="700" letter-spacing="12" text-anchor="middle">HERO SURFACE PLACEHOLDER</text>
+  <text x="800" y="474" fill="#E0C68F" font-family="Arial, sans-serif" font-size="22" letter-spacing="6" text-anchor="middle">LARGE FEATURE PANEL SKIN</text>
+</svg>

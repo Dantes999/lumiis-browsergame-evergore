@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" fill="none">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1000" y2="720" gradientUnits="userSpaceOnUse"><stop stop-color="#496035"/><stop offset="1" stop-color="#0E110C"/></linearGradient></defs>
+  <rect width="1000" height="720" rx="30" fill="url(#bg)"/>
+  <rect x="18" y="18" width="964" height="684" rx="20" stroke="#F3D9A0" stroke-opacity="0.2" stroke-width="2" stroke-dasharray="10 12"/>
+  <text x="500" y="336" fill="#FFF0C8" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8" text-anchor="middle">PREVIEW FOREST</text>
+  <text x="500" y="386" fill="#E3C68F" font-family="Arial, sans-serif" font-size="18" letter-spacing="4" text-anchor="middle">REPLACE THIS CARD ART</text>
+</svg>
