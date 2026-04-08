@@ -8968,6 +8968,12 @@
         overscroll-behavior: contain;
     }
 
+    #dashboard-equipment-overlay .dashboard-overlay-window-inventory,
+    #dashboard-equipment-overlay .dashboard-overlay-scroll-inventory,
+    #dashboard-equipment-overlay .inventory-workspace {
+        overflow: visible;
+    }
+
     .dashboard-map-window-close,
     .dashboard-map-overlay-panel .dashboard-overlay-close {
         flex: 0 0 auto;
