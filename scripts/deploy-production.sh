@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/var/www/lumiis/current}"
+APP_DIR="${APP_DIR:-/var/www/lumiis}"
 PHP_BIN="${PHP_BIN:-/usr/bin/php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
