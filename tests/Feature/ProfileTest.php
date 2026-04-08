@@ -144,9 +144,9 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Create Account')
-            ->assertSee('Create Character')
-            ->assertDontSee('Account erstellen');
+            ->assertSee('Welcome Back')
+            ->assertSee('Log in')
+            ->assertDontSee('Willkommen zurück');
 
         $this->assertSame('en', app()->getLocale());
     }
@@ -159,8 +159,9 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Account erstellen')
-            ->assertDontSee('Create Account');
+            ->assertSee('Willkommen zurück')
+            ->assertSee('Einloggen')
+            ->assertDontSee('Welcome Back');
 
         $this->assertSame('de', app()->getLocale());
     }

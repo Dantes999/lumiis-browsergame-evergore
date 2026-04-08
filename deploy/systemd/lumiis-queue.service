@@ -6,9 +6,9 @@ After=network.target mariadb.service mysql.service postgresql.service
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/lumiis/current
-ExecStart=/usr/bin/php /var/www/lumiis/current/artisan queue:work database --sleep=3 --tries=1 --timeout=120 --max-time=3600
-ExecReload=/usr/bin/php /var/www/lumiis/current/artisan queue:restart
+WorkingDirectory=/var/www/lumiis
+ExecStart=/usr/bin/php /var/www/lumiis/artisan queue:work database --sleep=3 --tries=1 --timeout=120 --max-time=3600
+ExecReload=/usr/bin/php /var/www/lumiis/artisan queue:restart
 Restart=always
 RestartSec=5
 KillSignal=SIGTERM

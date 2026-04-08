@@ -56,11 +56,14 @@ FLUSH PRIVILEGES;
 
 ## 3. Clone the application
 
+This deployment pack assumes a direct checkout in `/var/www/lumiis`.
+There is no release-symlink layout with a `current/` folder in the checked-in setup.
+
 ```bash
 sudo mkdir -p /var/www/lumiis
 sudo chown -R "$USER":www-data /var/www/lumiis
-git clone <your-repo-url> /var/www/lumiis/current
-cd /var/www/lumiis/current
+git clone <your-repo-url> /var/www/lumiis
+cd /var/www/lumiis
 ```
 
 Grant Laravel write access:
@@ -137,7 +140,7 @@ sudo systemctl start nginx
 Before enabling the config, replace:
 
 - `alpha.example.com`
-- `/var/www/lumiis/current`
+- `/var/www/lumiis` if you deployed elsewhere
 - `php8.3-fpm.sock` if your PHP socket path differs
 
 ## 7. Start background services
@@ -174,7 +177,7 @@ php artisan game:grant-admin you@example.com
 For each update:
 
 ```bash
-cd /var/www/lumiis/current
+cd /var/www/lumiis
 git pull --ff-only
 bash scripts/deploy-production.sh
 ```

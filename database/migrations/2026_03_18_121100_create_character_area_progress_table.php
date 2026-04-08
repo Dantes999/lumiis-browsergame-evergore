@@ -19,7 +19,10 @@ return new class extends Migration
             $table->timestamp('last_boss_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['game_character_id', 'location_area_id']);
+            $table->unique(
+                ['game_character_id', 'location_area_id'],
+                'char_area_progress_character_area_unique',
+            );
         });
     }
 

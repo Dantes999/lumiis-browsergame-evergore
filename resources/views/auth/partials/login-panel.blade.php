@@ -2,10 +2,10 @@
     <div class="metin2-auth-intro">
         <x-auth-session-status class="mb-4 theme-success-text" :status="session('status')" />
 
-        <span class="metin2-auth-kicker">{{ __('Rückkehr ins Reich') }}</span>
-        <h1 class="metin2-auth-title">{{ __('Willkommen zurück') }}</h1>
+        <span class="metin2-auth-kicker">{{ __('Return to the Realm') }}</span>
+        <h1 class="metin2-auth-title">{{ __('Welcome Back') }}</h1>
         <p class="metin2-auth-copy">
-            {{ __('Melde dich an und spiele weiter.') }}
+            {{ __('Log in and keep playing.') }}
         </p>
     </div>
 
@@ -13,7 +13,7 @@
         @csrf
 
         <div>
-            <x-input-label for="{{ $emailId ?? 'email' }}" :value="__('E-Mail')" />
+            <x-input-label for="{{ $emailId ?? 'email' }}" :value="__('Email')" />
             <x-text-input
                 id="{{ $emailId ?? 'email' }}"
                 class="mt-2 block w-full"
@@ -28,7 +28,7 @@
         </div>
 
         <div>
-            <x-input-label for="{{ $passwordId ?? 'password' }}" :value="__('Passwort')" />
+            <x-input-label for="{{ $passwordId ?? 'password' }}" :value="__('Password')" />
             <x-text-input
                 id="{{ $passwordId ?? 'password' }}"
                 class="mt-2 block w-full"
@@ -48,7 +48,7 @@
                     class="theme-checkbox"
                     name="remember"
                 >
-                <span>{{ __('Angemeldet bleiben') }}</span>
+                <span>{{ __('Remember me') }}</span>
             </label>
         </div>
 
@@ -60,7 +60,7 @@
             @endif
 
             <x-primary-button class="w-full sm:w-auto">
-                {{ __('Einloggen') }}
+                {{ __('Log in') }}
             </x-primary-button>
         </div>
     </form>

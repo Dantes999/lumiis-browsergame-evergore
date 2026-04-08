@@ -6,5 +6,5 @@ After=network.target
 Type=oneshot
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/lumiis/current
-ExecStart=/usr/bin/php /var/www/lumiis/current/artisan schedule:run
+WorkingDirectory=/var/www/lumiis
+ExecStart=/usr/bin/php /var/www/lumiis/artisan schedule:run
