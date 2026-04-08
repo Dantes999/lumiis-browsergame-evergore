@@ -55,7 +55,13 @@
         <div class="metin2-auth-links">
             @if (Route::has('password.request'))
                 <a class="theme-link text-sm" href="{{ route('password.request') }}">
-                    {{ __('Passwort vergessen?') }}
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+
+            @if (Route::has('register'))
+                <a href="{{ route('register') }}" class="theme-secondary-button text-center">
+                    {{ __('Create Account') }}
                 </a>
             @endif
 
