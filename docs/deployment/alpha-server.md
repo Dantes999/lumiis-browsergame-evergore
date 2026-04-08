@@ -43,6 +43,15 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
+Verify the version before the first deploy:
+
+```bash
+node -v
+```
+
+This project requires Node `20.19+` or `22.12+`.
+Ubuntu's default `nodejs` package is usually too old for the checked-in Vite version.
+
 ## 2. Create the database
 
 Example for MariaDB:
@@ -108,6 +117,8 @@ Run the checked-in deploy script:
 bash scripts/deploy-production.sh
 ```
 
+Run it as your normal deploy user inside `/var/www/lumiis`, not as root.
+
 That script will:
 
 - install PHP dependencies without dev packages
@@ -115,6 +126,12 @@ That script will:
 - run database migrations
 - run `WorldSeeder`
 - refresh Laravel config/view caches
+
+If the server should not build frontend assets locally, deploy prebuilt `public/build` assets and run:
+
+```bash
+RUN_BUILD=0 bash scripts/deploy-production.sh
+```
 
 `WorldSeeder` is safe during deploys because the world content uses idempotent `upsert` calls.
 
@@ -163,6 +180,8 @@ sudo systemctl enable --now lumiis-scheduler.timer
 ```
 
 The app does not currently define scheduled jobs, but enabling the timer now keeps the server ready for future scheduled work without another ops pass.
+
+If you skip this step on the first deploy, the deploy script will now continue and print a skip message instead of failing.
 
 ## 8. Create the first admin
 
