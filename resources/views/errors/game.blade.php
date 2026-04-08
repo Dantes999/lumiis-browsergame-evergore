@@ -1,7 +1,9 @@
 @php
     $homeUrl = auth()->check() ? route('dashboard') : url('/');
-    $secondaryUrl = auth()->check() ? route('profile.edit') : route('login');
-    $secondaryLabel = auth()->check() ? __('Profile') : __('Login');
+    $secondaryUrl = auth()->check()
+        ? (auth()->user()?->character()->exists() ? route('dashboard', ['panel' => 'settings']) : route('profile.edit'))
+        : route('login');
+    $secondaryLabel = auth()->check() ? __('Settings') : __('Login');
 @endphp
 
 <x-guest-layout class="guest-card-wide">
@@ -47,7 +49,7 @@
             </div>
 
             <p class="mt-4 text-sm leading-6 text-stone-300">
-                {{ __('If the problem keeps repeating, verify the route, refresh the page and try again from a known location such as the portal or your profile page.') }}
+                {{ __('If the problem keeps repeating, verify the route, refresh the page and try again from a known location such as the portal or your settings panel.') }}
             </p>
         </section>
     </div>

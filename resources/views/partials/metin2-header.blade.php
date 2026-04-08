@@ -3,9 +3,12 @@
     $primaryAction = Auth::check()
         ? ['label' => __('Realm'), 'route' => route('dashboard')]
         : ['label' => __('Create Account'), 'route' => route('register')];
+    $settingsRoute = Auth::check() && Auth::user()?->character()->exists()
+        ? route('dashboard', ['panel' => 'settings'])
+        : route('profile.edit');
 
     $secondaryAction = Auth::check()
-        ? ['label' => __('Profile'), 'route' => route('profile.edit')]
+        ? ['label' => __('Settings'), 'route' => $settingsRoute]
         : ['label' => __('Login'), 'route' => route('login')];
 
     $publicNavItems = [

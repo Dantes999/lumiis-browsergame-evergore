@@ -15,15 +15,39 @@
     $displayNavbarStamina = $staminaNavbarPreview['stamina'] ?? $currentCharacter?->stamina;
     $displayNavbarHealth = $healthNavbarPreview['health'] ?? $currentCharacter?->health;
     $displayNavbarSp = $spNavbarPreview['sp'] ?? $currentCharacter?->effectiveCurrentSp();
+    $navbarMaxStamina = $currentCharacter?->effectiveMaxStamina() ?? 0;
+    $navbarMaxHealth = $currentCharacter?->effectiveMaxHealth() ?? 0;
+    $navbarMaxSp = $currentCharacter?->effectiveMaxSp() ?? 0;
+    $staminaNavbarNextTickSeconds = $staminaNavbarPreview['next_tick_seconds'] ?? null;
+    $healthNavbarNextTickSeconds = $healthNavbarPreview['next_tick_seconds'] ?? null;
+    $spNavbarNextTickSeconds = $spNavbarPreview['next_tick_seconds'] ?? null;
+    $navbarHealthPointsPerTick = $currentCharacter ? max(2, (int) ceil($navbarMaxHealth * 0.05)) : 0;
+    $navbarSpPointsPerTick = $currentCharacter ? max(2, (int) ceil($navbarMaxSp * 0.15)) : 0;
+    $navbarHealthPercent = $navbarMaxHealth > 0
+        ? max(0, min(100, round((((int) $displayNavbarHealth) / $navbarMaxHealth) * 100, 2)))
+        : 0;
+    $navbarSpPercent = $navbarMaxSp > 0
+        ? max(0, min(100, round((((int) $displayNavbarSp) / $navbarMaxSp) * 100, 2)))
+        : 0;
+    $navbarStaminaPercent = $navbarMaxStamina > 0
+        ? max(0, min(100, round((((int) $displayNavbarStamina) / $navbarMaxStamina) * 100, 2)))
+        : 0;
+    $staminaNavbarCompactTickLabel = $staminaNavbarNextTickSeconds === null
+        ? __('Full')
+        : ceil($staminaNavbarNextTickSeconds / 60).' '.__('min');
     $navbarTutorialActive = (bool) $currentCharacter?->isInTutorial();
     $navbarTutorialStep = (int) ($currentCharacter?->tutorial_step ?? 0);
     $navbarCanOpenCharacter = $currentCharacter && (! $navbarTutorialActive || $navbarTutorialStep === 1);
+    $navbarCanOpenSkills = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenInventory = $currentCharacter && (! $navbarTutorialActive || $navbarTutorialStep === 6);
     $navbarCanOpenQuests = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenEquipment = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenChat = $currentCharacter && ! $navbarTutorialActive && $currentCharacter->globalChatUnlocked();
     $navbarCanOpenSettings = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenMobileInfo = $currentCharacter && ! $navbarTutorialActive;
+    $settingsUrl = $currentCharacter ? route('dashboard', ['panel' => 'settings']) : route('profile.edit');
+    $settingsLinkIsActive = request()->routeIs('profile.*')
+        || (request()->routeIs('dashboard', 'game.dashboard') && request()->query('panel') === 'settings');
     $useClassicDashboardHeader = request()->routeIs('dashboard', 'game.dashboard', 'profile.*') && $currentCharacter !== null;
     $showDashboardPanelButtons = request()->routeIs('dashboard', 'game.dashboard') && $currentCharacter !== null;
     $useUtilityPublicHeader = ! $useClassicDashboardHeader;
@@ -53,8 +77,8 @@
                     {{ __('Realm') }}
                 </a>
 
-                <a href="{{ route('profile.edit') }}" @class(['theme-secondary-button public-site-cta-link', 'is-active' => request()->routeIs('profile.*')])>
-                    {{ __('Profile') }}
+                <a href="{{ $settingsUrl }}" @class(['theme-secondary-button public-site-cta-link', 'is-active' => $settingsLinkIsActive])>
+                    {{ __('Settings') }}
                 </a>
 
                 @if (Auth::user()->is_admin)
@@ -111,27 +135,85 @@
                             {{ $currentCharacter->cooldownSecondsRemaining() > 0 ? sprintf('%02d:%02d', intdiv($currentCharacter->cooldownSecondsRemaining(), 60), $currentCharacter->cooldownSecondsRemaining() % 60) : __('Ready') }}
                         </span>
                     </div>
-                    <div class="portal-navbar-stat">
+                    <div class="portal-navbar-stat portal-navbar-stat-currency">
                         <span class="portal-navbar-stat-label">{{ __('Yang') }}</span>
-                        <span class="portal-navbar-stat-value">{{ number_format($currentCharacter->yang) }}</span>
-                    </div>
-                    <div class="portal-navbar-stat">
-                        <span class="portal-navbar-stat-label">{{ __('Stamina') }}</span>
-                        <span class="portal-navbar-stat-value">
-                            {{ number_format((int) $displayNavbarStamina) }}/{{ number_format($currentCharacter->effectiveMaxStamina()) }}
+                        <span class="portal-navbar-stat-value portal-navbar-stat-value-with-icon">
+                            <span class="portal-navbar-coin" aria-hidden="true"></span>
+                            <span>{{ number_format($currentCharacter->yang) }}</span>
                         </span>
                     </div>
-                    <div class="portal-navbar-stat">
-                        <span class="portal-navbar-stat-label">{{ __('HP') }}</span>
-                        <span class="portal-navbar-stat-value">
-                            {{ number_format((int) $displayNavbarHealth) }}/{{ number_format($currentCharacter->effectiveMaxHealth()) }}
-                        </span>
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            current: {{ (int) $displayNavbarStamina }},
+                            maximum: {{ $navbarMaxStamina }},
+                            nextTickSeconds: {{ $staminaNavbarNextTickSeconds === null ? 'null' : (int) $staminaNavbarNextTickSeconds }},
+                            intervalSeconds: 600,
+                            pointsPerTick: 1,
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
+                        <div class="portal-navbar-stat-head">
+                            <span class="portal-navbar-stat-label">{{ __('Stamina') }}</span>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
+                                {{ number_format((int) $displayNavbarStamina) }}/{{ number_format($navbarMaxStamina) }}
+                            </span>
+                        </div>
+                        <div class="portal-resource-gauge portal-resource-gauge-stamina" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarStaminaPercent }}%;"></span>
+                        </div>
+                        <span class="portal-navbar-stat-note" x-text="compactNextTick()">{{ $staminaNavbarCompactTickLabel }}</span>
                     </div>
-                    <div class="portal-navbar-stat">
-                        <span class="portal-navbar-stat-label">{{ __('SP') }}</span>
-                        <span class="portal-navbar-stat-value">
-                            {{ number_format((int) $displayNavbarSp) }}/{{ number_format($currentCharacter->effectiveMaxSp()) }}
-                        </span>
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            current: {{ (int) $displayNavbarHealth }},
+                            maximum: {{ $navbarMaxHealth }},
+                            nextTickSeconds: {{ $healthNavbarNextTickSeconds === null ? 'null' : (int) $healthNavbarNextTickSeconds }},
+                            intervalSeconds: 300,
+                            pointsPerTick: {{ $navbarHealthPointsPerTick }},
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
+                        <div class="portal-navbar-stat-head">
+                            <span class="portal-navbar-stat-label">{{ __('HP') }}</span>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
+                                {{ number_format((int) $displayNavbarHealth) }}/{{ number_format($navbarMaxHealth) }}
+                            </span>
+                        </div>
+                        <div class="portal-resource-gauge portal-resource-gauge-health" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarHealthPercent }}%;"></span>
+                        </div>
+                    </div>
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            current: {{ (int) $displayNavbarSp }},
+                            maximum: {{ $navbarMaxSp }},
+                            nextTickSeconds: {{ $spNavbarNextTickSeconds === null ? 'null' : (int) $spNavbarNextTickSeconds }},
+                            intervalSeconds: 180,
+                            pointsPerTick: {{ $navbarSpPointsPerTick }},
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
+                        <div class="portal-navbar-stat-head">
+                            <span class="portal-navbar-stat-label">{{ __('SP') }}</span>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
+                                {{ number_format((int) $displayNavbarSp) }}/{{ number_format($navbarMaxSp) }}
+                            </span>
+                        </div>
+                        <div class="portal-resource-gauge portal-resource-gauge-sp" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarSpPercent }}%;"></span>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -161,6 +243,15 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'skills' })"
+                        @disabled(! $navbarCanOpenSkills)
+                    >
+                        {{ __('Skills') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="theme-button theme-button-primary theme-button-compact"
                         x-on:click="$dispatch('dashboard-panel-open', { panel: 'quests' })"
                         @disabled(! $navbarCanOpenQuests)
                     >
@@ -185,14 +276,14 @@
                         {{ __('Equipment') }}
                     </button>
 
-                    <button
+                    <!--<button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact dashboard-mobile-window-pill"
                         x-on:click="$dispatch('dashboard-panel-open', { panel: 'mobile-info' })"
                         @disabled(! $navbarCanOpenMobileInfo)
                     >
                         {{ __('Info') }}
-                    </button>
+                    </button>-->
 
                     @if ($navbarCanOpenSettings)
                         <button
@@ -214,16 +305,6 @@
                         </button>
                     @endif
                 @endif
-
-                <a
-                    href="{{ route('profile.edit') }}"
-                    @class([
-                        'theme-button theme-button-primary theme-button-compact',
-                        'theme-button-active' => request()->routeIs('profile.*'),
-                    ])
-                >
-                    {{ __('Profile') }}
-                </a>
 
                 @if (Auth::user()->is_admin)
                     <a

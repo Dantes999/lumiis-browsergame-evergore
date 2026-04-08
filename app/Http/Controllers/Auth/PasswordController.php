@@ -24,6 +24,12 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        if ($request->user()?->character()->exists()) {
+            return redirect()
+                ->route('dashboard', ['panel' => 'settings'])
+                ->with('status', 'password-updated');
+        }
+
         return back()->with('status', 'password-updated');
     }
 }

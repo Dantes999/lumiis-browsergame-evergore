@@ -16,10 +16,14 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display the fallback profile form for accounts without a playable character yet.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): View|RedirectResponse
     {
+        if ($request->user()?->character()->exists()) {
+            return Redirect::route('dashboard', ['panel' => 'settings']);
+        }
+
         return view('profile.edit', [
             'user' => $request->user(),
         ]);
@@ -45,7 +49,7 @@ class ProfileController extends Controller
         $request->user()->save();
         $this->syncLocaleSession($request);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return $this->settingsRedirect($request)->with('status', 'profile-updated');
     }
 
     /**
@@ -59,7 +63,7 @@ class ProfileController extends Controller
         ])->save();
         $this->syncLocaleSession($request);
 
-        return Redirect::back()->with('status', __('Language updated.'));
+        return $this->settingsRedirect($request)->with('status', __('Language updated.'));
     }
 
     /**
@@ -102,5 +106,14 @@ class ProfileController extends Controller
     private function storedLocalePreference(string $localePreference): string
     {
         return $localePreference;
+    }
+
+    private function settingsRedirect(Request $request): RedirectResponse
+    {
+        if ($request->user()?->character()->exists()) {
+            return Redirect::route('dashboard', ['panel' => 'settings']);
+        }
+
+        return Redirect::route('profile.edit');
     }
 }

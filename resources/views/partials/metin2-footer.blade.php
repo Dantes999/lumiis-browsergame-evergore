@@ -10,8 +10,13 @@
             <a href="{{ url('/#systems') }}">{{ __('Systems') }}</a>
             <a href="{{ url('/#gallery') }}">{{ __('Interface') }}</a>
             @auth
+                @php
+                    $settingsRoute = auth()->user()?->character()->exists()
+                        ? route('dashboard', ['panel' => 'settings'])
+                        : route('profile.edit');
+                @endphp
                 <a href="{{ route('dashboard') }}">{{ __('Realm') }}</a>
-                <a href="{{ route('profile.edit') }}">{{ __('Profile') }}</a>
+                <a href="{{ $settingsRoute }}">{{ __('Settings') }}</a>
             @else
                 <a href="{{ route('register') }}">{{ __('Register') }}</a>
                 <a href="{{ route('login') }}">{{ __('Login') }}</a>

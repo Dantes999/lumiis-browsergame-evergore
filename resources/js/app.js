@@ -406,9 +406,134 @@ Alpine.data('actionLock', ({ secondsRemaining = 0, title = 'Lumiis', syncDocumen
 }));
 
 Alpine.data(
+    'resourceGauge',
+    ({ current = 0, maximum = 0, nextTickSeconds = null, intervalSeconds = 60, pointsPerTick = 1, labels = {} } = {}) => ({
+        current,
+        maximum,
+        nextTickSeconds,
+        intervalSeconds,
+        pointsPerTick,
+        labels: {
+            fullShort: labels.fullShort ?? 'Full',
+            minutesShort: labels.minutesShort ?? 'min',
+        },
+        intervalId: null,
+        refillTimeoutId: null,
+        isRefilling: false,
+
+        init() {
+            if (this.nextTickSeconds === null || this.current >= this.maximum) {
+                return;
+            }
+
+            this.intervalId = window.setInterval(() => {
+                if (this.current >= this.maximum) {
+                    this.current = this.maximum;
+                    this.nextTickSeconds = null;
+                    this.stop();
+
+                    return;
+                }
+
+                if (this.nextTickSeconds === null) {
+                    this.nextTickSeconds = this.intervalSeconds;
+                }
+
+                this.nextTickSeconds -= 1;
+
+                if (this.nextTickSeconds > 0) {
+                    return;
+                }
+
+                const nextValue = Math.min(this.maximum, this.current + this.pointsPerTick);
+
+                if (nextValue !== this.current) {
+                    this.current = nextValue;
+                    this.pulseRefill();
+                }
+
+                if (this.current >= this.maximum) {
+                    this.current = this.maximum;
+                    this.nextTickSeconds = null;
+                    this.stop();
+
+                    return;
+                }
+
+                this.nextTickSeconds = this.intervalSeconds;
+            }, 1000);
+        },
+
+        destroy() {
+            this.stop();
+
+            if (this.refillTimeoutId !== null) {
+                window.clearTimeout(this.refillTimeoutId);
+                this.refillTimeoutId = null;
+            }
+        },
+
+        percent() {
+            if (this.maximum <= 0) {
+                return 0;
+            }
+
+            return Math.max(0, Math.min(100, (this.current / this.maximum) * 100));
+        },
+
+        fillStyle() {
+            return { width: `${this.percent()}%` };
+        },
+
+        formattedValue() {
+            return `${Number(this.current).toLocaleString()}/${Number(this.maximum).toLocaleString()}`;
+        },
+
+        compactNextTick() {
+            if (this.nextTickSeconds === null || this.current >= this.maximum) {
+                return this.labels.fullShort;
+            }
+
+            return `${Math.max(1, Math.ceil(this.nextTickSeconds / 60))} ${this.labels.minutesShort}`;
+        },
+
+        pulseRefill() {
+            this.isRefilling = true;
+
+            if (this.refillTimeoutId !== null) {
+                window.clearTimeout(this.refillTimeoutId);
+            }
+
+            this.refillTimeoutId = window.setTimeout(() => {
+                this.isRefilling = false;
+                this.refillTimeoutId = null;
+            }, 900);
+        },
+
+        stop() {
+            if (this.intervalId === null) {
+                return;
+            }
+
+            window.clearInterval(this.intervalId);
+            this.intervalId = null;
+        },
+    }),
+);
+
+Alpine.data(
     'dashboardShell',
-    ({ activePanel = null, chatTab = 'global', tutorial = null, actionLockSeconds = 0, resting = null, activeBattleRound = 0 } = {}) => ({
+    ({
+        activePanel = null,
+        requestedPanel = null,
+        chatTab = 'global',
+        tutorial = null,
+        actionLockSeconds = 0,
+        resting = null,
+        activeBattleRound = 0,
+    } = {}) => ({
         activePanel,
+        requestedPanel,
         chatTab,
         tutorial,
         actionLockSeconds,
@@ -439,7 +564,11 @@ Alpine.data(
 
             this.restoreState();
 
-             this.$nextTick(() => {
+            if (this.requestedPanel && this.canOpenPanel(this.requestedPanel)) {
+                this.activePanel = this.requestedPanel;
+            }
+
+            this.$nextTick(() => {
                 window.requestAnimationFrame(() => this.scrollMobileFocusIntoView());
             });
 
@@ -605,7 +734,7 @@ Alpine.data(
 
                 const state = JSON.parse(payload);
 
-                this.activePanel = ['character', 'inventory', 'chat', 'settings', 'mobile-info'].includes(state.activePanel)
+                this.activePanel = ['character', 'skills', 'quests', 'inventory', 'equipment', 'chat', 'settings', 'mobile-info'].includes(state.activePanel)
                     ? state.activePanel
                     : null;
                 this.chatTab = ['global', 'whisper'].includes(state.chatTab) ? state.chatTab : this.chatTab;
@@ -623,7 +752,7 @@ Alpine.data(
                 window.localStorage?.setItem(
                     DASHBOARD_SHELL_STORAGE_KEY,
                     JSON.stringify({
-                        activePanel: this.activePanel,
+                        activePanel: this.activePanel === 'focus' ? null : this.activePanel,
                         chatTab: this.chatTab,
                     }),
                 );
@@ -803,6 +932,25 @@ Alpine.data(
 
             window.clearInterval(this.intervalId);
             this.intervalId = null;
+        },
+    }),
+);
+
+Alpine.data(
+    'equipmentBoard',
+    ({ initialInfoSlot = null } = {}) => ({
+        infoSlot: initialInfoSlot,
+
+        toggleInfo(slot) {
+            this.infoSlot = this.infoSlot === slot ? null : slot;
+        },
+
+        closeInfo() {
+            this.infoSlot = null;
+        },
+
+        isInfoOpen(slot) {
+            return this.infoSlot === slot;
         },
     }),
 );
@@ -1438,6 +1586,55 @@ Alpine.data('battleResolution', ({ result = null, autoOpen = false, labels = {} 
         this.enemies.push(enemy);
     },
 }));
+
+Alpine.data(
+    'inventoryList',
+    ({ totalItems = 0, perPage = 10 } = {}) => ({
+        totalItems,
+        perPage,
+        currentPage: 1,
+        infoItemId: null,
+
+        totalPages() {
+            return Math.max(1, Math.ceil(this.totalItems / this.perPage));
+        },
+
+        startIndex() {
+            return (this.currentPage - 1) * this.perPage;
+        },
+
+        endIndex() {
+            return Math.min(this.totalItems, this.startIndex() + this.perPage);
+        },
+
+        isVisible(index) {
+            return index >= this.startIndex() && index < this.startIndex() + this.perPage;
+        },
+
+        goToPage(page) {
+            const nextPage = Math.max(1, Math.min(this.totalPages(), Number(page) || 1));
+
+            this.currentPage = nextPage;
+            this.infoItemId = null;
+        },
+
+        previousPage() {
+            this.goToPage(this.currentPage - 1);
+        },
+
+        nextPage() {
+            this.goToPage(this.currentPage + 1);
+        },
+
+        toggleInfo(itemId) {
+            this.infoItemId = this.infoItemId === itemId ? null : itemId;
+        },
+
+        isInfoOpen(itemId) {
+            return this.infoItemId === itemId;
+        },
+    }),
+);
 
 window.Alpine = Alpine;
 

@@ -5,7 +5,10 @@
         <div class="dashboard-overlay-head">
             <div>
                 <p class="panel-kicker">{{ __('Settings') }}</p>
-                <h2 class="dashboard-overlay-title">{{ __('Language and Interface') }}</h2>
+                <h2 class="dashboard-overlay-title">{{ __('Settings') }}</h2>
+                <p class="dashboard-overlay-subtitle">
+                    {{ __('Manage your login, password and language settings here without switching to a separate desktop layout.') }}
+                </p>
             </div>
 
             <button type="button" class="dashboard-overlay-close" @click="closePanel()">
@@ -14,43 +17,19 @@
         </div>
 
         <div class="dashboard-overlay-scroll">
-            <article class="game-panel">
-                <h3 class="font-[Cinzel] text-2xl tracking-[0.12em] text-amber-50">
-                    {{ __('Choose Your Language') }}
-                </h3>
+            <div class="grid w-full gap-4">
+                <article class="game-panel">
+                    @include('profile.partials.update-profile-information-form', ['user' => auth()->user()])
+                </article>
 
-                <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                    <form method="POST" action="{{ route('profile.locale.update') }}" class="paper-note text-center">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="locale_preference" value="de">
-                        <p class="text-[0.65rem] uppercase tracking-[0.28em] text-amber-900/70">{{ __('German') }}</p>
-                        <p class="mt-3 text-3xl">🇩🇪</p>
-                        <p class="mt-3 font-[Cinzel] text-xl tracking-[0.08em] text-stone-900">{{ __('Deutsch') }}</p>
-                        <p class="mt-2 text-sm leading-6 text-stone-700">
-                            {{ __('Full German interface for story, menus and action feedback.') }}
-                        </p>
-                        <button type="submit" class="action-button mt-5 w-full" @disabled($currentLocalePreference === 'de')>
-                            {{ $currentLocalePreference === 'de' ? __('Active') : __('Use German') }}
-                        </button>
-                    </form>
+                <article class="game-panel">
+                    @include('profile.partials.update-password-form')
+                </article>
 
-                    <form method="POST" action="{{ route('profile.locale.update') }}" class="paper-note text-center">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="locale_preference" value="en">
-                        <p class="text-[0.65rem] uppercase tracking-[0.28em] text-amber-900/70">{{ __('English') }}</p>
-                        <p class="mt-3 text-3xl">🇬🇧</p>
-                        <p class="mt-3 font-[Cinzel] text-xl tracking-[0.08em] text-stone-900">{{ __('English') }}</p>
-                        <p class="mt-2 text-sm leading-6 text-stone-700">
-                            {{ __('Full English interface for story, menus and action feedback.') }}
-                        </p>
-                        <button type="submit" class="action-button mt-5 w-full" @disabled($currentLocalePreference === 'en')>
-                            {{ $currentLocalePreference === 'en' ? __('Active') : __('Use English') }}
-                        </button>
-                    </form>
-                </div>
-            </article>
+                <article class="game-panel">
+                    @include('profile.partials.delete-user-form')
+                </article>
+            </div>
         </div>
     </div>
 </section>
@@ -173,6 +152,75 @@
                 </div>
             </article>
 
+        </div>
+    </div>
+</section>
+
+@if ($activeArea && ! $tutorialActive)
+    <section id="dashboard-focus-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'focus'" x-cloak>
+        <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
+
+        <div class="dashboard-overlay-window dashboard-map-overlay-window">
+            <div class="dashboard-overlay-head">
+                <div>
+                    <p class="panel-kicker">{{ $activeArea->isService() ? __('Town Hotspot') : __('Hunting Ground') }}</p>
+                    <h2 class="dashboard-overlay-title">{{ $activeArea->name }}</h2>
+                    <p class="dashboard-overlay-subtitle">
+                        {{ $activeArea->description }}
+                    </p>
+                </div>
+
+                <div class="dashboard-overlay-head-actions">
+                    @if ($activeArea->recommended_level)
+                        <span class="dashboard-overlay-pill">
+                            Lv {{ $activeArea->recommended_level }}+
+                        </span>
+                    @endif
+
+                    <button type="button" class="dashboard-overlay-close" @click="closePanel()">
+                        {{ __('Close') }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="dashboard-overlay-scroll">
+                <article class="game-panel">
+                    <div class="character-stats-grid">
+                        @foreach ($dashboardFocusFacts as $focusFact)
+                            <div class="stat-card">
+                                <span class="stat-label">{{ $focusFact['label'] }}</span>
+                                <span class="stat-value stat-value-compact">{{ $focusFact['value'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if ($activeArea->isHunting())
+                        @include('game.partials.dashboard-focus-hunting-panel')
+                    @else
+                        @include('game.partials.dashboard-focus-service-panel')
+                    @endif
+                </article>
+            </div>
+        </div>
+    </section>
+@endif
+
+<section id="dashboard-skills-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'skills'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
+
+    <div class="dashboard-overlay-window dashboard-map-overlay-window">
+        <div class="dashboard-overlay-head">
+            <div>
+                <p class="panel-kicker">{{ __('Skills') }}</p>
+                <h2 class="dashboard-overlay-title">{{ __('Skills') }}</h2>
+            </div>
+
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()">
+                {{ __('Close') }}
+            </button>
+        </div>
+
+        <div class="dashboard-overlay-scroll">
             @include('game.partials.skill-panel')
         </div>
     </div>
@@ -207,16 +255,9 @@
             <div>
                 <p class="panel-kicker">{{ __('Equipment') }}</p>
                 <h2 class="dashboard-overlay-title">{{ __('Equipment') }}</h2>
-                <p class="dashboard-overlay-subtitle">
-                    {{ __('Inspect your current loadout, check slot bonuses and unequip gear without leaving the map.') }}
-                </p>
             </div>
 
             <div class="dashboard-overlay-head-actions">
-                <span class="dashboard-overlay-pill">
-                    {{ number_format($equippedItemCount) }}/{{ number_format(count($equipmentBoardSlots)) }} {{ __('Slots') }}
-                </span>
-
                 <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                     {{ __('Close') }}
                 </button>
@@ -224,39 +265,10 @@
         </div>
 
         <div class="dashboard-overlay-scroll dashboard-overlay-scroll-inventory">
-            <div
-                class="inventory-workspace"
-                x-data="{
-                    equipmentInspector: @js($equipmentInspectorDefaultSlot),
-                }"
-            >
-                <div class="inventory-overview-grid">
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Equipped slots') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($equippedItemCount) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Current loadout pieces active on your character.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Empty slots') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($emptyEquipmentSlotCount) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Open slots you can still fill from your bag.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Bag gear') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($inventoryEquippableCount) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Equippable items currently waiting in inventory.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Mount slot') }}</span>
-                        <strong class="inventory-summary-value">{{ $equipmentBySlot->has('mount') ? __('Ready') : __('Empty') }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Use the inventory panel when you want to equip a new mount item.') }}</p>
-                    </article>
-                </div>
-
-                @include('game.partials.dashboard-equipment-workspace')
+            <div class="inventory-workspace">
+                @include('game.partials.dashboard-equipment-workspace', [
+                    'showPanelHead' => false,
+                ])
             </div>
         </div>
     </div>
@@ -271,7 +283,7 @@
                 <p class="panel-kicker">{{ __('Inventory Control') }}</p>
                 <h2 class="dashboard-overlay-title">{{ __('Inventory') }}</h2>
                 <p class="dashboard-overlay-subtitle">
-                    {{ __('Manage bag items, consumables, books and sell-ready drops from one contained workspace.') }}
+                    {{ __('Manage bag items, consumables and sell-ready drops from one contained workspace.') }}
                 </p>
             </div>
 
@@ -355,70 +367,68 @@
 
             <div
                 class="inventory-workspace"
-                x-data="{
-                    inventorySelection: @js($inventorySelectionDefaultId),
-                }"
+                x-data="inventoryList({
+                    totalItems: {{ $bagItems->count() }},
+                    perPage: 10,
+                })"
             >
-                <div class="inventory-overview-grid">
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Stored stacks') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($bagItems->count()) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Distinct bag entries currently available.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Total pieces') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($inventoryTotalQuantity) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Combined quantity across your current bag.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">{{ __('Gear pieces') }}</span>
-                        <strong class="inventory-summary-value">{{ number_format($inventoryEquippableCount) }}</strong>
-                        <p class="inventory-summary-copy">{{ __('Weapons, armor and other equip-ready drops.') }}</p>
-                    </article>
-
-                    <article class="inventory-summary-card">
-                        <span class="inventory-summary-label">
-                            {{ $inventorySellEnabled ? __('Sell ready') : __('Skill books') }}
-                        </span>
-                        <strong class="inventory-summary-value">
-                            {{ number_format($inventorySellEnabled ? $inventorySellableCount : $inventorySkillBookCount) }}
-                        </strong>
-                        <p class="inventory-summary-copy">
-                            @if ($inventorySellEnabled)
-                                {{ __('Town vendor access is active for :vendor.', ['vendor' => $inventorySellVendorArea->name]) }}
-                            @else
-                                {{ __('Consumable books currently carried in the bag.') }}
-                            @endif
-                        </p>
-                    </article>
-                </div>
-
                 @if ($tutorialActive && $tutorialStep === 6)
-                    <div
-                        class="inventory-modal-main"
-                        x-data="{
-                            equipmentInspector: @js($equipmentInspectorDefaultSlot),
-                        }"
-                    >
+                    <div class="inventory-modal-main">
                         @include('game.partials.dashboard-equipment-workspace', [
                             'articleId' => 'tutorial-equipment-panel',
                         ])
                     </div>
                 @endif
 
-                <div class="inventory-modal-main">
-                        <article class="game-panel inventory-modern-panel inventory-detail-workspace">
-                            <div class="dashboard-section-head dashboard-section-head-modern">
-                                <div>
-                                    <p class="panel-kicker">{{ __('Selected Item') }}</p>
-                                    <h2 class="dashboard-section-title">{{ __('Item Workspace') }}</h2>
-                                </div>
-                                <span class="dashboard-section-badge">{{ __('Live actions') }}</span>
-                            </div>
+                <article class="game-panel inventory-modern-panel inventory-list-panel">
+                    <div class="dashboard-section-head dashboard-section-head-modern">
+                        <div>
+                            <p class="panel-kicker">{{ __('Bag Contents') }}</p>
+                            <h2 class="dashboard-section-title">{{ __('Inventory List') }}</h2>
+                        </div>
+                        <span class="dashboard-section-badge">{{ __('Live actions') }}</span>
+                    </div>
 
-                            @forelse ($bagItems as $inventoryItem)
+                    @if ($bagItems->isNotEmpty())
+                        <div class="inventory-list-pagination mt-6">
+                            <p class="inventory-list-pagination-copy">
+                                <span x-text="(startIndex() + 1).toLocaleString()">{{ number_format($bagItems->isEmpty() ? 0 : 1) }}</span>
+                                -
+                                <span x-text="endIndex().toLocaleString()">{{ number_format(min(10, $bagItems->count())) }}</span>
+                                /
+                                {{ number_format($bagItems->count()) }}
+                            </p>
+
+                            <div class="inventory-list-pagination-controls">
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="previousPage()"
+                                    x-bind:disabled="currentPage <= 1"
+                                >
+                                    {{ __('Previous') }}
+                                </button>
+
+                                <span class="inventory-list-page-indicator">
+                                    {{ __('Page') }}
+                                    <span x-text="currentPage">1</span>
+                                    /
+                                    <span x-text="totalPages()">1</span>
+                                </span>
+
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="nextPage()"
+                                    x-bind:disabled="currentPage >= totalPages()"
+                                >
+                                    {{ __('Next') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="inventory-list-rows mt-6">
+                            @foreach ($bagItems as $inventoryItem)
                                 @php
                                     $item = $inventoryItem->item;
                                     $isBiologistSupportItem = in_array($item->slug, ['research-catalyst', 'research-report'], true);
@@ -426,284 +436,139 @@
                                     $linkedSkill = $item->linkedSkillDefinition();
                                 @endphp
 
-                                <section class="inventory-detail-sheet" x-show="inventorySelection === {{ $inventoryItem->id }}" x-cloak>
-                                    <div class="inventory-detail-hero">
-                                        <div class="inventory-detail-preview" aria-hidden="true">
-                                            @if (filled($inventoryItem->iconPath()))
-                                                <img
-                                                    src="{{ asset($inventoryItem->iconPath()) }}"
-                                                    alt=""
-                                                    class="inventory-detail-preview-icon"
-                                                >
-                                            @else
-                                                <span class="inventory-detail-fallback">{{ strtoupper(substr($item->name, 0, 1)) }}</span>
-                                            @endif
-                                        </div>
-
-                                        <div class="inventory-detail-copy">
-                                            <div class="inventory-detail-title-row">
-                                                <h3 class="inventory-detail-title">{{ $inventoryItem->displayName() }}</h3>
-
-                                                <div class="inventory-detail-badges">
-                                                    <span class="inventory-entry-chip">{{ strtoupper($item->item_type) }}</span>
-                                                    @if ($inventoryItem->quantity > 1)
-                                                        <span class="inventory-entry-chip">x{{ $inventoryItem->quantity }}</span>
-                                                    @endif
-                                                    @if ($inventoryItem->isEquipped())
-                                                        <span class="inventory-entry-chip">{{ __('Equipped') }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-
-                                            <p class="inventory-detail-description">{{ $item->description }}</p>
-
-                                            <div class="inventory-detail-stats">
-                                                <div class="inventory-detail-stat">
-                                                    <span>{{ __('Req. Level') }}</span>
-                                                    <strong>{{ $item->required_level }}</strong>
-                                                </div>
-                                                <div class="inventory-detail-stat">
-                                                    <span>{{ __('Sell') }}</span>
-                                                    <strong>{{ (int) $item->sell_price > 0 ? number_format($item->sell_price).' '.__('Yang') : __('None') }}</strong>
-                                                </div>
-                                                <div class="inventory-detail-stat">
-                                                    <span>{{ __('Bonuses') }}</span>
-                                                    <strong>
-                                                        @if ($item->isEquippable())
-                                                            {{ $inventoryItem->bonusCount() }}/{{ $inventoryItem->bonus_slot_limit }}
-                                                        @else
-                                                            {{ __('N/A') }}
-                                                        @endif
-                                                    </strong>
-                                                </div>
-                                            </div>
-
-                                            <p class="inventory-detail-meta">
-                                                @if ($item->isSkillBook() && $linkedSkill !== null) {{ __('Skill') }} {{ $linkedSkill['name'] }} · @endif
-                                                @if ($item->isSkillBook()) {{ __('Book Rank') }} {{ \App\Support\Game\MetinClassCatalog::skillBookMinimumRank() }}+ · @endif
-                                                @if ($item->heal_amount) +{{ $item->heal_amount }} HP · @endif
-                                                @if ($item->sp_restore) +{{ $item->sp_restore }} SP · @endif
-                                                @if ($inventoryItem->effectiveBonus('attack_bonus')) +{{ $inventoryItem->effectiveBonus('attack_bonus') }} ATK · @endif
-                                                @if ($inventoryItem->effectiveBonus('defense_bonus')) +{{ $inventoryItem->effectiveBonus('defense_bonus') }} DEF · @endif
-                                                @if ($inventoryItem->effectiveBonus('speed_bonus')) +{{ $inventoryItem->effectiveBonus('speed_bonus') }} SPD · @endif
-                                                @if ($inventoryItem->effectiveBonus('health_bonus')) +{{ $inventoryItem->effectiveBonus('health_bonus') }} HP @endif
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    @if ($inventoryItem->bonusLines() !== [])
-                                        <div class="inventory-detail-chips">
-                                            @foreach ($inventoryItem->bonusLines() as $bonusLine)
-                                                <span class="cozy-chip">{{ $bonusLine }}</span>
-                                            @endforeach
-                                        </div>
-                                    @endif
-
-                                    <div class="inventory-detail-actions">
-                                        @if ($item->isConsumable() && ! $isBiologistSupportItem)
-                                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'use-item']) }}" class="space-y-3">
-                                                @csrf
-                                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
-                                                @if ($activeFocus)
-                                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                                @endif
-
-                                                <div class="flex flex-wrap items-center gap-3">
-                                                    <label class="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-stone-700" for="consume-quantity-{{ $inventoryItem->id }}">
-                                                        {{ __('Qty') }}
-                                                    </label>
-                                                    <input
-                                                        id="consume-quantity-{{ $inventoryItem->id }}"
-                                                        type="number"
-                                                        name="quantity"
-                                                        min="1"
-                                                        max="{{ $inventoryItem->quantity }}"
-                                                        value="1"
-                                                        class="inventory-use-quantity"
+                                <article
+                                    class="inventory-list-row"
+                                    x-show="isVisible({{ $loop->index }})"
+                                    x-cloak
+                                    x-bind:class="{ 'inventory-list-row-open': isInfoOpen({{ $inventoryItem->id }}) }"
+                                >
+                                    <div class="inventory-list-row-header">
+                                        <div class="inventory-list-row-main">
+                                            <span class="inventory-list-row-art" aria-hidden="true">
+                                                @if (filled($inventoryItem->iconPath()))
+                                                    <img
+                                                        src="{{ asset($inventoryItem->iconPath()) }}"
+                                                        alt=""
+                                                        class="inventory-list-row-icon"
                                                     >
+                                                @else
+                                                    <span class="inventory-detail-fallback">{{ strtoupper(substr($item->name, 0, 1)) }}</span>
+                                                @endif
+                                            </span>
+
+                                            <div class="inventory-list-row-copy">
+                                                <div class="inventory-list-row-titleline">
+                                                    <h3 class="inventory-list-row-title">{{ $inventoryItem->displayName() }}</h3>
+                                                    <span class="inventory-list-row-count">x{{ number_format($inventoryItem->quantity) }}</span>
                                                 </div>
-
-                                                <div class="inventory-detail-action-grid">
-                                                    <button type="submit" class="action-button w-full">
-                                                        {{ __('Use Selected') }}
-                                                    </button>
-                                                    <button type="submit" name="use_until_full" value="1" class="action-button-muted w-full">
-                                                        {{ __('Use Until Full') }}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        @elseif ($item->isSkillBook())
-                                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'use-item']) }}">
-                                                @csrf
-                                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
-                                                @if ($activeFocus)
-                                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                                @endif
-
-                                                <button type="submit" class="action-button w-full">
-                                                    {{ __('Study Book') }}
-                                                </button>
-                                            </form>
-                                        @elseif ($isBiologistSupportItem)
-                                            <div class="inventory-detail-note">
-                                                {{ __('Use this item from the Biologist panel in town.') }}
                                             </div>
-                                        @elseif ($isSkillSupportMaterial)
-                                            <div class="inventory-detail-note">
-                                                {{ __('Use this item from the skill panel once a skill reaches M10.') }}
-                                            </div>
-                                        @endif
+                                        </div>
 
-                                        @if ($item->isEquippable())
-                                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'equip-item']) }}">
-                                                @csrf
-                                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
-                                                @if ($activeFocus)
-                                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                                @endif
+                                        <div class="inventory-list-row-actions">
+                                            @if ($item->isSkillBook())
+                                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'use-item']) }}" class="inventory-list-row-action-form">
+                                                    @csrf
+                                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                                    <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
+                                                    @if ($activeFocus)
+                                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                                    @endif
 
-                                                <button
-                                                    type="submit"
-                                                    class="action-button w-full"
-                                                    @disabled($character->level < $item->required_level)
-                                                >
-                                                    {{ __('Equip') }}
-                                                </button>
-                                            </form>
-                                        @endif
+                                                    <button type="submit" class="action-button">
+                                                        {{ __('Study Book') }}
+                                                    </button>
+                                                </form>
+                                            @elseif ($item->isConsumable() && ! $isBiologistSupportItem)
+                                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'use-item']) }}" class="inventory-list-row-action-form">
+                                                    @csrf
+                                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                                    <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
+                                                    @if ($activeFocus)
+                                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                                    @endif
 
-                                        @if ($inventorySellEnabled && ! $inventoryItem->isEquipped() && (int) $item->sell_price > 0)
-                                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'sell-item']) }}" class="space-y-3">
-                                                @csrf
-                                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                <input type="hidden" name="location_area_id" value="{{ $inventorySellVendorArea->id }}">
-                                                <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
-                                                @if ($activeFocus)
-                                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                                @endif
+                                                    <button type="submit" class="action-button">
+                                                        {{ __('Use') }}
+                                                    </button>
+                                                </form>
+                                            @endif
 
-                                                @if ($item->stackable && $inventoryItem->quantity > 1)
-                                                    <div class="flex flex-wrap items-center gap-3">
-                                                        <label class="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-stone-700" for="sell-quantity-{{ $inventoryItem->id }}">
+                                            @if ($item->isEquippable())
+                                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'equip-item']) }}" class="inventory-list-row-action-form">
+                                                    @csrf
+                                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                                    <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
+                                                    @if ($activeFocus)
+                                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                                    @endif
+
+                                                    <button
+                                                        type="submit"
+                                                        class="action-button"
+                                                        @disabled($character->level < $item->required_level)
+                                                    >
+                                                        {{ __('Equip') }}
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            @if ($inventorySellEnabled && ! $inventoryItem->isEquipped() && (int) $item->sell_price > 0)
+                                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'sell-item']) }}" class="inventory-list-row-action-form inventory-list-row-action-form-sell">
+                                                    @csrf
+                                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                                    <input type="hidden" name="location_area_id" value="{{ $inventorySellVendorArea->id }}">
+                                                    <input type="hidden" name="character_item_id" value="{{ $inventoryItem->id }}">
+                                                    @if ($activeFocus)
+                                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                                    @endif
+
+                                                    @if ($item->stackable && $inventoryItem->quantity > 1)
+                                                        <label class="sr-only" for="inventory-list-sell-quantity-{{ $inventoryItem->id }}">
                                                             {{ __('Qty') }}
                                                         </label>
                                                         <input
-                                                            id="sell-quantity-{{ $inventoryItem->id }}"
+                                                            id="inventory-list-sell-quantity-{{ $inventoryItem->id }}"
                                                             type="number"
                                                             name="quantity"
                                                             min="1"
                                                             max="{{ $inventoryItem->quantity }}"
                                                             value="1"
-                                                            class="inventory-use-quantity"
+                                                            class="inventory-use-quantity inventory-list-row-quantity"
                                                         >
-                                                    </div>
-                                                @endif
+                                                    @endif
 
-                                                <button type="submit" class="action-button-muted w-full">
-                                                    {{ __('Sell') }}
-                                                </button>
-                                            </form>
-                                        @endif
+                                                    <button type="submit" class="action-button-muted">
+                                                        {{ __('Sell') }}
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            <button
+                                                type="button"
+                                                class="inventory-list-row-info-toggle"
+                                                @click.stop="toggleInfo({{ $inventoryItem->id }})"
+                                                x-bind:aria-expanded="isInfoOpen({{ $inventoryItem->id }})"
+                                            >
+                                                {{ __('Info') }}
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    @include('game.partials.item-bonus-actions', ['inventoryItem' => $inventoryItem])
-
-                                    <div class="inventory-detail-notes">
-                                        @if ($item->isEquippable() && $character->level < $item->required_level)
-                                            <p class="action-cost-warning">{{ __('Required level not reached yet.') }}</p>
-                                        @endif
-                                        @if ($inventorySellEnabled && ! $inventoryItem->isEquipped() && (int) $item->sell_price > 0)
-                                            <p class="action-copy">{{ __('Selling here goes through :vendor.', ['vendor' => $inventorySellVendorArea->name]) }}</p>
-                                        @endif
+                                    <div class="inventory-list-row-details">
+                                        @include('game.partials.inventory-list-row-details', ['inventoryItem' => $inventoryItem])
                                     </div>
-                                </section>
-                            @empty
-                                <div class="inventory-empty-state">
-                                    <p class="inventory-empty-title">{{ __('Your inventory is empty.') }}</p>
-                                    <p class="inventory-empty-copy">{{ __('Fight monsters or visit town services to fill the bag again.') }}</p>
-                                </div>
-                            @endforelse
-                        </article>
-
-                        <article class="game-panel inventory-modern-panel inventory-collection-panel">
-                            <div class="dashboard-section-head dashboard-section-head-modern">
-                                <div>
-                                    <p class="panel-kicker">{{ __('Bag Contents') }}</p>
-                                    <h2 class="dashboard-section-title">{{ __('Quick Select') }}</h2>
-                                </div>
-                                <span class="dashboard-section-badge">{{ __('Tap or click') }}</span>
-                            </div>
-
-                            @if ($bagItems->isNotEmpty())
-                                <div class="inventory-collection-list mt-6">
-                                    @foreach ($bagItems as $inventoryItem)
-                                        @php
-                                            $item = $inventoryItem->item;
-                                            $linkedSkill = $item->linkedSkillDefinition();
-                                        @endphp
-
-                                        <button
-                                            type="button"
-                                            class="inventory-card-button"
-                                            @click="inventorySelection = {{ $inventoryItem->id }}"
-                                            x-bind:class="{ 'inventory-card-button-active': inventorySelection === {{ $inventoryItem->id }} }"
-                                            x-bind:aria-pressed="inventorySelection === {{ $inventoryItem->id }}"
-                                        >
-                                            <span class="inventory-card-art" aria-hidden="true">
-                                                @if (filled($inventoryItem->iconPath()))
-                                                    <img
-                                                        src="{{ asset($inventoryItem->iconPath()) }}"
-                                                        alt=""
-                                                        class="inventory-card-art-icon"
-                                                    >
-                                                @else
-                                                    <span class="inventory-card-art-fallback">{{ strtoupper(substr($item->name, 0, 1)) }}</span>
-                                                @endif
-                                            </span>
-
-                                            <span class="inventory-card-copy">
-                                                <span class="inventory-card-topline">
-                                                    <span class="inventory-card-name">{{ $inventoryItem->displayName() }}</span>
-                                                    @if ($inventoryItem->isEquipped())
-                                                        <span class="inventory-card-state">{{ __('Equipped') }}</span>
-                                                    @endif
-                                                </span>
-
-                                                <span class="inventory-card-meta">
-                                                    {{ strtoupper($item->item_type) }} · {{ __('Level') }} {{ $item->required_level }}
-                                                    @if ((int) $item->sell_price > 0) · {{ number_format($item->sell_price) }} {{ __('Yang') }} @endif
-                                                </span>
-
-                                                <span class="inventory-card-footer">
-                                                    @if ($inventoryItem->quantity > 1)
-                                                        <span class="inventory-card-pill">x{{ $inventoryItem->quantity }}</span>
-                                                    @endif
-                                                    @if ($inventoryItem->bonusCount() > 0)
-                                                        <span class="inventory-card-pill">
-                                                            {{ __('Bonuses') }} {{ $inventoryItem->bonusCount() }}
-                                                        </span>
-                                                    @endif
-                                                    @if ($item->isSkillBook() && $linkedSkill !== null)
-                                                        <span class="inventory-card-pill">{{ $linkedSkill['name'] }}</span>
-                                                    @endif
-                                                </span>
-                                            </span>
-                                        </button>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="inventory-empty-state mt-6">
-                                    <p class="inventory-empty-title">{{ __('Nothing to select yet.') }}</p>
-                                    <p class="inventory-empty-copy">{{ __('The quick select grid fills as soon as items reach your bag.') }}</p>
-                                </div>
-                            @endif
-                        </article>
-                    </div>
-                </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="inventory-empty-state mt-6">
+                            <p class="inventory-empty-title">{{ __('Your inventory is empty.') }}</p>
+                            <p class="inventory-empty-copy">{{ __('Fight monsters or visit town services to fill the bag again.') }}</p>
+                        </div>
+                    @endif
+                </article>
             </div>
         </div>
+    </div>
     </div>
 </section>

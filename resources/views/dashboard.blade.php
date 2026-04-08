@@ -387,11 +387,16 @@
             ];
         });
         $dashboardCanOpenCharacter = ! $tutorialActive || $tutorialStep === 1;
+        $dashboardCanOpenSkills = ! $tutorialActive;
         $dashboardCanOpenInventory = ! $tutorialActive || $tutorialStep === 6;
         $dashboardCanOpenQuests = ! $tutorialActive;
         $dashboardCanOpenEquipment = ! $tutorialActive;
         $dashboardCanOpenChat = ! $tutorialActive && $globalChatUnlocked;
         $dashboardCanOpenSettings = ! $tutorialActive;
+        $requestedDashboardPanel = request()->query('panel');
+        $initialDashboardPanel = in_array($requestedDashboardPanel, ['character', 'skills', 'quests', 'inventory', 'equipment', 'settings', 'chat', 'mobile-info', 'focus'], true)
+            ? $requestedDashboardPanel
+            : ($activeArea && ! $tutorialActive ? 'focus' : null);
         $equippedItemCount = $equipmentBySlot
             ->filter(fn ($equippedSlot) => $equippedSlot?->characterItem?->item !== null)
             ->count();
@@ -457,6 +462,7 @@
                     6 => 'inventory',
                     default => null,
                 } : null),
+                requestedPanel: @js($tutorialActive ? null : $initialDashboardPanel),
                 chatTab: 'global',
                 tutorial: @js($tutorialDriverPayload),
                 actionLockSeconds: {{ $character->cooldownSecondsRemaining() }},
@@ -480,6 +486,20 @@
                                     <a href="{{ route('dashboard') }}" class="metin2-main-nav-link is-active">
                                         {{ __('Realm') }}
                                     </a>
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        @class([
+                                            'metin2-main-nav-link',
+                                            'dashboard-side-link',
+                                            'dashboard-side-link-disabled' => ! $dashboardCanOpenSkills,
+                                        ])
+                                        @click="openPanel('skills')"
+                                        @disabled(! $dashboardCanOpenSkills)
+                                    >
+                                        {{ __('Skills') }}
+                                    </button>
                                 </li>
                                 <li>
                                     <button
@@ -563,10 +583,6 @@
                                         {{ __('Chat') }}
                                     </button>
                                 @endif
-
-                                <a href="{{ route('profile.edit') }}" class="dashboard-side-utility-link">
-                                    {{ __('Profile') }}
-                                </a>
 
                                 @if (auth()->user()?->is_admin)
                                     <a href="{{ route('admin.dashboard') }}" class="dashboard-side-utility-link">
@@ -1444,12 +1460,7 @@
             <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
             <div class="dashboard-overlay-window dashboard-mobile-info-window">
-                <div class="dashboard-overlay-head">
-                    <div>
-                        <p class="panel-kicker">{{ __('Map Intel') }}</p>
-                        <h2 class="dashboard-overlay-title">{{ __('Realm Info') }}</h2>
-                    </div>
-
+                <div class="dashboard-overlay-head justify-end">
                     <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                         {{ __('Close') }}
                     </button>
@@ -1557,6 +1568,15 @@
                                     @disabled(! $dashboardCanOpenCharacter)
                                 >
                                     {{ __('Open Character') }}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="openPanel('skills')"
+                                    @disabled(! $dashboardCanOpenSkills)
+                                >
+                                    {{ __('Skills') }}
                                 </button>
 
                                 <button
@@ -2392,7 +2412,7 @@
 
                     @include('game.partials.dashboard-map-system-overlays')
 
-                    @if ($activeArea)
+                    @if ($tutorialActive && $activeArea)
                         <div class="dashboard-map-lower dashboard-map-lower-mobile-open">
                             <div id="tutorial-focus-panel" class="paper-note dashboard-focus-panel dashboard-focus-panel-mobile-open">
                             @if ($activeArea)

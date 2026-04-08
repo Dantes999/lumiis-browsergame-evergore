@@ -2,13 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GameCharacterState;
+use App\Models\GameCharacter;
+use App\Models\Location;
 use App\Models\User;
+use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(WorldSeeder::class);
+    }
 
     public function test_profile_page_is_displayed(): void
     {
@@ -19,6 +31,17 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk();
+    }
+
+    public function test_profile_page_redirects_players_with_a_character_to_dashboard_settings(): void
+    {
+        [$user] = $this->createCharacterAt('yongan');
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/profile');
+
+        $response->assertRedirect(route('dashboard', ['panel' => 'settings']));
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -42,6 +65,22 @@ class ProfileTest extends TestCase
         $this->assertSame($originalName, $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_profile_information_update_redirects_character_players_back_to_dashboard_settings(): void
+    {
+        [$user] = $this->createCharacterAt('yongan');
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'email' => 'fighter@example.com',
+                'locale_preference' => 'de',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard', ['panel' => 'settings']));
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
@@ -136,6 +175,23 @@ class ProfileTest extends TestCase
         $this->assertNull(session('app_locale'));
     }
 
+    public function test_dashboard_settings_overlay_contains_profile_security_forms_for_players(): void
+    {
+        [$user] = $this->createCharacterAt('yongan');
+        $user->forceFill(['locale' => 'en'])->save();
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('dashboard', ['panel' => 'settings']));
+
+        $response
+            ->assertOk()
+            ->assertSee('Profile Information')
+            ->assertSee('Update Password')
+            ->assertSee('Delete Account')
+            ->assertSee('Skills');
+    }
+
     public function test_guest_pages_fall_back_to_browser_language_when_no_preference_exists(): void
     {
         $response = $this
@@ -180,5 +236,47 @@ class ProfileTest extends TestCase
         $response
             ->assertSessionHasErrors('locale_preference')
             ->assertRedirect('/profile');
+    }
+
+    /**
+     * @return array{0: User, 1: GameCharacter}
+     */
+    private function createCharacterAt(string $locationSlug, array $overrides = []): array
+    {
+        $location = Location::query()->where('slug', $locationSlug)->firstOrFail();
+        $user = User::factory()->create();
+
+        $character = GameCharacter::query()->create([
+            'user_id' => $user->id,
+            'location_id' => $location->id,
+            'name' => 'Hero'.Str::upper(Str::random(6)),
+            'faction' => 'Shinsoo',
+            'race' => 'warrior',
+            'skill_group' => null,
+            'game_state' => GameCharacterState::Active,
+            'tutorial_step' => null,
+            'level' => 1,
+            'experience' => 0,
+            'yang' => 0,
+            'health' => 100,
+            'max_health' => 100,
+            'stamina' => 12,
+            'max_stamina' => 12,
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'magic_attack' => 0,
+            'sp' => 24,
+            'max_sp' => 24,
+            'unspent_skill_points' => 0,
+            'version' => 1,
+            'last_active_at' => now(),
+            'stamina_updated_at' => now(),
+            'health_updated_at' => now(),
+            'sp_updated_at' => now(),
+            ...$overrides,
+        ]);
+
+        return [$user, $character];
     }
 }

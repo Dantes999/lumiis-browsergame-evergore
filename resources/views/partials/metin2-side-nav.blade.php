@@ -1,8 +1,11 @@
 @php
+    $settingsRoute = Auth::check() && Auth::user()?->character()->exists()
+        ? route('dashboard', ['panel' => 'settings'])
+        : route('profile.edit');
     $quickLinks = Auth::check()
         ? [
             ['label' => __('Open Realm'), 'route' => route('dashboard')],
-            ['label' => __('Edit Profile'), 'route' => route('profile.edit')],
+            ['label' => __('Settings'), 'route' => $settingsRoute],
             ['label' => __('Back Home'), 'route' => url('/')],
         ]
         : [
