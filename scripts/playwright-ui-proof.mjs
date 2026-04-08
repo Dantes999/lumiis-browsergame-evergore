@@ -71,7 +71,19 @@ async function capture(page, relativeUrl, fileName) {
 
 async function captureDashboardFocus(page, fileName) {
     await page.goto(`${baseUrl}/dashboard?focus=riverbank`, { waitUntil: 'networkidle' });
-    await page.screenshot({ path: path.join(outputDir, fileName), fullPage: true });
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(outputDir, fileName), fullPage: false });
+}
+
+async function captureDashboardPanel(page, panel, fileName) {
+    await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' });
+    await page.evaluate((panelName) => {
+        window.dispatchEvent(new CustomEvent('dashboard-panel-open', {
+            detail: { panel: panelName },
+        }));
+    }, panel);
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: path.join(outputDir, fileName), fullPage: false });
 }
 
 async function createContext(browser, viewportConfig) {
@@ -101,6 +113,9 @@ async function main() {
                 await capture(page, relativeUrl, `${viewportConfig.name}-${label}.png`);
             }
             await captureDashboardFocus(page, `${viewportConfig.name}-dashboard-riverbank.png`);
+            await captureDashboardPanel(page, 'character', `${viewportConfig.name}-dashboard-character.png`);
+            await captureDashboardPanel(page, 'inventory', `${viewportConfig.name}-dashboard-inventory.png`);
+            await captureDashboardPanel(page, 'settings', `${viewportConfig.name}-dashboard-settings.png`);
 
             await context.close();
 

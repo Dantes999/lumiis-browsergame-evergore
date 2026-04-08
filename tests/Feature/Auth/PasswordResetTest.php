@@ -4,8 +4,12 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -28,6 +32,43 @@ class PasswordResetTest extends TestCase
         $this->post('/forgot-password', ['email' => $user->email]);
 
         Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_reset_password_request_does_not_leak_whether_an_email_exists(): void
+    {
+        Notification::fake();
+
+        $response = $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => 'ghost@example.test',
+        ]);
+
+        $response
+            ->assertRedirect('/forgot-password')
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', __(Password::RESET_LINK_SENT));
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_reset_password_requests_are_rate_limited(): void
+    {
+        RateLimiter::for('password-reset-requests', function (Request $request): array {
+            return [
+                Limit::perMinute(2)->by('test-password-reset-requests:ip:'.$request->ip()),
+            ];
+        });
+
+        $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => 'first@example.test',
+        ])->assertRedirect('/forgot-password');
+
+        $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => 'second@example.test',
+        ])->assertRedirect('/forgot-password');
+
+        $this->from('/forgot-password')->post('/forgot-password', [
+            'email' => 'third@example.test',
+        ])->assertTooManyRequests();
     }
 
     public function test_reset_password_screen_can_be_rendered(): void

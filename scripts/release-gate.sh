@@ -2,8 +2,9 @@
 set -euo pipefail
 
 HOST="${UI_GATE_HOST:-127.0.0.1}"
-PORT="${UI_GATE_PORT:-8000}"
-PORT_MAX="${UI_GATE_PORT_MAX:-8010}"
+START_PORT="${UI_GATE_PORT:-8000}"
+PORT="${START_PORT}"
+PORT_MAX="${UI_GATE_PORT_MAX:-8030}"
 BASE_URL="${UI_BASE_URL:-http://${HOST}:${PORT}}"
 SERVER_LOG="${UI_GATE_SERVER_LOG:-/tmp/lumiis-release-gate-server.log}"
 SERVER_PID=""
@@ -28,6 +29,11 @@ start_server() {
     local max_port
 
     if [ -n "${UI_BASE_URL:-}" ]; then
+        if curl -fsS "${UI_BASE_URL}/up" >/dev/null 2>&1; then
+            BASE_URL="${UI_BASE_URL}"
+            return 0
+        fi
+
         max_port="${PORT}"
     else
         max_port="${PORT_MAX}"
@@ -36,7 +42,7 @@ start_server() {
     for attempt_port in $(seq "${PORT}" "${max_port}"); do
         attempt_base_url="${UI_BASE_URL:-http://${HOST}:${attempt_port}}"
         : >"${SERVER_LOG}"
-        php artisan serve --host="${HOST}" --port="${attempt_port}" >"${SERVER_LOG}" 2>&1 &
+        php -S "${HOST}:${attempt_port}" -t public scripts/ui-proof-router.php >"${SERVER_LOG}" 2>&1 &
         SERVER_PID=$!
 
         for _ in $(seq 1 15); do
@@ -62,7 +68,11 @@ start_server() {
 }
 
 if ! start_server; then
-    echo "Laravel server did not become ready between ports ${PORT} and ${PORT_MAX}." >&2
+    echo "Laravel server did not become ready between ports ${START_PORT} and ${PORT_MAX}." >&2
+    if [ -f "${SERVER_LOG}" ]; then
+        echo "Last server log output:" >&2
+        tail -n 20 "${SERVER_LOG}" >&2 || true
+    fi
     exit 1
 fi
 

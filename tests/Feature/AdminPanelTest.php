@@ -39,6 +39,33 @@ class AdminPanelTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_guest_users_cannot_update_admin_user_records(): void
+    {
+        $targetUser = User::factory()->create();
+
+        $response = $this->patch(route('admin.users.update', $targetUser), [
+            'name' => 'Guest Edit Attempt',
+            'email' => 'guest-edit@example.test',
+            'is_admin' => false,
+        ]);
+
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_non_admin_users_cannot_update_admin_user_records(): void
+    {
+        $user = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        $response = $this->actingAs($user)->patch(route('admin.users.update', $targetUser), [
+            'name' => 'Blocked Edit Attempt',
+            'email' => 'blocked-edit@example.test',
+            'is_admin' => false,
+        ]);
+
+        $response->assertForbidden();
+    }
+
     public function test_admin_users_can_view_the_admin_dashboard(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -46,6 +73,25 @@ class AdminPanelTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk()->assertSee('Control Panel');
+    }
+
+    public function test_last_admin_account_cannot_be_demoted(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.users.edit', $admin))
+            ->patch(route('admin.users.update', $admin), [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'is_admin' => false,
+            ]);
+
+        $response
+            ->assertRedirect(route('admin.users.edit', $admin))
+            ->assertSessionHasErrors('is_admin');
+
+        $this->assertTrue($admin->fresh()->is_admin);
     }
 
     public function test_admin_can_update_a_character_record(): void

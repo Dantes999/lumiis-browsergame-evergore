@@ -63,7 +63,7 @@
 
                 @isset($header)
                     <header class="portal-stage pb-0">
-                        <div class="mx-auto max-w-7xl">
+                        <div class="w-full">
                             {{ $header }}
                         </div>
                     </header>

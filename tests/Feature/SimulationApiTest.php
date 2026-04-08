@@ -40,6 +40,56 @@ class SimulationApiTest extends TestCase
         ]);
     }
 
+    public function test_simulation_api_requires_the_configured_access_key(): void
+    {
+        config()->set('game_simulator.key', 'alpha-proof-key');
+
+        $this->postJson('/api/simulations/characters/normal', [
+            'name' => 'NoKeyBot',
+        ])->assertUnauthorized()
+            ->assertJsonPath('message', 'Missing or invalid simulation API key.');
+
+        $this->withHeaders([
+            'X-Simulation-Key' => 'wrong-key',
+        ])->postJson('/api/simulations/characters/normal', [
+            'name' => 'WrongKeyBot',
+        ])->assertUnauthorized()
+            ->assertJsonPath('message', 'Missing or invalid simulation API key.');
+
+        $this->withHeaders([
+            'X-Simulation-Key' => 'alpha-proof-key',
+        ])->postJson('/api/simulations/characters/normal', [
+            'name' => 'CorrectKeyBot',
+        ])->assertCreated()
+            ->assertJsonPath('character.name', 'CorrectKeyBot');
+    }
+
+    public function test_simulation_api_is_hidden_when_disabled_outside_trusted_environments(): void
+    {
+        $this->runInEnvironment('production', function (): void {
+            config()->set('game_simulator.enabled', false);
+            config()->set('game_simulator.key', null);
+
+            $this->postJson('/api/simulations/characters/normal', [
+                'name' => 'ProdHiddenBot',
+            ])->assertNotFound()
+                ->assertJsonPath('message', 'Simulation API is not enabled.');
+        });
+    }
+
+    public function test_simulation_api_fails_closed_without_a_key_in_production(): void
+    {
+        $this->runInEnvironment('production', function (): void {
+            config()->set('game_simulator.enabled', true);
+            config()->set('game_simulator.key', null);
+
+            $this->postJson('/api/simulations/characters/normal', [
+                'name' => 'ProdOpenBot',
+            ])->assertStatus(503)
+                ->assertJsonPath('message', 'Simulation API key is not configured.');
+        });
+    }
+
     public function test_simulation_fight_api_can_run_ephemeral_auto_balance_checks(): void
     {
         $response = $this->postJson('/api/simulations/fights', [
@@ -136,5 +186,18 @@ class SimulationApiTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['iterations']);
+    }
+
+    private function runInEnvironment(string $environment, callable $callback): void
+    {
+        $originalEnvironment = $this->app->environment();
+
+        $this->app->detectEnvironment(fn () => $environment);
+
+        try {
+            $callback();
+        } finally {
+            $this->app->detectEnvironment(fn () => $originalEnvironment);
+        }
     }
 }

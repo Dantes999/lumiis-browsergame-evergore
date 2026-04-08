@@ -439,6 +439,10 @@ Alpine.data(
 
             this.restoreState();
 
+             this.$nextTick(() => {
+                window.requestAnimationFrame(() => this.scrollMobileFocusIntoView());
+            });
+
             this.$watch('activePanel', () => this.persistState());
             this.$watch('chatTab', () => this.persistState());
         },
@@ -591,6 +595,28 @@ Alpine.data(
             } catch {
                 // Storage availability varies across browsers and privacy modes.
             }
+        },
+
+        scrollMobileFocusIntoView() {
+            if (window.innerWidth >= 1024) {
+                return;
+            }
+
+            const focusPanel = document.querySelector('#tutorial-focus-panel.dashboard-focus-panel-mobile-open');
+
+            if (!(focusPanel instanceof HTMLElement)) {
+                return;
+            }
+
+            const top = focusPanel.getBoundingClientRect().top + window.scrollY - 8;
+
+            if (!Number.isFinite(top)) {
+                return;
+            }
+
+            window.scrollTo({
+                top: Math.max(0, top),
+            });
         },
 
         applyTutorialLayout() {

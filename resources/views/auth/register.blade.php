@@ -1,4 +1,4 @@
-<x-guest-layout>
+<x-guest-layout class="public-auth-main-wide">
     <div class="metin2-auth-shell">
         <div class="metin2-auth-intro">
             <span class="metin2-auth-kicker">{{ __('Charaktererstellung') }}</span>

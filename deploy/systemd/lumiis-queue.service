@@ -1,0 +1,18 @@
+[Unit]
+Description=Lumiis queue worker
+After=network.target mariadb.service mysql.service postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/lumiis/current
+ExecStart=/usr/bin/php /var/www/lumiis/current/artisan queue:work database --sleep=3 --tries=1 --timeout=120 --max-time=3600
+ExecReload=/usr/bin/php /var/www/lumiis/current/artisan queue:restart
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=300
+
+[Install]
+WantedBy=multi-user.target

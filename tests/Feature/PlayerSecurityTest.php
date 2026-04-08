@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -41,6 +42,23 @@ class PlayerSecurityTest extends TestCase
         $this->assertStringContainsString('private', $cacheControl);
         $this->assertStringContainsString('max-age=0', $cacheControl);
         $this->assertStringContainsString('must-revalidate', $cacheControl);
+    }
+
+    public function test_web_responses_include_browser_security_headers(): void
+    {
+        [$user] = $this->createCharacterAt('yongan');
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertHeader('X-Frame-Options', 'DENY');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        $response->assertHeader(
+            'Content-Security-Policy',
+            "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+        );
     }
 
     public function test_dashboard_only_shows_whispers_for_the_current_character(): void
@@ -75,6 +93,32 @@ class PlayerSecurityTest extends TestCase
         $response->assertOk();
         $response->assertSee('Visible whisper for viewer.');
         $response->assertDontSee('Hidden whisper for another player.');
+    }
+
+    public function test_dashboard_escapes_malicious_chat_names_and_bodies(): void
+    {
+        [$viewerUser] = $this->createCharacterAt('yongan', [
+            'name' => 'ViewerSafe',
+            'level' => 3,
+        ]);
+        [, $senderCharacter] = $this->createCharacterAt('joan', [
+            'name' => '<img src=x onerror=alert(1)>',
+        ]);
+
+        GameMessage::query()->create([
+            'sender_character_id' => $senderCharacter->id,
+            'recipient_character_id' => null,
+            'channel' => 'global',
+            'body' => '<script>alert(1)</script> stolen',
+        ]);
+
+        $response = $this->actingAs($viewerUser)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertDontSee('<img src=x onerror=alert(1)>', false);
+        $response->assertDontSee('<script>alert(1)</script> stolen', false);
+        $response->assertSee(e('<img src=x onerror=alert(1)>'), false);
+        $response->assertSee(e('<script>alert(1)</script> stolen'), false);
     }
 
     public function test_dashboard_ignores_foreign_battle_replay_flash_ids(): void
@@ -240,6 +284,24 @@ class PlayerSecurityTest extends TestCase
         ])->assertTooManyRequests();
     }
 
+    public function test_game_action_route_rejects_requests_without_csrf_token_when_middleware_is_enabled(): void
+    {
+        [$user] = $this->createCharacterAt('yongan', [
+            'level' => 3,
+        ]);
+
+        $this->runInEnvironment('production', function () use ($user): void {
+            $response = $this->withMiddleware(ValidateCsrfToken::class)
+                ->actingAs($user)
+                ->post(route('game.actions.store', ['action' => 'global-chat']), [
+                    'idempotency_key' => (string) Str::uuid(),
+                    'message' => 'No token',
+                ]);
+
+            $response->assertStatus(419);
+        });
+    }
+
     /**
      * @return array{0: User, 1: GameCharacter}
      */
@@ -280,5 +342,18 @@ class PlayerSecurityTest extends TestCase
         ]);
 
         return [$user, $character];
+    }
+
+    private function runInEnvironment(string $environment, callable $callback): void
+    {
+        $originalEnvironment = $this->app->environment();
+
+        $this->app->detectEnvironment(fn () => $environment);
+
+        try {
+            $callback();
+        } finally {
+            $this->app->detectEnvironment(fn () => $originalEnvironment);
+        }
     }
 }

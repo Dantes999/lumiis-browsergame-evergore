@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplySecurityHeaders;
 use App\Http\Middleware\EnsureSimulationApiAccess;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\PreventAuthenticatedResponseCache;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             SetPreferredLocale::class,
+            ApplySecurityHeaders::class,
         ]);
 
         $middleware->alias([

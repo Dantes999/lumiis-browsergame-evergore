@@ -1,0 +1,10 @@
+[Unit]
+Description=Lumiis scheduler runner
+After=network.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/lumiis/current
+ExecStart=/usr/bin/php /var/www/lumiis/current/artisan schedule:run

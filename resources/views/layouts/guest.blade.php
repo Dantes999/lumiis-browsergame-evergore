@@ -26,22 +26,14 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="game-shell antialiased">
-        <div class="public-site-shell public-auth-shell">
-            @include('partials.metin2-header')
+        <div class="public-site-shell public-site-shell-login public-site-shell-guest">
+            @include('partials.metin2-header', ['compactHeader' => true])
 
-            <main class="public-site-main">
-                <div class="public-auth-layout">
-                    <aside class="public-auth-aside">
-                        @include('partials.metin2-side-nav')
-                    </aside>
-
-                    <section {{ $attributes->class(['public-surface public-auth-main']) }}>
-                        {{ $slot }}
-                    </section>
-                </div>
+            <main class="public-site-main public-landing-main public-guest-main">
+                <section {{ $attributes->class(['public-surface public-auth-main public-auth-main-standalone']) }}>
+                    {{ $slot }}
+                </section>
             </main>
-
-            @include('partials.metin2-footer')
         </div>
     </body>
 </html>

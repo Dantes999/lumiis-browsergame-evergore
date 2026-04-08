@@ -10,7 +10,8 @@ class EnsureSimulationApiAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $enabled = app()->environment(['local', 'testing']) || (bool) config('game_simulator.enabled', false);
+        $trustedEnvironment = app()->environment(['local', 'testing']);
+        $enabled = $trustedEnvironment || (bool) config('game_simulator.enabled', false);
 
         if (! $enabled) {
             return response()->json([
@@ -19,6 +20,12 @@ class EnsureSimulationApiAccess
         }
 
         $configuredKey = trim((string) config('game_simulator.key', ''));
+
+        if (! $trustedEnvironment && $configuredKey === '') {
+            return response()->json([
+                'message' => 'Simulation API key is not configured.',
+            ], 503);
+        }
 
         if ($configuredKey !== '') {
             $providedKey = trim((string) $request->header('X-Simulation-Key', ''));

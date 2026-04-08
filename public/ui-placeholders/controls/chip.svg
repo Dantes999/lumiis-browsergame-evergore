@@ -1,12 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 220" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="220" viewBox="0 0 960 220" fill="none">
   <defs>
-    <linearGradient id="chipBg" x1="0" y1="0" x2="960" y2="220" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#5A2717"/>
-      <stop offset="1" stop-color="#1A0D08"/>
+    <linearGradient id="bg1" x1="480" y1="0" x2="480" y2="220">
+      <stop offset="0" stop-color="#9C6A31"/>
+      <stop offset="0.22" stop-color="#653A1B"/>
+      <stop offset="0.6" stop-color="#351C13"/>
+      <stop offset="1" stop-color="#190D0B"/>
+    </linearGradient>
+    <linearGradient id="bg2" x1="480" y1="20" x2="480" y2="200">
+      <stop offset="0" stop-color="#C59A54"/>
+      <stop offset="0.22" stop-color="#805026"/>
+      <stop offset="0.6" stop-color="#432216"/>
+      <stop offset="1" stop-color="#22110D"/>
     </linearGradient>
   </defs>
-  <rect width="960" height="220" rx="110" fill="url(#chipBg)"/>
-  <rect x="16" y="16" width="928" height="188" rx="94" stroke="#E8CE96" stroke-opacity="0.28" stroke-width="2" stroke-dasharray="12 12"/>
-  <text x="480" y="116" fill="#FFF0C8" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="7" text-anchor="middle">CHIP PLACEHOLDER</text>
-  <text x="480" y="154" fill="#DABC81" font-family="Arial, sans-serif" font-size="16" letter-spacing="4" text-anchor="middle">TAGS / BADGES / MINI BUTTONS</text>
+  <rect x="8" y="8" width="944" height="204" rx="102" fill="#1B0D09"/>
+  <rect x="14" y="14" width="932" height="192" rx="96" fill="url(#bg1)" stroke="#331712" stroke-width="4"/>
+  <rect x="26" y="26" width="908" height="168" rx="84" fill="url(#bg2)" stroke="#E4C37B" stroke-width="4"/>
+  <rect x="40" y="38" width="880" height="54" rx="27" fill="#FFF0C2" fill-opacity="0.18"/>
+  <path d="M94 164H866" stroke="#140907" stroke-opacity="0.4" stroke-width="6" stroke-linecap="round"/>
 </svg>

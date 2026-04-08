@@ -1355,7 +1355,7 @@
             </div>
         @endif
 
-        <section id="dashboard-settings-overlay" class="dashboard-overlay-panel" x-show="activePanel === 'settings'" x-cloak>
+        <section id="dashboard-settings-overlay-legacy" class="dashboard-overlay-panel dashboard-overlay-panel-legacy" x-show="false" x-cloak>
             <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
             <div class="dashboard-overlay-window">
@@ -1528,7 +1528,7 @@
             </div>
         </section>
 
-        <section id="dashboard-character-overlay" class="dashboard-overlay-panel" x-show="activePanel === 'character'" x-cloak>
+        <section id="dashboard-character-overlay-legacy" class="dashboard-overlay-panel dashboard-overlay-panel-legacy" x-show="false" x-cloak>
             <div class="dashboard-overlay-backdrop" @click="if (!tutorial?.active) closePanel()"></div>
 
             <div class="dashboard-overlay-window">
@@ -1696,7 +1696,7 @@
             </div>
         </section>
 
-        <section id="tutorial-inventory-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory" x-show="activePanel === 'inventory'" x-cloak>
+        <section id="tutorial-inventory-overlay-legacy" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-overlay-panel-legacy" x-show="false" x-cloak>
             <div class="dashboard-overlay-backdrop" @click="if (!tutorial?.active) closePanel()"></div>
 
             <div class="dashboard-overlay-window dashboard-overlay-window-inventory">
@@ -2309,13 +2309,13 @@
                                 <span class="dashboard-scene-banner-item">{{ $activeArea?->isService() ? __('Town Flow') : ($activeArea?->isHunting() ? __('Hunting Flow') : __('Select a Hotspot')) }}</span>
                             </div>
 
-                            <div class="scene-copy {{ $activeArea ? 'scene-copy-focused' : '' }}">
+                            <div class="scene-copy">
                                 <p class="scene-copy-kicker">{{ $character->location->region }}</p>
                                 <h2 class="font-[Cinzel] text-3xl tracking-[0.12em] text-amber-50">
-                                    {{ $activeArea?->name ?? $character->location->name }}
+                                    {{ $character->location->name }}
                                 </h2>
                                 <p class="scene-copy-description mt-3 max-w-xl text-sm leading-6 text-amber-50/85">
-                                    {{ $activeArea?->description ?? $character->location->description }}
+                                    {{ $character->location->description }}
                                 </p>
                             </div>
 
@@ -2346,21 +2346,23 @@
                         </div>
                     </div>
 
+                    @include('game.partials.dashboard-map-system-overlays')
+
                     @if ($activeArea)
-                        <div class="dashboard-map-lower {{ $mobileFocusWindowOpen ? 'dashboard-map-lower-mobile-open' : '' }}">
-                            <div id="tutorial-focus-panel" class="paper-note dashboard-focus-panel {{ $mobileFocusWindowOpen ? 'dashboard-focus-panel-mobile-open' : '' }}">
-                            @if ($mobileFocusWindowOpen)
+                        <div class="dashboard-map-lower dashboard-map-lower-mobile-open">
+                            <div id="tutorial-focus-panel" class="paper-note dashboard-focus-panel dashboard-focus-panel-mobile-open">
+                            @if ($activeArea)
                                 <div class="dashboard-mobile-focus-bar">
                                     <span class="dashboard-mobile-focus-bar-label">
                                         {{ $activeArea->isService() ? __('Town Hotspot') : __('Hunting Ground') }}
                                     </span>
                                     <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-mobile-focus-close">
-                                        {{ __('Back To Map') }}
+                                        {{ __('Close') }}
                                     </a>
                                 </div>
                             @endif
 
-                            <div class="dashboard-focus-panel-head {{ $mobileFocusWindowOpen ? 'dashboard-focus-panel-head-mobile-open' : '' }} flex flex-wrap items-start justify-between gap-3">
+                            <div class="dashboard-focus-panel-head dashboard-focus-panel-head-mobile-open flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <p class="text-[0.65rem] uppercase tracking-[0.28em] text-amber-900/70">
                                         {{ $activeArea->isService() ? __('Town Hotspot') : __('Hunting Ground') }}
@@ -2375,9 +2377,9 @@
                                             Lv {{ $activeArea->recommended_level }}+
                                         </span>
                                     @endif
-                                    @if (! $tutorialActive && ! $mobileFocusWindowOpen)
+                                    @if (! $tutorialActive)
                                         <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-map-window-close">
-                                            {{ __('Back To Map') }}
+                                            {{ __('Close') }}
                                         </a>
                                     @endif
                                 </div>

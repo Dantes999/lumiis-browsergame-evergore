@@ -1,13 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 320" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="320" viewBox="0 0 1400 320" fill="none">
   <defs>
-    <linearGradient id="inputBg" x1="0" y1="0" x2="1400" y2="320" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFF1D2"/>
-      <stop offset="1" stop-color="#D1A86A"/>
+    <linearGradient id="bg1" x1="700" y1="0" x2="700" y2="320">
+      <stop offset="0" stop-color="#EEDCB2"/>
+      <stop offset="0.18" stop-color="#C59758"/>
+      <stop offset="0.5" stop-color="#84532C"/>
+      <stop offset="1" stop-color="#382117"/>
+    </linearGradient>
+    <linearGradient id="bg2" x1="700" y1="20" x2="700" y2="300">
+      <stop offset="0" stop-color="#FFF3D8"/>
+      <stop offset="0.18" stop-color="#E0BB7A"/>
+      <stop offset="0.48" stop-color="#B17B41"/>
+      <stop offset="0.82" stop-color="#5C3820"/>
+      <stop offset="1" stop-color="#301B14"/>
     </linearGradient>
   </defs>
-  <rect width="1400" height="320" rx="36" fill="url(#inputBg)"/>
-  <rect x="18" y="18" width="1364" height="284" rx="22" stroke="#7E5A2D" stroke-opacity="0.34" stroke-width="2" stroke-dasharray="12 12"/>
-  <path d="M0 0H1400V116C1086 94 834 84 612 88C396 92 196 108 0 142V0Z" fill="#FFFFFF" fill-opacity="0.16"/>
-  <text x="700" y="156" fill="#5A351A" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="8" text-anchor="middle">INPUT PLACEHOLDER SURFACE</text>
-  <text x="700" y="200" fill="#7A562A" font-family="Arial, sans-serif" font-size="18" letter-spacing="4" text-anchor="middle">FIELDS / SELECTS / INPUTS</text>
+  <rect x="8" y="8" width="1384" height="304" rx="40" fill="#24140E"/>
+  <rect x="14" y="14" width="1372" height="292" rx="34" fill="url(#bg1)" stroke="#3D2418" stroke-width="4"/>
+  <rect x="26" y="26" width="1348" height="268" rx="24" fill="url(#bg2)" stroke="#F1D39A" stroke-width="4"/>
+  <rect x="40" y="40" width="1320" height="74" rx="18" fill="#FFFFFF" fill-opacity="0.28"/>
+  <rect x="42" y="222" width="1316" height="38" rx="19" fill="#180D0A" fill-opacity="0.32"/>
+  <path d="M74 160H1326" stroke="#F6E2B2" stroke-opacity="0.18" stroke-width="2" stroke-dasharray="8 10"/>
 </svg>
