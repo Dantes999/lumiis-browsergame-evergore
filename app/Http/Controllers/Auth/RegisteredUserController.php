@@ -10,6 +10,7 @@ use App\Models\Location;
 use App\Models\User;
 use App\Services\Game\CharacterInventoryService;
 use App\Support\Game\MetinClassCatalog;
+use App\Support\Game\TutorialFlow;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,6 +88,7 @@ class RegisteredUserController extends Controller
             $startingIntelligence = (int) ($startingStats['intelligence'] ?? 0);
             $startingHealth = (int) ($startingStats['max_health'] ?? 100) + ($startingVitality * 10);
             $startingSp = (int) ($startingStats['max_sp'] ?? 24) + ($startingIntelligence * 6);
+            $tutorialEnabled = TutorialFlow::enabled();
 
             $character = GameCharacter::create([
                 'user_id' => $user->id,
@@ -96,8 +98,8 @@ class RegisteredUserController extends Controller
                 'faction' => 'Shinsoo',
                 'race' => $race,
                 'skill_group' => null,
-                'game_state' => GameCharacterState::Tutorial,
-                'tutorial_step' => 1,
+                'game_state' => $tutorialEnabled ? GameCharacterState::Tutorial : GameCharacterState::Active,
+                'tutorial_step' => $tutorialEnabled ? 1 : null,
                 'level' => 1,
                 'experience' => 0,
                 'yang' => 150,

@@ -28,6 +28,7 @@ class TutorialFlowTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('game_tutorial.enabled', true);
         $this->seed(WorldSeeder::class);
     }
 

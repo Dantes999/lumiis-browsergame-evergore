@@ -108,7 +108,7 @@ class GameActionBranchCoverageTest extends TestCase
         $this->assertNull($character->action_available_at);
     }
 
-    public function test_travel_requires_enough_stamina(): void
+    public function test_travel_is_disabled_even_when_the_character_has_a_route_target(): void
     {
         [$user] = $this->createCharacterAt('yongan', [
             'level' => 4,
@@ -122,14 +122,12 @@ class GameActionBranchCoverageTest extends TestCase
             'target_location_id' => $targetLocation->id,
         ]);
 
-        $response->assertSessionHas('error');
+        $response->assertSessionHas('error', __('Fast travel is currently disabled.'));
         $this->assertSame(0, GameActionLog::query()->count());
     }
 
-    public function test_travel_without_mount_uses_the_base_travel_cooldown(): void
+    public function test_travel_does_not_change_location_when_the_feature_is_disabled(): void
     {
-        $this->freezeTime();
-
         [$user, $character] = $this->createCharacterAt('yongan', [
             'level' => 20,
             'stamina' => 12,
@@ -144,9 +142,9 @@ class GameActionBranchCoverageTest extends TestCase
 
         $character->refresh();
 
-        $response->assertSessionHas('status');
-        $this->assertSame('seungryong-valley', $character->location->slug);
-        $this->assertContains((int) now()->diffInSeconds($character->action_available_at, true), [54, 55]);
+        $response->assertSessionHas('error', __('Fast travel is currently disabled.'));
+        $this->assertSame('yongan', $character->location->slug);
+        $this->assertSame(0, GameActionLog::query()->count());
     }
 
     public function test_learning_skill_rejects_other_race_skills(): void

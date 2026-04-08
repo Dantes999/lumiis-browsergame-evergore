@@ -114,7 +114,9 @@ async function main() {
             }
             await captureDashboardFocus(page, `${viewportConfig.name}-dashboard-riverbank.png`);
             await captureDashboardPanel(page, 'character', `${viewportConfig.name}-dashboard-character.png`);
+            await captureDashboardPanel(page, 'quests', `${viewportConfig.name}-dashboard-quests.png`);
             await captureDashboardPanel(page, 'inventory', `${viewportConfig.name}-dashboard-inventory.png`);
+            await captureDashboardPanel(page, 'equipment', `${viewportConfig.name}-dashboard-equipment.png`);
             await captureDashboardPanel(page, 'settings', `${viewportConfig.name}-dashboard-settings.png`);
 
             await context.close();

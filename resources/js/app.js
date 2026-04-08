@@ -517,6 +517,41 @@ Alpine.data(
             return Math.max(1, Math.ceil(this.actionLockSeconds / 60));
         },
 
+        formattedActionLockCountdown() {
+            if (this.actionLockSeconds <= 0) {
+                return '00:00';
+            }
+
+            const hours = Math.floor(this.actionLockSeconds / 3600);
+            const minutes = Math.floor((this.actionLockSeconds % 3600) / 60);
+            const seconds = this.actionLockSeconds % 60;
+
+            if (hours > 0) {
+                return [hours, minutes, seconds]
+                    .map((value) => String(value).padStart(2, '0'))
+                    .join(':');
+            }
+
+            return [minutes, seconds]
+                .map((value) => String(value).padStart(2, '0'))
+                .join(':');
+        },
+
+        actionLockReadyAtLabel() {
+            if (this.actionLockSeconds <= 0) {
+                return '';
+            }
+
+            const locale = document.documentElement?.lang || undefined;
+            const readyAt = new Date(Date.now() + (this.actionLockSeconds * 1000));
+
+            return new Intl.DateTimeFormat(locale, {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            }).format(readyAt);
+        },
+
         restingLockLabel() {
             if (!this.isResting()) {
                 return '';

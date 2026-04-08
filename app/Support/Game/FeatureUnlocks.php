@@ -50,11 +50,6 @@ class FeatureUnlocks
                 'label' => __('Trade Square'),
                 'description' => __('Player-to-player social space unlocks at level 3.'),
             ],
-            'routes' => [
-                'level' => 4,
-                'label' => __('Travel Routes'),
-                'description' => __('Leaving the starter map opens at level 4.'),
-            ],
             'boss_fights' => [
                 'level' => 4,
                 'label' => __('Boss Souls'),
@@ -105,7 +100,8 @@ class FeatureUnlocks
             $area->service_type === 'trade' => false,
             in_array($area->slug, ['weapon-dealer', 'armor-dealer', 'town-smith'], true) => self::isUnlocked($character, 'advanced_town_services'),
             $area->service_type === 'biologist' => self::isUnlocked($character, 'biologist_research'),
-            $area->service_type === 'routes' => self::isUnlocked($character, 'routes'),
+            // Fast travel is not part of the current alpha surface.
+            $area->service_type === 'routes' => false,
             default => true,
         };
     }

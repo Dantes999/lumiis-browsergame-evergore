@@ -155,6 +155,28 @@ class GameActionTest extends TestCase
             ->assertSee('24/24');
     }
 
+    public function test_dashboard_shows_action_cooldown_guidance_in_hunting_focus(): void
+    {
+        $this->freezeTime();
+
+        [$user] = $this->createCharacterAt('yongan', [
+            'action_available_at' => now()->addSeconds(95),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard', [
+            'focus' => 'riverbank',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSee(__('Action cooldown'))
+            ->assertSee(__('Hunting is on cooldown.'))
+            ->assertSee(__('Time left'))
+            ->assertSee(__('Ready at'))
+            ->assertSee('formattedActionLockCountdown()', false)
+            ->assertSee('actionLockReadyAtLabel()', false);
+    }
+
     public function test_dashboard_can_render_an_active_manual_battle_overlay_without_lazy_loading(): void
     {
         [$user] = $this->createCharacterAt('yongan');
@@ -426,7 +448,7 @@ class GameActionTest extends TestCase
         $this->assertSame(1, $autoLumiisButton?->length);
     }
 
-    public function test_dashboard_disables_travel_buttons_and_shows_missing_stamina(): void
+    public function test_dashboard_hides_travel_buttons_when_fast_travel_is_disabled(): void
     {
         [$user] = $this->createCharacterAt('yongan', [
             'level' => 20,
@@ -437,18 +459,21 @@ class GameActionTest extends TestCase
             'focus' => 'south-gate',
         ]));
 
-        $response->assertOk();
-        $response->assertSee('Missing 2 stamina.');
+        $response
+            ->assertOk()
+            ->assertDontSee('Travel Routes')
+            ->assertDontSee('Map Connections')
+            ->assertDontSee('Missing 2 stamina.');
 
         $document = new \DOMDocument();
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
-        $travelButtons = $xpath->query('//form[contains(@action, "travel")]//button[@disabled]');
+        $travelButtons = $xpath->query('//form[contains(@action, "travel")]');
 
-        $this->assertGreaterThanOrEqual(1, $travelButtons?->length ?? 0);
+        $this->assertSame(0, $travelButtons?->length ?? 0);
     }
 
-    public function test_dashboard_disables_high_level_travel_buttons_and_shows_required_level(): void
+    public function test_dashboard_hides_travel_requirements_when_fast_travel_is_disabled(): void
     {
         [$user] = $this->createCharacterAt('yongan', [
             'level' => 4,
@@ -461,15 +486,17 @@ class GameActionTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Req. Level 20')
-            ->assertSee('Requires level 20.');
+            ->assertDontSee('Req. Level 20')
+            ->assertDontSee('Requires level 20.')
+            ->assertDontSee('Travel Routes')
+            ->assertDontSee('Map Connections');
 
         $document = new \DOMDocument();
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
-        $travelButtons = $xpath->query('//form[contains(@action, "travel")]//button[@disabled]');
+        $travelButtons = $xpath->query('//form[contains(@action, "travel")]');
 
-        $this->assertGreaterThanOrEqual(1, $travelButtons?->length ?? 0);
+        $this->assertSame(0, $travelButtons?->length ?? 0);
     }
 
     public function test_dashboard_disables_high_level_hunting_actions_until_the_area_band_is_reached(): void
@@ -1992,7 +2019,7 @@ class GameActionTest extends TestCase
         $this->assertSame(0, GameActionLog::query()->count());
     }
 
-    public function test_map_two_route_panel_only_shows_the_public_alpha_world_path(): void
+    public function test_route_marker_hotspot_stays_hidden_when_fast_travel_is_disabled(): void
     {
         [$user] = $this->createCharacterAt('seungryong-valley', [
             'level' => 30,
@@ -2004,10 +2031,9 @@ class GameActionTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Yongan')
-            ->assertSee('Monkey Dungeon')
-            ->assertDontSee('Joan')
-            ->assertDontSee('Pyungmoo');
+            ->assertDontSee('Travel Routes')
+            ->assertDontSee('Map Connections')
+            ->assertDontSee('Route Marker');
     }
 
     public function test_trade_square_hotspot_stays_hidden_in_the_public_alpha_ui(): void
@@ -2976,6 +3002,8 @@ class GameActionTest extends TestCase
             'character_item_id' => $inventoryItem->id,
         ]);
 
+        $actionLogCountBeforeTravel = GameActionLog::query()->count();
+
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'travel']), [
             'idempotency_key' => (string) Str::uuid(),
             'target_location_id' => Location::query()->where('slug', 'seungryong-valley')->firstOrFail()->id,
@@ -2983,11 +3011,9 @@ class GameActionTest extends TestCase
 
         $character->refresh();
 
-        $response->assertSessionHas('status');
-        $this->assertSame('seungryong-valley', $character->location->slug);
-        $travelCooldown = (int) floor(now()->diffInSeconds($character->action_available_at, true));
-
-        $this->assertContains($travelCooldown, [43, 44, 45]);
+        $response->assertSessionHas('error', __('Fast travel is currently disabled.'));
+        $this->assertSame('yongan', $character->location->slug);
+        $this->assertSame($actionLogCountBeforeTravel, GameActionLog::query()->count());
     }
 
     public function test_level_five_character_can_choose_a_skill_group_and_learn_a_race_skill(): void

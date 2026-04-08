@@ -19,10 +19,13 @@
     $navbarTutorialStep = (int) ($currentCharacter?->tutorial_step ?? 0);
     $navbarCanOpenCharacter = $currentCharacter && (! $navbarTutorialActive || $navbarTutorialStep === 1);
     $navbarCanOpenInventory = $currentCharacter && (! $navbarTutorialActive || $navbarTutorialStep === 6);
+    $navbarCanOpenQuests = $currentCharacter && ! $navbarTutorialActive;
+    $navbarCanOpenEquipment = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenChat = $currentCharacter && ! $navbarTutorialActive && $currentCharacter->globalChatUnlocked();
     $navbarCanOpenSettings = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenMobileInfo = $currentCharacter && ! $navbarTutorialActive;
-    $useClassicDashboardHeader = request()->routeIs('dashboard', 'game.dashboard') && $currentCharacter !== null;
+    $useClassicDashboardHeader = request()->routeIs('dashboard', 'game.dashboard', 'profile.*') && $currentCharacter !== null;
+    $showDashboardPanelButtons = request()->routeIs('dashboard', 'game.dashboard') && $currentCharacter !== null;
     $useUtilityPublicHeader = ! $useClassicDashboardHeader;
 @endphp
 
@@ -144,7 +147,7 @@
                     {{ __('Realm') }}
                 </a>
 
-                @if (request()->routeIs('dashboard', 'game.dashboard') && $currentCharacter)
+                @if ($showDashboardPanelButtons)
                     <button
                         id="tutorial-character-button"
                         type="button"
@@ -158,10 +161,28 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'quests' })"
+                        @disabled(! $navbarCanOpenQuests)
+                    >
+                        {{ __('Quests') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="theme-button theme-button-primary theme-button-compact"
                         x-on:click="$dispatch('dashboard-panel-open', { panel: 'inventory' })"
                         @disabled(! $navbarCanOpenInventory)
                     >
                         {{ __('Inventory') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="theme-button theme-button-primary theme-button-compact"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'equipment' })"
+                        @disabled(! $navbarCanOpenEquipment)
+                    >
+                        {{ __('Equipment') }}
                     </button>
 
                     <button

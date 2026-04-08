@@ -44,6 +44,11 @@ class TutorialFlow
 
     public const FINAL_STEP = self::STEP_RESULT_EXPLAINED;
 
+    public static function enabled(): bool
+    {
+        return (bool) config('game_tutorial.enabled', false);
+    }
+
     /**
      * Tutorial step values can be edited by admins, so we normalize them before
      * every comparison.
@@ -176,7 +181,7 @@ class TutorialFlow
      */
     public static function viewData(GameCharacter $character): array
     {
-        if (! $character->isInTutorial()) {
+        if (! self::enabled() || ! $character->isInTutorial()) {
             return [
                 'active' => false,
             ];

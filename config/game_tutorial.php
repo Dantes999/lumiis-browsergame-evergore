@@ -8,6 +8,8 @@
  * through controller, Blade or service code.
  */
 return [
+    'enabled' => env('GAME_TUTORIAL_ENABLED', false),
+
     'steps' => [
         1 => [
             'title' => 'Welcome to Lumiis',

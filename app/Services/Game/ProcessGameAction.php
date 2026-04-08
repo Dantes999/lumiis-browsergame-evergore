@@ -315,8 +315,8 @@ class ProcessGameAction
             throw new GameActionException(__('Lumiis hunts unlock at level 2.'));
         }
 
-        if ($action === GameActionType::Travel && ! $character->travelRoutesUnlocked()) {
-            throw new GameActionException(__('Travel routes unlock at level 4.'));
+        if ($action === GameActionType::Travel) {
+            throw new GameActionException(__('Fast travel is currently disabled.'));
         }
 
         if ($action === GameActionType::GlobalChat && ! $character->globalChatUnlocked()) {

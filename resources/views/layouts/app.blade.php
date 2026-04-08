@@ -4,7 +4,7 @@
         $isDashboardRoute = request()->routeIs('dashboard', 'game.dashboard');
         $isAdminRoute = request()->routeIs('admin.*');
         $isProfileRoute = request()->routeIs('profile.*');
-        $useUtilityShell = ! $isDashboardRoute;
+        $useUtilityShell = ! ($isDashboardRoute || $isProfileRoute);
     @endphp
     <head>
         <meta charset="utf-8">

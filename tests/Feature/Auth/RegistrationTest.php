@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\CharacterItem;
+use App\Enums\GameCharacterState;
 use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\User;
@@ -39,6 +40,8 @@ class RegistrationTest extends TestCase
             'faction' => 'Shinsoo',
             'race' => 'warrior',
             'location_id' => \App\Models\Location::query()->where('slug', 'yongan')->value('id'),
+            'game_state' => GameCharacterState::Active->value,
+            'tutorial_step' => null,
             'stamina' => 15,
             'max_stamina' => 15,
         ]);
@@ -66,7 +69,7 @@ class RegistrationTest extends TestCase
         $this->assertNotSame($beforeRegistrationSessionId, $this->app['session.store']->getId());
     }
 
-    public function test_registration_grants_a_practical_starter_loadout_for_the_tutorial(): void
+    public function test_registration_grants_a_practical_starter_loadout_for_the_opening_game_loop(): void
     {
         $this->seed(\Database\Seeders\WorldSeeder::class);
 

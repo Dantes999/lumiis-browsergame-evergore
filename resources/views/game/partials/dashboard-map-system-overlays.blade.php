@@ -173,51 +173,91 @@
                 </div>
             </article>
 
-            @if ($questline)
-                <article class="game-panel">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <p class="panel-kicker">{{ __('Map Questline') }}</p>
-                            <h2 class="mt-2 font-[Cinzel] text-2xl tracking-[0.12em] text-amber-50">
-                                {{ $questline['title'] }}
-                            </h2>
-                        </div>
-                        <span class="cozy-chip">{{ count($questline['completed']) }} {{ __('complete') }}</span>
-                    </div>
-
-                    @if ($questline['active'] !== [])
-                        <div class="mt-4 space-y-3">
-                            @foreach ($questline['active'] as $quest)
-                                <div class="paper-note">
-                                    <div class="flex flex-wrap items-start justify-between gap-2">
-                                        <p class="font-[Cinzel] text-lg tracking-[0.06em] text-stone-900">{{ $quest['title'] }}</p>
-                                        <span class="cozy-chip">{{ number_format($quest['progress']) }}/{{ number_format($quest['objective_target']) }}</span>
-                                    </div>
-                                    <p class="mt-2 text-sm leading-6 text-stone-700">{{ $quest['story_text'] }}</p>
-                                    <div class="pressure-meter mt-3 h-2">
-                                        <span class="pressure-fill" style="width: {{ $quest['progress_percent'] }}%;"></span>
-                                    </div>
-                                    @if ($quest['feature_unlock_hint'])
-                                        <p class="mt-3 text-[0.68rem] uppercase tracking-[0.22em] text-amber-900/70">
-                                            {{ $quest['feature_unlock_hint'] }}
-                                        </p>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @elseif ($questline['upcoming'] !== [])
-                        <div class="paper-note mt-4 text-sm leading-6">
-                            {{ __('Next quest: :title at level :level.', ['title' => $questline['upcoming'][0]['title'], 'level' => $questline['upcoming'][0]['required_level']]) }}
-                        </div>
-                    @else
-                        <div class="paper-note mt-4 text-sm leading-6">
-                            {{ __('This map questline is currently complete.') }}
-                        </div>
-                    @endif
-                </article>
-            @endif
-
             @include('game.partials.skill-panel')
+        </div>
+    </div>
+</section>
+
+<section id="dashboard-quests-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'quests'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
+
+    <div class="dashboard-overlay-window dashboard-map-overlay-window">
+        <div class="dashboard-overlay-head">
+            <div>
+                <p class="panel-kicker">{{ __('Quests') }}</p>
+                <h2 class="dashboard-overlay-title">{{ __('Questlog') }}</h2>
+            </div>
+
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()">
+                {{ __('Close') }}
+            </button>
+        </div>
+
+        <div class="dashboard-overlay-scroll">
+            @include('game.partials.dashboard-questlog-panel')
+        </div>
+    </div>
+</section>
+
+<section id="dashboard-equipment-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-map-overlay-panel dashboard-map-overlay-panel-inventory" x-show="activePanel === 'equipment'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
+
+    <div class="dashboard-overlay-window dashboard-overlay-window-inventory dashboard-map-overlay-window">
+        <div class="dashboard-overlay-head dashboard-overlay-head-inventory">
+            <div>
+                <p class="panel-kicker">{{ __('Equipment') }}</p>
+                <h2 class="dashboard-overlay-title">{{ __('Equipment') }}</h2>
+                <p class="dashboard-overlay-subtitle">
+                    {{ __('Inspect your current loadout, check slot bonuses and unequip gear without leaving the map.') }}
+                </p>
+            </div>
+
+            <div class="dashboard-overlay-head-actions">
+                <span class="dashboard-overlay-pill">
+                    {{ number_format($equippedItemCount) }}/{{ number_format(count($equipmentBoardSlots)) }} {{ __('Slots') }}
+                </span>
+
+                <button type="button" class="dashboard-overlay-close" @click="closePanel()">
+                    {{ __('Close') }}
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard-overlay-scroll dashboard-overlay-scroll-inventory">
+            <div
+                class="inventory-workspace"
+                x-data="{
+                    equipmentInspector: @js($equipmentInspectorDefaultSlot),
+                }"
+            >
+                <div class="inventory-overview-grid">
+                    <article class="inventory-summary-card">
+                        <span class="inventory-summary-label">{{ __('Equipped slots') }}</span>
+                        <strong class="inventory-summary-value">{{ number_format($equippedItemCount) }}</strong>
+                        <p class="inventory-summary-copy">{{ __('Current loadout pieces active on your character.') }}</p>
+                    </article>
+
+                    <article class="inventory-summary-card">
+                        <span class="inventory-summary-label">{{ __('Empty slots') }}</span>
+                        <strong class="inventory-summary-value">{{ number_format($emptyEquipmentSlotCount) }}</strong>
+                        <p class="inventory-summary-copy">{{ __('Open slots you can still fill from your bag.') }}</p>
+                    </article>
+
+                    <article class="inventory-summary-card">
+                        <span class="inventory-summary-label">{{ __('Bag gear') }}</span>
+                        <strong class="inventory-summary-value">{{ number_format($inventoryEquippableCount) }}</strong>
+                        <p class="inventory-summary-copy">{{ __('Equippable items currently waiting in inventory.') }}</p>
+                    </article>
+
+                    <article class="inventory-summary-card">
+                        <span class="inventory-summary-label">{{ __('Mount slot') }}</span>
+                        <strong class="inventory-summary-value">{{ $equipmentBySlot->has('mount') ? __('Ready') : __('Empty') }}</strong>
+                        <p class="inventory-summary-copy">{{ __('Use the inventory panel when you want to equip a new mount item.') }}</p>
+                    </article>
+                </div>
+
+                @include('game.partials.dashboard-equipment-workspace')
+            </div>
         </div>
     </div>
 </section>
@@ -231,7 +271,7 @@
                 <p class="panel-kicker">{{ __('Inventory Control') }}</p>
                 <h2 class="dashboard-overlay-title">{{ __('Inventory') }}</h2>
                 <p class="dashboard-overlay-subtitle">
-                    {{ __('Manage equipment, consumables and sell-ready drops from one contained workspace.') }}
+                    {{ __('Manage bag items, consumables, books and sell-ready drops from one contained workspace.') }}
                 </p>
             </div>
 
@@ -317,7 +357,6 @@
                 class="inventory-workspace"
                 x-data="{
                     inventorySelection: @js($inventorySelectionDefaultId),
-                    equipmentInspector: @js($equipmentInspectorDefaultSlot),
                 }"
             >
                 <div class="inventory-overview-grid">
@@ -356,159 +395,20 @@
                     </article>
                 </div>
 
-                <div class="inventory-modal-layout">
-                    <div class="inventory-modal-sidebar">
-                        <article id="tutorial-equipment-panel" class="game-panel inventory-modern-panel inventory-loadout-panel equipment-panel-compact">
-                            <div class="dashboard-section-head dashboard-section-head-compact">
-                                <div>
-                                    <p class="panel-kicker">{{ __('Equipment') }}</p>
-                                    <h2 class="dashboard-section-title">{{ __('Equipment Window') }}</h2>
-                                </div>
-                                <span class="dashboard-section-badge">
-                                    {{ __('Affects stats') }}
-                                </span>
-                            </div>
-
-                            <div class="equipment-board mt-6">
-                                <div class="equipment-board-shell">
-                                    <div class="equipment-board-window">
-                                        <div class="equipment-board-window-head">
-                                            <span class="equipment-board-window-title">{{ __('Equipment') }}</span>
-                                            <span class="equipment-board-window-emblem" aria-hidden="true"></span>
-                                        </div>
-
-                                        <div class="equipment-board-frame">
-                                            <div class="equipment-board-silhouette" aria-hidden="true"></div>
-
-                                            @foreach ($equipmentBoardSlots as $slot => $slotConfig)
-                                            @php
-                                                $equippedSlot = $equipmentBySlot->get($slot);
-                                                $equippedInventoryItem = $equippedSlot?->characterItem;
-                                                $equippedItem = $equippedInventoryItem?->item;
-                                            @endphp
-
-                                                <button
-                                                    type="button"
-                                                    class="equipment-board-slot {{ $slotConfig['class'] }} {{ $equippedItem ? 'equipment-board-slot-filled' : '' }}"
-                                                    @click="equipmentInspector = '{{ $slot }}'"
-                                                    x-bind:class="{ 'equipment-board-slot-active': equipmentInspector === '{{ $slot }}' }"
-                                                    x-bind:aria-pressed="equipmentInspector === '{{ $slot }}'"
-                                                    aria-label="{{ $slotConfig['label'] }}: {{ $equippedItem ? $equippedInventoryItem->displayName() : __('Nothing equipped.') }}"
-                                                    title="{{ $slotConfig['label'] }}"
-                                                >
-                                                    <span class="equipment-board-slot-kicker">{{ $slotConfig['label'] }}</span>
-
-                                                    <span class="equipment-board-art">
-                                                        @if ($equippedItem)
-                                                            @if (filled($equippedInventoryItem->iconPath()))
-                                                                <img
-                                                                    src="{{ asset($equippedInventoryItem->iconPath()) }}"
-                                                                    alt=""
-                                                                    class="equipment-board-icon"
-                                                                >
-                                                            @else
-                                                                <span class="equipment-board-fallback">{{ strtoupper(substr($equippedItem->name, 0, 1)) }}</span>
-                                                            @endif
-                                                        @else
-                                                            <span class="equipment-board-empty-mark">{{ $slotConfig['empty'] }}</span>
-                                                        @endif
-                                                    </span>
-                                                </button>
-                                            @endforeach
-                                        </div>
-                                    </div>
-
-                                    <div class="equipment-board-inspector">
-                                        @foreach ($equipmentBoardSlots as $slot => $slotConfig)
-                                        @php
-                                            $equippedSlot = $equipmentBySlot->get($slot);
-                                            $equippedInventoryItem = $equippedSlot?->characterItem;
-                                            $equippedItem = $equippedInventoryItem?->item;
-                                        @endphp
-
-                                            <section
-                                                class="equipment-board-detail {{ $equippedItem ? 'equipment-board-detail-filled' : 'equipment-board-detail-empty' }}"
-                                                x-show="equipmentInspector === '{{ $slot }}'"
-                                                x-cloak
-                                            >
-                                                <div class="equipment-board-detail-head">
-                                                    <div class="equipment-board-detail-preview">
-                                                        @if ($equippedItem)
-                                                            @if (filled($equippedInventoryItem->iconPath()))
-                                                                <img
-                                                                    src="{{ asset($equippedInventoryItem->iconPath()) }}"
-                                                                    alt="{{ $equippedInventoryItem->displayName() }}"
-                                                                    class="equipment-board-icon"
-                                                                >
-                                                            @else
-                                                                <span class="equipment-board-fallback">{{ strtoupper(substr($equippedItem->name, 0, 1)) }}</span>
-                                                            @endif
-                                                        @else
-                                                            <span class="equipment-board-empty-mark">{{ $slotConfig['empty'] }}</span>
-                                                        @endif
-                                                    </div>
-
-                                                    <div class="equipment-board-detail-copy">
-                                                        <p class="equipment-board-detail-slot">{{ $slotConfig['label'] }}</p>
-                                                        <p class="equipment-board-name">
-                                                            {{ $equippedItem ? $equippedInventoryItem->displayName() : __('Nothing equipped.') }}
-                                                        </p>
-                                                        <p class="equipment-board-bonus">
-                                                            @if ($equippedItem)
-                                                                @if ($equippedInventoryItem->effectiveBonus('attack_bonus')) +{{ $equippedInventoryItem->effectiveBonus('attack_bonus') }} ATK @endif
-                                                                @if ($equippedInventoryItem->effectiveBonus('defense_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('defense_bonus') }} DEF @endif
-                                                                @if ($equippedInventoryItem->effectiveBonus('speed_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('speed_bonus') }} SPD @endif
-                                                                @if ($equippedInventoryItem->effectiveBonus('travel_speed_percent_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('travel_speed_percent_bonus') }}% TRAVEL @endif
-                                                                @if ($equippedInventoryItem->effectiveBonus('health_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('health_bonus') }} HP @endif
-                                                            @else
-                                                                {{ __('Select an item in your bag to fill this slot.') }}
-                                                            @endif
-                                                        </p>
-                                                        @if ($equippedItem)
-                                                            <p class="equipment-board-detail-meta">
-                                                                {{ __('Bonuses :current/:slots', [
-                                                                    'current' => $equippedInventoryItem->bonusCount(),
-                                                                    'slots' => $equippedInventoryItem->bonus_slot_limit,
-                                                                ]) }}
-                                                            </p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-
-                                                @if ($equippedItem && $equippedInventoryItem->bonusLines() !== [])
-                                                    <div class="equipment-board-detail-chips">
-                                                        @foreach ($equippedInventoryItem->bonusLines() as $bonusLine)
-                                                            <span class="cozy-chip">{{ $bonusLine }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-
-                                                @if ($equippedItem)
-                                                    <div class="equipment-board-detail-actions">
-                                                        <form method="POST" action="{{ route('game.actions.store', ['action' => 'unequip-item']) }}">
-                                                            @csrf
-                                                            <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                            <input type="hidden" name="character_item_id" value="{{ $equippedSlot->character_item_id }}">
-                                                            @if ($activeFocus)
-                                                                <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                                            @endif
-
-                                                            <button type="submit" class="action-button-muted w-full">
-                                                                {{ __('Unequip') }}
-                                                            </button>
-                                                        </form>
-                                                        @include('game.partials.item-bonus-actions', ['inventoryItem' => $equippedInventoryItem])
-                                                    </div>
-                                                @endif
-                                            </section>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
+                @if ($tutorialActive && $tutorialStep === 6)
+                    <div
+                        class="inventory-modal-main"
+                        x-data="{
+                            equipmentInspector: @js($equipmentInspectorDefaultSlot),
+                        }"
+                    >
+                        @include('game.partials.dashboard-equipment-workspace', [
+                            'articleId' => 'tutorial-equipment-panel',
+                        ])
                     </div>
+                @endif
 
-                    <div class="inventory-modal-main">
+                <div class="inventory-modal-main">
                         <article class="game-panel inventory-modern-panel inventory-detail-workspace">
                             <div class="dashboard-section-head dashboard-section-head-modern">
                                 <div>
@@ -586,7 +486,6 @@
                                                 @if ($inventoryItem->effectiveBonus('attack_bonus')) +{{ $inventoryItem->effectiveBonus('attack_bonus') }} ATK · @endif
                                                 @if ($inventoryItem->effectiveBonus('defense_bonus')) +{{ $inventoryItem->effectiveBonus('defense_bonus') }} DEF · @endif
                                                 @if ($inventoryItem->effectiveBonus('speed_bonus')) +{{ $inventoryItem->effectiveBonus('speed_bonus') }} SPD · @endif
-                                                @if ($inventoryItem->effectiveBonus('travel_speed_percent_bonus')) +{{ $inventoryItem->effectiveBonus('travel_speed_percent_bonus') }}% TRAVEL · @endif
                                                 @if ($inventoryItem->effectiveBonus('health_bonus')) +{{ $inventoryItem->effectiveBonus('health_bonus') }} HP @endif
                                             </p>
                                         </div>
@@ -724,7 +623,7 @@
                             @empty
                                 <div class="inventory-empty-state">
                                     <p class="inventory-empty-title">{{ __('Your inventory is empty.') }}</p>
-                                    <p class="inventory-empty-copy">{{ __('Travel, fight or visit town services to fill the bag again.') }}</p>
+                                    <p class="inventory-empty-copy">{{ __('Fight monsters or visit town services to fill the bag again.') }}</p>
                                 </div>
                             @endforelse
                         </article>

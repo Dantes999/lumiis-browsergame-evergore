@@ -158,7 +158,7 @@ class GameCharacter extends Model
 
     public function isInTutorial(): bool
     {
-        return $this->game_state === GameCharacterState::Tutorial;
+        return TutorialFlow::enabled() && $this->game_state === GameCharacterState::Tutorial;
     }
 
     public function currentTutorialStep(): int
@@ -188,7 +188,7 @@ class GameCharacter extends Model
 
     public function travelRoutesUnlocked(): bool
     {
-        return FeatureUnlocks::isUnlocked($this, 'routes');
+        return false;
     }
 
     public function bossFightsUnlocked(): bool

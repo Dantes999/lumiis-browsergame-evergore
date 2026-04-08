@@ -5,7 +5,6 @@
         $globalChatUnlocked = $character->globalChatUnlocked();
         $whispersUnlocked = $character->whispersUnlocked();
         $lumiisUnlocked = $character->lumiisUnlocked();
-        $travelRoutesUnlocked = $character->travelRoutesUnlocked();
         $bossFightsUnlocked = $character->bossFightsUnlocked();
         $tutorialActive = (bool) data_get($tutorial, 'active', false);
         $tutorialStep = (int) data_get($tutorial, 'step', 0);
@@ -38,7 +37,6 @@
         $armorDealerArea = $serviceAreas->firstWhere('slug', 'armor-dealer');
         $blacksmithArea = $serviceAreas->firstWhere('slug', 'town-smith');
         $biologistArea = $serviceAreas->firstWhere('service_type', 'biologist');
-        $routesArea = $serviceAreas->firstWhere('service_type', 'routes');
         $activeBiologistResearch = data_get($biologistResearch, 'active');
         $upcomingBiologistResearch = data_get($biologistResearch, 'upcoming');
         $completedBiologistStages = data_get($biologistResearch, 'completed', []);
@@ -255,10 +253,6 @@
                 $parts[] = '+'.$item->speed_bonus.' '.__('SPD');
             }
 
-            if ((int) $item->travel_speed_percent_bonus > 0) {
-                $parts[] = '+'.$item->travel_speed_percent_bonus.'% '.__('Travel');
-            }
-
             return $parts;
         };
         $shopItemValueText = function (\App\Models\Item $item) use ($shopItemValueParts): ?string {
@@ -394,8 +388,14 @@
         });
         $dashboardCanOpenCharacter = ! $tutorialActive || $tutorialStep === 1;
         $dashboardCanOpenInventory = ! $tutorialActive || $tutorialStep === 6;
+        $dashboardCanOpenQuests = ! $tutorialActive;
+        $dashboardCanOpenEquipment = ! $tutorialActive;
         $dashboardCanOpenChat = ! $tutorialActive && $globalChatUnlocked;
         $dashboardCanOpenSettings = ! $tutorialActive;
+        $equippedItemCount = $equipmentBySlot
+            ->filter(fn ($equippedSlot) => $equippedSlot?->characterItem?->item !== null)
+            ->count();
+        $emptyEquipmentSlotCount = count($equipmentBoardSlots) - $equippedItemCount;
         $dashboardRaceLabel = $raceDefinition['label'] ?? \App\Support\Game\MetinClassCatalog::raceLabel($character->chosenRace());
         $dashboardSkillGroupLabel = $character->hasChosenSkillGroup()
             ? \App\Support\Game\MetinClassCatalog::skillGroupLabel($character->chosenRace(), (string) $character->skill_group)
@@ -439,7 +439,7 @@
             $activeArea?->isService() => [
                 ['label' => __('Service'), 'value' => __(\Illuminate\Support\Str::headline((string) ($activeArea->service_type ?? __('Town'))))],
                 ['label' => __('Map'), 'value' => $character->location->name],
-                ['label' => __('Travel'), 'value' => $travelRoutesUnlocked ? __('Open') : __('Locked')],
+                ['label' => __('Area'), 'value' => __('Town')],
                 ['label' => __('Status'), 'value' => __('Safe')],
             ],
             default => [
@@ -501,12 +501,40 @@
                                         @class([
                                             'metin2-main-nav-link',
                                             'dashboard-side-link',
+                                            'dashboard-side-link-disabled' => ! $dashboardCanOpenQuests,
+                                        ])
+                                        @click="openPanel('quests')"
+                                        @disabled(! $dashboardCanOpenQuests)
+                                    >
+                                        {{ __('Quests') }}
+                                    </button>
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        @class([
+                                            'metin2-main-nav-link',
+                                            'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenInventory,
                                         ])
                                         @click="openPanel('inventory')"
                                         @disabled(! $dashboardCanOpenInventory)
                                     >
                                         {{ __('Inventory') }}
+                                    </button>
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        @class([
+                                            'metin2-main-nav-link',
+                                            'dashboard-side-link',
+                                            'dashboard-side-link-disabled' => ! $dashboardCanOpenEquipment,
+                                        ])
+                                        @click="openPanel('equipment')"
+                                        @disabled(! $dashboardCanOpenEquipment)
+                                    >
+                                        {{ __('Equipment') }}
                                     </button>
                                 </li>
                                 <li>
@@ -1457,7 +1485,7 @@
                                 <div>
                                     <p class="panel-kicker">{{ __('Hotspots') }}</p>
                                     <h3 class="mt-2 font-[Cinzel] text-2xl tracking-[0.12em] text-amber-50">
-                                        {{ __('Fast Travel Focus') }}
+                                        {{ __('Map Hotspots') }}
                                     </h3>
                                 </div>
                                 <span class="cozy-chip">{{ number_format($locationAreas->count()) }} {{ __('Areas') }}</span>
@@ -1516,10 +1544,28 @@
                                 <button
                                     type="button"
                                     class="action-button-muted"
+                                    @click="openPanel('equipment')"
+                                    @disabled(! $dashboardCanOpenEquipment)
+                                >
+                                    {{ __('Open Equipment') }}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
                                     @click="openPanel('character')"
                                     @disabled(! $dashboardCanOpenCharacter)
                                 >
                                     {{ __('Open Character') }}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="openPanel('quests')"
+                                    @disabled(! $dashboardCanOpenQuests)
+                                >
+                                    {{ __('Open Quests') }}
                                 </button>
                             </div>
                         </article>
@@ -1932,7 +1978,6 @@
                                                                     @if ($equippedInventoryItem->effectiveBonus('attack_bonus')) +{{ $equippedInventoryItem->effectiveBonus('attack_bonus') }} ATK @endif
                                                                     @if ($equippedInventoryItem->effectiveBonus('defense_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('defense_bonus') }} DEF @endif
                                                                     @if ($equippedInventoryItem->effectiveBonus('speed_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('speed_bonus') }} SPD @endif
-                                                                    @if ($equippedInventoryItem->effectiveBonus('travel_speed_percent_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('travel_speed_percent_bonus') }}% TRAVEL @endif
                                                                     @if ($equippedInventoryItem->effectiveBonus('health_bonus')) · +{{ $equippedInventoryItem->effectiveBonus('health_bonus') }} HP @endif
                                                                 @else
                                                                     {{ __('Select an item in your bag to fill this slot.') }}
@@ -2060,7 +2105,6 @@
                                                     @if ($inventoryItem->effectiveBonus('attack_bonus')) +{{ $inventoryItem->effectiveBonus('attack_bonus') }} ATK · @endif
                                                     @if ($inventoryItem->effectiveBonus('defense_bonus')) +{{ $inventoryItem->effectiveBonus('defense_bonus') }} DEF · @endif
                                                     @if ($inventoryItem->effectiveBonus('speed_bonus')) +{{ $inventoryItem->effectiveBonus('speed_bonus') }} SPD · @endif
-                                                    @if ($inventoryItem->effectiveBonus('travel_speed_percent_bonus')) +{{ $inventoryItem->effectiveBonus('travel_speed_percent_bonus') }}% TRAVEL · @endif
                                                     @if ($inventoryItem->effectiveBonus('health_bonus')) +{{ $inventoryItem->effectiveBonus('health_bonus') }} HP @endif
                                                 </p>
                                             </div>
@@ -2198,7 +2242,7 @@
                                 @empty
                                     <div class="inventory-empty-state">
                                         <p class="inventory-empty-title">{{ __('Your inventory is empty.') }}</p>
-                                        <p class="inventory-empty-copy">{{ __('Travel, fight or visit town services to fill the bag again.') }}</p>
+                                        <p class="inventory-empty-copy">{{ __('Fight monsters or visit town services to fill the bag again.') }}</p>
                                     </div>
                                 @endforelse
                             </article>
@@ -2555,6 +2599,33 @@
                                     </div>
                                 @endif
 
+                                <div class="theme-empty-state mt-5 px-4 py-4 text-sm leading-6" x-show="isActionLocked()" x-cloak>
+                                    <p class="text-[0.62rem] uppercase tracking-[0.24em] text-amber-900/70">
+                                        <span x-show="!isResting()" x-cloak>{{ __('Action cooldown') }}</span>
+                                        <span x-show="isResting()" x-cloak>{{ __('Rest in progress') }}</span>
+                                    </p>
+
+                                    <p class="mt-2 font-semibold text-stone-900" x-show="!isResting()" x-cloak>
+                                        {{ __('Hunting is on cooldown.') }}
+                                    </p>
+                                    <p class="mt-2 font-semibold text-stone-900" x-show="isResting()" x-cloak>
+                                        {{ __('You are currently resting.') }}
+                                    </p>
+
+                                    <p class="mt-2 text-stone-700" x-show="!isResting()" x-cloak>
+                                        {{ __('Time left') }}:
+                                        <strong x-text="formattedActionLockCountdown()"></strong>
+                                        · {{ __('Ready at') }}:
+                                        <strong x-text="actionLockReadyAtLabel()"></strong>
+                                    </p>
+                                    <p class="mt-2 text-stone-700" x-show="isResting()" x-cloak>
+                                        {{ __('Rest ends in') }}:
+                                        <strong x-text="formattedActionLockCountdown()"></strong>
+                                        · {{ __('Ready at') }}:
+                                        <strong x-text="actionLockReadyAtLabel()"></strong>
+                                    </p>
+                                </div>
+
                                 <div class="mt-5 grid gap-3 lg:grid-cols-2">
                                     <div class="form-card">
                                         @php
@@ -2604,8 +2675,6 @@
                                                 {{ __('Manual Fight') }}
                                             </button>
                                         </form>
-
-                                        <p class="action-cost-warning" x-show="isResting()" x-text="restingLockLabel()" x-cloak></p>
 
                                         @if ($monsterFightLocked)
                                             <p class="action-cost-warning">{{ __('Recommended from level :level.', ['level' => $activeAreaLevelRequirement]) }}</p>
@@ -2671,8 +2740,6 @@
                                                 </button>
                                             </form>
 
-                                            <p class="action-cost-warning" x-show="isResting()" x-text="restingLockLabel()" x-cloak></p>
-
                                             @if ($lumiisFightLocked)
                                                 <p class="action-cost-warning">{{ __('Recommended from level :level.', ['level' => $activeAreaLevelRequirement]) }}</p>
                                             @elseif ($lumiisFightStaminaMissing > 0)
@@ -2719,8 +2786,6 @@
                                                         {{ __('Manual Boss Fight') }}
                                                     </button>
                                                 </form>
-
-                                                <p class="action-cost-warning" x-show="isResting()" x-text="restingLockLabel()" x-cloak></p>
 
                                                 @if ($bossFightLocked)
                                                     <p class="action-cost-warning">{{ __('Recommended from level :level.', ['level' => $activeAreaLevelRequirement]) }}</p>
@@ -2778,18 +2843,18 @@
 
                                             @if ($restingState)
                                                 @include('game.partials.rest-waiting-placeholder', [
-                                                    'footerUrl' => route('dashboard', ['focus' => $routesArea?->slug ?? $activeArea->slug]),
-                                                    'footerLabel' => __('View Routes'),
+                                                    'footerUrl' => route('dashboard'),
+                                                    'footerLabel' => __('Back to Map'),
                                                 ])
                                             @else
                                                 <div class="form-card flex flex-col justify-between gap-4">
                                                     <div>
-                                                        <p class="action-title">{{ __('Route Control') }}</p>
-                                                        <p class="shop-item-meta">{{ __('Maps and field exits') }}</p>
+                                                        <p class="action-title">{{ __('Map Overview') }}</p>
+                                                        <p class="shop-item-meta">{{ __('Return to the full map view') }}</p>
                                                     </div>
 
-                                                    <a href="{{ route('dashboard', ['focus' => $routesArea?->slug ?? $activeArea->slug]) }}" class="action-button-muted">
-                                                        {{ __('View Routes') }}
+                                                    <a href="{{ route('dashboard') }}" class="action-button-muted">
+                                                        {{ __('Back to Map') }}
                                                     </a>
                                                 </div>
                                             @endif
@@ -3380,49 +3445,6 @@
                                         </div>
                                     @break
 
-                                    @case('routes')
-                                        <div class="mt-5 space-y-3">
-                                            @forelse ($character->location->outgoingConnections as $connection)
-                                                @php
-                                                    $travelStaminaMissing = $staminaMissingFor((int) $connection->stamina_cost);
-                                                    $travelLevelMissing = max(0, (int) $connection->required_level - (int) $character->level);
-                                                @endphp
-                                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'travel']) }}" class="route-card">
-                                                    @csrf
-                                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                                    <input type="hidden" name="target_location_id" value="{{ $connection->toLocation->id }}">
-                                                    <input type="hidden" name="redirect_focus" value="{{ $activeArea->slug }}">
-
-                                                    <div>
-                                                        <p class="font-[Cinzel] text-lg tracking-[0.12em] text-amber-50">
-                                                            {{ $connection->toLocation->name }}
-                                                        </p>
-                                                        <p class="text-xs uppercase tracking-[0.25em] text-amber-200/60">
-                                                            {{ $character->travelCooldownFor($connection->travel_seconds) }} sec cooldown · {{ $connection->stamina_cost }} stamina · {{ __('Req. Level') }} {{ $connection->required_level }}
-                                                        </p>
-                                                        @if ($travelLevelMissing > 0)
-                                                            <p class="action-cost-warning mt-2">
-                                                                {{ __('Requires level :level.', ['level' => $connection->required_level]) }}
-                                                            </p>
-                                                        @elseif ($travelStaminaMissing > 0)
-                                                            <p class="action-cost-warning mt-2">Missing {{ $travelStaminaMissing }} stamina.</p>
-                                                        @endif
-                                                    </div>
-
-                                                    <button
-                                                        type="submit"
-                                                        class="action-button"
-                                                        x-bind:disabled="isActionLocked() || @js($travelLevelMissing > 0 || $travelStaminaMissing > 0)"
-                                                        @disabled($travelLevelMissing > 0 || $travelStaminaMissing > 0)
-                                                    >
-                                                        Travel
-                                                    </button>
-                                                </form>
-                                            @empty
-                                                <p class="text-sm text-stone-700">No routes are configured from this node yet.</p>
-                                            @endforelse
-                                        </div>
-                                    @break
                                 @endswitch
                             @endif
                         </div>
@@ -3498,71 +3520,6 @@
                             </div>
                         </div>
                     </div>
-                </article>
-
-                <article class="game-panel" id="travel-routes">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="panel-kicker">Travel Routes</p>
-                            <h2 class="mt-2 font-[Cinzel] text-2xl tracking-[0.12em] text-amber-50">Map Connections</h2>
-                        </div>
-                        <span class="rounded-full border border-amber-500/20 px-3 py-1 text-xs uppercase tracking-[0.25em] text-stone-300">
-                            Mount bonus applied
-                        </span>
-                    </div>
-
-                    @if (! $travelRoutesUnlocked)
-                        <div class="mt-4 rounded-[1.2rem] border border-dashed border-amber-500/18 bg-stone-950/25 px-5 py-5 text-sm leading-7 text-stone-300">
-                            Travel routes unlock at level 4. Finish the early questline, keep clearing packs and Lumiis, and the wider world will open once your character is strong enough to leave the starter land.
-                        </div>
-                    @else
-                        <div class="mt-4 space-y-3">
-                            @forelse ($character->location->outgoingConnections as $connection)
-                                @php
-                                    $travelStaminaMissing = $staminaMissingFor((int) $connection->stamina_cost);
-                                    $travelLevelMissing = max(0, (int) $connection->required_level - (int) $character->level);
-                                @endphp
-                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'travel']) }}" class="route-card">
-                                    @csrf
-                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                    <input type="hidden" name="target_location_id" value="{{ $connection->toLocation->id }}">
-                                    @if ($activeFocus)
-                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
-                                    @endif
-
-                                    <div>
-                                        <p class="font-[Cinzel] text-lg tracking-[0.12em] text-amber-50">
-                                            {{ $connection->toLocation->name }}
-                                        </p>
-                                        <p class="text-xs uppercase tracking-[0.25em] text-amber-200/60">
-                                            {{ $character->travelCooldownFor($connection->travel_seconds) }} sec cooldown · {{ $connection->stamina_cost }} stamina · {{ __('Req. Level') }} {{ $connection->required_level }}
-                                            @if ($character->travelSpeedPercentBonus() > 0)
-                                                · mount / skill bonus active
-                                            @endif
-                                        </p>
-                                        @if ($travelLevelMissing > 0)
-                                            <p class="action-cost-warning mt-2">
-                                                {{ __('Requires level :level.', ['level' => $connection->required_level]) }}
-                                            </p>
-                                        @elseif ($travelStaminaMissing > 0)
-                                            <p class="action-cost-warning mt-2">Missing {{ $travelStaminaMissing }} stamina.</p>
-                                        @endif
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        class="action-button"
-                                        x-bind:disabled="isActionLocked() || @js($travelLevelMissing > 0 || $travelStaminaMissing > 0)"
-                                        @disabled($travelLevelMissing > 0 || $travelStaminaMissing > 0)
-                                    >
-                                        Travel
-                                    </button>
-                                </form>
-                            @empty
-                                <p class="text-sm text-stone-400">No routes configured from this location yet.</p>
-                            @endforelse
-                        </div>
-                    @endif
                 </article>
 
                 <article class="game-panel" id="town-vendor">
