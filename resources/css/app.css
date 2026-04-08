@@ -6860,6 +6860,28 @@
         padding-bottom: 1.5rem;
     }
 
+    .public-login-page,
+    .public-login-page .game-shell {
+        background: #090303;
+    }
+
+    .public-login-page::before {
+        opacity: 1;
+        background-image:
+            linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5) 46%, rgba(0, 0, 0, 0.72) 100%),
+            var(--placeholder-layout-header);
+        background-position: center center, center 18%;
+        background-repeat: no-repeat, no-repeat;
+        background-size: auto, cover;
+    }
+
+    .public-login-page::after {
+        opacity: 0.52;
+        background:
+            linear-gradient(180deg, rgba(24, 8, 4, 0.06), rgba(24, 8, 4, 0.3) 54%, rgba(12, 4, 2, 0.56) 100%),
+            repeating-linear-gradient(135deg, rgba(255, 240, 205, 0.018) 0 12px, transparent 12px 28px);
+    }
+
     .utility-site-shell {
         display: grid;
         align-content: start;
@@ -7059,31 +7081,37 @@
     }
 
     .public-site-shell-login {
-        padding-bottom: 2rem;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-bottom: 0;
     }
 
     .public-site-shell-login .public-site-header-wrap {
         display: flex;
         align-items: flex-start;
-        min-height: clamp(14rem, 30vw, 21rem);
+        min-height: auto;
         padding-top: 1.25rem;
-        background-position: center 20%;
+        background-image: none;
     }
 
     .public-site-shell-guest .public-site-header-wrap {
         display: flex;
         align-items: flex-start;
-        min-height: clamp(12.5rem, 27vw, 18rem);
+        min-height: auto;
         padding-top: 1rem;
-        background-position: center 16%;
+        background-image: none;
     }
 
     .public-landing-main {
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        margin-top: -3.5rem;
-        padding-top: 0;
+        align-items: center;
+        min-height: 100%;
+        margin-top: 0;
+        padding-top: 1.25rem;
+        padding-bottom: 2rem;
     }
 
     .public-landing-login-card {
@@ -7093,9 +7121,11 @@
     .public-guest-main {
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        margin-top: -2.75rem;
-        padding-top: 0;
+        align-items: center;
+        min-height: 100%;
+        margin-top: 0;
+        padding-top: 1rem;
+        padding-bottom: 2rem;
     }
 
     .public-auth-main-standalone {
@@ -7912,21 +7942,23 @@
         }
 
         .public-site-shell-login .public-site-header-wrap {
-            min-height: clamp(11rem, 48vw, 15rem);
             padding-top: 0.9rem;
         }
 
         .public-site-shell-guest .public-site-header-wrap {
-            min-height: clamp(10rem, 42vw, 13rem);
             padding-top: 0.85rem;
         }
 
         .public-landing-main {
-            margin-top: -1.4rem;
+            align-items: flex-start;
+            padding-top: 0.9rem;
+            padding-bottom: 1rem;
         }
 
         .public-guest-main {
-            margin-top: -1.2rem;
+            align-items: flex-start;
+            padding-top: 0.75rem;
+            padding-bottom: 1rem;
         }
 
         .public-preview-stage,
