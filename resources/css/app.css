@@ -283,6 +283,953 @@
     }
 }
 
+@layer components {
+    .simple-ui .theme-button,
+    .simple-ui .theme-primary-button,
+    .simple-ui .theme-secondary-button,
+    .simple-ui .theme-danger-button,
+    .simple-ui .nav-pill,
+    .simple-ui .action-button,
+    .simple-ui .action-button-muted,
+    .simple-ui .dashboard-overlay-close,
+    .simple-ui .dashboard-map-window-close,
+    .simple-ui .public-site-nav-link,
+    .simple-ui .metin2-main-nav-link,
+    .simple-ui .dashboard-side-link,
+    .simple-ui .dashboard-side-utility-link,
+    .simple-ui .metin2-download-button {
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        box-shadow: none;
+    }
+
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button-muted,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-overlay-close {
+        min-height: 2.55rem;
+        padding: 0.7rem 0.95rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-shadow: none;
+    }
+
+    .simple-ui .panel-kicker,
+    .simple-ui .shop-item-meta,
+    .simple-ui .scene-copy-kicker,
+    .simple-ui .portal-navbar-stat-label,
+    .simple-ui .portal-navbar-stat-note,
+    .simple-ui .theme-label,
+    .simple-ui .inventory-list-pagination-copy,
+    .simple-ui .inventory-list-page-indicator,
+    .simple-ui .inventory-list-row-details-label,
+    .simple-ui .inventory-list-row-details-meta,
+    .simple-ui .inventory-detail-meta,
+    .simple-ui .inventory-card-meta,
+    .simple-ui .equipment-board-slot-kicker,
+    .simple-ui .equipment-board-slot-info-toggle,
+    .simple-ui .equipment-slot-popover-label,
+    .simple-ui .equipment-slot-popover-stat span,
+    .simple-ui .equipment-slot-popover-meta,
+    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card p.text-xs.uppercase,
+    .simple-ui .paper-note p.uppercase,
+    .simple-ui .theme-empty-state p.uppercase,
+    .simple-ui .theme-paper-panel p.uppercase {
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+    }
+
+    .simple-ui .action-title {
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+    }
+
+    .simple-ui .action-copy,
+    .simple-ui .inventory-list-row-details-text,
+    .simple-ui .inventory-empty-copy {
+        font-size: 0.96rem;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 1023px) {
+        .simple-ui .dashboard-classic-header .portal-navbar-title {
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
+        }
+    }
+}
+
+.simple-ui .theme-page-heading {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.simple-ui .theme-page-eyebrow {
+    margin: 0;
+    color: var(--simple-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.simple-ui .theme-page-title {
+    margin: 0;
+    color: var(--simple-text);
+    font-family: "Cinzel", Georgia, serif;
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+    text-shadow: none;
+}
+
+.simple-ui .theme-page-description {
+    margin: 0;
+    max-width: 48rem;
+    color: var(--simple-muted);
+    font-size: 0.98rem;
+    line-height: 1.6;
+}
+
+.simple-ui .admin-hub-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(107, 70, 51, 0.96);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, var(--simple-panel-soft), var(--simple-panel));
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.simple-ui .theme-table-wrap {
+    border: 1px solid rgba(200, 162, 122, 0.22);
+    border-radius: 0.9rem;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.simple-ui .theme-table {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    color: var(--simple-muted);
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+.simple-ui .theme-table thead {
+    color: var(--simple-muted);
+}
+
+.simple-ui .theme-table thead th {
+    padding: 0.9rem 1rem;
+    color: var(--simple-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    border-bottom: 1px solid rgba(200, 162, 122, 0.22);
+    white-space: nowrap;
+}
+
+.simple-ui .theme-table tbody tr {
+    border-top: 1px solid rgba(200, 162, 122, 0.16);
+}
+
+.simple-ui .theme-table tbody tr:first-child {
+    border-top: 0;
+}
+
+.simple-ui .theme-table td {
+    padding: 0.95rem 1rem;
+    vertical-align: top;
+    color: var(--simple-text);
+}
+
+.simple-ui .theme-table td.text-right,
+.simple-ui .theme-table th.text-right {
+    text-align: right;
+}
+
+.simple-ui .theme-table .font-semibold,
+.simple-ui .theme-table .text-amber-100,
+.simple-ui .theme-table .text-stone-900 {
+    color: var(--simple-text) !important;
+}
+
+.simple-ui .theme-table .text-stone-400,
+.simple-ui .theme-table .text-stone-600 {
+    color: var(--simple-muted) !important;
+}
+
+.simple-ui .theme-table .theme-input,
+.simple-ui .theme-table textarea,
+.simple-ui .theme-table select {
+    min-width: 6rem;
+}
+
+.simple-ui .admin-inline-hint {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--simple-paper-text);
+}
+
+.simple-ui .admin-row-index {
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+}
+
+.simple-ui .admin-row-tool {
+    min-height: 2.2rem;
+    padding: 0.48rem 0.78rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    box-shadow: none;
+}
+
+.simple-ui .theme-input.theme-textarea,
+.simple-ui textarea.theme-input,
+.simple-ui .portal-stage textarea:not(.inventory-use-quantity):not([class="theme-input"]) {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.simple-ui .portal-stage textarea:not(.inventory-use-quantity),
+.simple-ui .portal-stage select,
+.simple-ui .portal-stage input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+    border-color: rgba(200, 162, 122, 0.98);
+    background: linear-gradient(180deg, #fbf4e7, var(--simple-paper));
+    color: var(--simple-paper-text);
+    box-shadow: none;
+}
+
+.simple-ui .portal-stage textarea:not(.inventory-use-quantity)::placeholder,
+.simple-ui .portal-stage input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])::placeholder {
+    color: rgba(76, 51, 36, 0.68);
+}
+
+.simple-ui .portal-stage .theme-status-flash ul {
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.simple-ui .portal-stage nav[role="navigation"] {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.simple-ui .portal-stage nav[role="navigation"] .text-sm.text-gray-700,
+.simple-ui .portal-stage nav[role="navigation"] .dark\:text-gray-600,
+.simple-ui .portal-stage nav[role="navigation"] .font-medium {
+    color: var(--simple-muted) !important;
+}
+
+.simple-ui .portal-stage nav[role="navigation"] .inline-flex.items-center {
+    border-color: rgba(200, 162, 122, 0.4) !important;
+    background: linear-gradient(180deg, #fbf4e7, var(--simple-paper)) !important;
+    color: var(--simple-paper-text) !important;
+    box-shadow: none !important;
+}
+
+.simple-ui .portal-stage nav[role="navigation"] .bg-gray-200,
+.simple-ui .portal-stage nav[role="navigation"] .dark\:bg-gray-700 {
+    background: linear-gradient(180deg, var(--simple-accent), var(--simple-accent-deep)) !important;
+    color: #fff6ef !important;
+}
+
+@media (max-width: 767px) {
+    .simple-ui .theme-page-title {
+        font-size: 1.65rem;
+    }
+
+    .simple-ui .theme-table thead th,
+    .simple-ui .theme-table td {
+        padding: 0.78rem 0.82rem;
+    }
+
+    .simple-ui .admin-hub-nav > * {
+        flex: 1 1 calc(50% - 0.55rem);
+    }
+}
+.simple-ui .theme-button,
+.simple-ui .theme-primary-button,
+.simple-ui .theme-secondary-button,
+.simple-ui .theme-danger-button,
+.simple-ui .nav-pill,
+.simple-ui .action-button,
+.simple-ui .action-button-muted,
+.simple-ui .dashboard-overlay-close,
+.simple-ui .dashboard-map-window-close,
+.simple-ui .public-site-nav-link,
+.simple-ui .metin2-main-nav-link,
+.simple-ui .dashboard-side-link,
+.simple-ui .dashboard-side-utility-link,
+.simple-ui .metin2-download-button {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    box-shadow: none;
+}
+
+.simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button,
+.simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button-muted,
+.simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-overlay-close {
+    min-height: 2.55rem;
+    padding: 0.7rem 0.95rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-shadow: none;
+}
+
+.simple-ui .panel-kicker,
+.simple-ui .shop-item-meta,
+.simple-ui .scene-copy-kicker,
+.simple-ui .portal-navbar-stat-label,
+.simple-ui .portal-navbar-stat-note,
+.simple-ui .theme-label,
+.simple-ui .inventory-list-pagination-copy,
+.simple-ui .inventory-list-page-indicator,
+.simple-ui .inventory-list-row-details-label,
+.simple-ui .inventory-list-row-details-meta,
+.simple-ui .inventory-detail-meta,
+.simple-ui .inventory-card-meta,
+.simple-ui .equipment-board-slot-kicker,
+.simple-ui .equipment-board-slot-info-toggle,
+.simple-ui .equipment-slot-popover-label,
+.simple-ui .equipment-slot-popover-stat span,
+.simple-ui .equipment-slot-popover-meta,
+.simple-ui .utility-page-header-card > div > p:first-child,
+.simple-ui .utility-page-header-card p.text-xs.uppercase,
+.simple-ui .paper-note p.uppercase,
+.simple-ui .theme-empty-state p.uppercase,
+.simple-ui .theme-paper-panel p.uppercase {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+}
+
+.simple-ui .action-title {
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+}
+
+.simple-ui .action-copy,
+.simple-ui .inventory-list-row-details-text,
+.simple-ui .inventory-empty-copy {
+    font-size: 0.96rem;
+    line-height: 1.55;
+}
+
+.simple-ui .inventory-list-row-info-toggle,
+.simple-ui .equipment-board-slot-info-toggle,
+.simple-ui .equipment-slot-popover-close {
+    font-size: 0.78rem !important;
+    letter-spacing: 0.06em !important;
+}
+
+@media (max-width: 1023px) {
+    .simple-ui .dashboard-classic-header .portal-navbar-title {
+        font-size: 0.95rem;
+        letter-spacing: 0.06em;
+    }
+}
+
+@layer components {
+    .simple-ui {
+        --simple-bg-1: #1a100b;
+        --simple-bg-2: #0f0805;
+        --simple-panel: #23150f;
+        --simple-panel-soft: #2d1c14;
+        --simple-panel-border: #6b4633;
+        --simple-panel-border-soft: #8a5a40;
+        --simple-text: #f4eadb;
+        --simple-muted: #d7bba3;
+        --simple-paper: #f6edde;
+        --simple-paper-border: #c8a27a;
+        --simple-paper-text: #261810;
+        --simple-paper-muted: #5f4735;
+        --simple-accent: #b8693b;
+        --simple-accent-hover: #ca7a48;
+        --simple-accent-deep: #8e5330;
+        --simple-danger: #a84534;
+        --simple-link: #f1c79f;
+    }
+
+    body.simple-ui,
+    body.simple-ui.game-shell,
+    body.simple-ui.public-login-page,
+    body.simple-ui.public-login-page .game-shell {
+        background:
+            radial-gradient(circle at top, rgba(184, 105, 59, 0.14), transparent 20rem),
+            linear-gradient(180deg, var(--simple-bg-1) 0%, var(--simple-bg-2) 100%);
+        color: var(--simple-text);
+    }
+
+    body.simple-ui::before,
+    body.simple-ui::after,
+    body.simple-ui.public-login-page::before,
+    body.simple-ui.public-login-page::after {
+        display: none;
+    }
+
+    .simple-ui .public-site-shell {
+        padding-bottom: 1rem;
+    }
+
+    .simple-ui .public-site-header-wrap,
+    .simple-ui .public-site-main,
+    .simple-ui .public-site-footer,
+    .simple-ui .utility-page-header-wrap {
+        width: min(72rem, calc(100% - 1rem));
+    }
+
+    .simple-ui .public-site-header-wrap,
+    .simple-ui.public-login-page .public-site-header-wrap {
+        padding-top: 0.8rem;
+        background-image: none;
+    }
+
+    .simple-ui .public-site-footer {
+        padding-top: 0.75rem;
+        background-image: none;
+    }
+
+    .simple-ui .public-surface,
+    .simple-ui .portal-shell,
+    .simple-ui .hero-banner,
+    .simple-ui .game-panel,
+    .simple-ui .utility-page-panel,
+    .simple-ui .dashboard-side-shell,
+    .simple-ui .dashboard-side-module,
+    .simple-ui .dashboard-portal .dashboard-map-stage,
+    .simple-ui .dashboard-portal .dashboard-focus-panel,
+    .simple-ui .dashboard-portal .inventory-modern-panel,
+    .simple-ui .dashboard-map-overlay-panel .dashboard-overlay-window,
+    .simple-ui .dashboard-map-overlay-panel .dashboard-overlay-window-inventory,
+    .simple-ui .portal-navbar-stat {
+        border: 1px solid rgba(107, 70, 51, 0.96);
+        border-radius: 1rem;
+        background: linear-gradient(180deg, var(--simple-panel-soft), var(--simple-panel));
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .simple-ui .public-surface::before,
+    .simple-ui .portal-shell::before,
+    .simple-ui .portal-shell::after,
+    .simple-ui .hero-banner::before,
+    .simple-ui .hero-banner::after,
+    .simple-ui .game-panel::before,
+    .simple-ui .utility-page-panel::before,
+    .simple-ui .dashboard-side-shell::before,
+    .simple-ui .dashboard-side-module::before,
+    .simple-ui .dashboard-portal .game-panel::before,
+    .simple-ui .dashboard-portal .inventory-modern-panel::before,
+    .simple-ui .dashboard-portal .dashboard-map-stage::before {
+        display: none;
+    }
+
+    .simple-ui .public-site-header,
+    .simple-ui .public-site-footer-inner,
+    .simple-ui .portal-navbar,
+    .simple-ui .dashboard-portal .dashboard-map-stage,
+    .simple-ui .dashboard-side-shell .metin2-side-body,
+    .simple-ui .dashboard-side-module .metin2-side-body {
+        padding: 1rem;
+    }
+
+    .simple-ui .public-site-brand-mark,
+    .simple-ui .application-logo-mark {
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 1px solid rgba(200, 132, 85, 0.82);
+        border-radius: 0.75rem;
+        background: linear-gradient(180deg, var(--simple-accent), var(--simple-accent-deep));
+        box-shadow: none;
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    .simple-ui .public-site-brand-name,
+    .simple-ui .application-logo-wordmark,
+    .simple-ui .metin2-auth-title,
+    .simple-ui .portal-navbar-title,
+    .simple-ui .dashboard-portal .dashboard-map-heading h1,
+    .simple-ui .dashboard-portal .dashboard-focus-panel-head h3,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-section-title,
+    .simple-ui .dashboard-section-title,
+    .simple-ui .utility-page-header-card > :not(.hero-banner) h1,
+    .simple-ui .utility-page-header-card > :not(.hero-banner) h2 {
+        color: var(--simple-text);
+        letter-spacing: 0.04em;
+        text-shadow: none;
+    }
+
+    .simple-ui .public-site-brand-tag,
+    .simple-ui .application-logo-caption,
+    .simple-ui .public-kicker,
+    .simple-ui .public-eyebrow,
+    .simple-ui .public-preview-badge,
+    .simple-ui .public-mini-label,
+    .simple-ui .metin2-auth-kicker,
+    .simple-ui .panel-kicker,
+    .simple-ui .portal-navbar-kicker,
+    .simple-ui .portal-navbar-subtitle,
+    .simple-ui .portal-navbar-stat-label,
+    .simple-ui .portal-navbar-stat-note,
+    .simple-ui .dashboard-side-kicker,
+    .simple-ui .dashboard-side-meta,
+    .simple-ui .dashboard-side-copy,
+    .simple-ui .theme-label,
+    .simple-ui .metin2-race-card-meta {
+        color: var(--simple-muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-shadow: none;
+    }
+
+    .simple-ui .scene-copy-kicker,
+    .simple-ui .shop-item-meta,
+    .simple-ui .action-cost-warning,
+    .simple-ui .stat-label,
+    .simple-ui .scene-stat-label,
+    .simple-ui .inventory-entry-meta,
+    .simple-ui .dashboard-overlay-pill,
+    .simple-ui .cozy-chip,
+    .simple-ui .dashboard-scene-banner-item {
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+    }
+
+    .simple-ui .public-hero-lead,
+    .simple-ui .public-panel-copy,
+    .simple-ui .public-flow-item p,
+    .simple-ui .public-footer-copy,
+    .simple-ui .public-footer-meta,
+    .simple-ui .metin2-auth-copy,
+    .simple-ui .metin2-race-card-copy,
+    .simple-ui .dashboard-overlay-subtitle,
+    .simple-ui .scene-copy-description,
+    .simple-ui .utility-page-header-card > :not(.hero-banner) p:not(:first-child) {
+        color: var(--simple-muted);
+        font-size: 0.98rem;
+        line-height: 1.6;
+    }
+
+    .simple-ui .action-title {
+        color: var(--simple-text);
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+    }
+
+    .simple-ui .action-copy {
+        color: var(--simple-muted);
+        font-size: 0.96rem;
+        line-height: 1.55;
+    }
+
+    .simple-ui .public-site-nav,
+    .simple-ui .public-site-actions,
+    .simple-ui .public-footer-links,
+    .simple-ui .public-link-cluster,
+    .simple-ui .public-hero-actions,
+    .simple-ui .public-chip-row,
+    .simple-ui .metin2-auth-links {
+        gap: 0.6rem;
+    }
+
+    .simple-ui .theme-button,
+    .simple-ui .theme-primary-button,
+    .simple-ui .theme-secondary-button,
+    .simple-ui .theme-danger-button,
+    .simple-ui .nav-pill,
+    .simple-ui .action-button,
+    .simple-ui .action-button-muted,
+    .simple-ui .dashboard-overlay-close,
+    .simple-ui .dashboard-map-window-close,
+    .simple-ui .public-site-nav-link,
+    .simple-ui .metin2-main-nav-link,
+    .simple-ui .dashboard-side-link,
+    .simple-ui .dashboard-side-utility-link,
+    .simple-ui .metin2-download-button {
+        min-height: 2.55rem;
+        padding: 0.65rem 0.95rem;
+        border-radius: 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        box-shadow: none;
+    }
+
+    .simple-ui .theme-button,
+    .simple-ui .theme-button-primary,
+    .simple-ui .theme-primary-button,
+    .simple-ui .nav-pill,
+    .simple-ui .action-button,
+    .simple-ui .public-site-nav-link,
+    .simple-ui .metin2-main-nav-link,
+    .simple-ui .dashboard-side-link,
+    .simple-ui .metin2-download-button,
+    .simple-ui .cozy-chip,
+    .simple-ui .dashboard-scene-banner-item,
+    .simple-ui .dashboard-overlay-window-inventory .dashboard-section-badge {
+        border: 1px solid rgba(202, 122, 72, 0.92);
+        background: linear-gradient(180deg, var(--simple-accent), var(--simple-accent-deep));
+        color: #fff6ef;
+    }
+
+    .simple-ui .theme-button-secondary,
+    .simple-ui .theme-secondary-button,
+    .simple-ui .action-button-muted,
+    .simple-ui .dashboard-map-window-close,
+    .simple-ui .dashboard-side-utility-link {
+        border: 1px solid rgba(200, 162, 122, 0.92);
+        background: linear-gradient(180deg, #f7efe2, #ead5bd);
+        color: var(--simple-paper-text);
+    }
+
+    .simple-ui .theme-button-danger,
+    .simple-ui .theme-danger-button {
+        border: 1px solid rgba(209, 113, 99, 0.88);
+        background: linear-gradient(180deg, #c55a47, var(--simple-danger));
+        color: #fff3ee;
+    }
+
+    .simple-ui .theme-button-primary:hover,
+    .simple-ui .theme-primary-button:hover,
+    .simple-ui .theme-button:hover,
+    .simple-ui .nav-pill:hover,
+    .simple-ui .action-button:hover,
+    .simple-ui .public-site-nav-link:hover,
+    .simple-ui .public-site-nav-link.is-active,
+    .simple-ui .metin2-main-nav-link:hover,
+    .simple-ui .metin2-main-nav-link.is-active,
+    .simple-ui .dashboard-side-link:hover,
+    .simple-ui .theme-button-active,
+    .simple-ui .metin2-download-button:hover,
+    .simple-ui .theme-button-secondary:hover,
+    .simple-ui .theme-secondary-button:hover,
+    .simple-ui .action-button-muted:hover,
+    .simple-ui .dashboard-map-window-close:hover,
+    .simple-ui .dashboard-side-utility-link:hover,
+    .simple-ui .dashboard-side-utility-link:focus-visible {
+        transform: none;
+        border-color: rgba(231, 176, 139, 0.98);
+        box-shadow: none;
+        text-decoration: none;
+    }
+
+    .simple-ui .theme-link,
+    .simple-ui .public-footer-links a,
+    .simple-ui .public-link-chip {
+        color: var(--simple-link);
+        text-decoration-color: rgba(241, 199, 159, 0.45);
+    }
+
+    .simple-ui .theme-input,
+    .simple-ui .theme-select,
+    .simple-ui .utility-page-panel textarea,
+    .simple-ui .utility-page-panel select,
+    .simple-ui .utility-page-panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    .simple-ui .utility-page-header-card textarea,
+    .simple-ui .utility-page-header-card select,
+    .simple-ui .utility-page-header-card input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .inventory-use-quantity {
+        border: 1px solid rgba(200, 162, 122, 0.98);
+        border-radius: 0.8rem;
+        background: linear-gradient(180deg, #fbf4e7, var(--simple-paper));
+        color: var(--simple-paper-text);
+        box-shadow: none;
+    }
+
+    .simple-ui .theme-input::placeholder,
+    .simple-ui .utility-page-panel textarea::placeholder,
+    .simple-ui .utility-page-panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])::placeholder,
+    .simple-ui .utility-page-header-card textarea::placeholder,
+    .simple-ui .utility-page-header-card input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])::placeholder {
+        color: rgba(76, 51, 36, 0.68);
+    }
+
+    .simple-ui .theme-input-error {
+        color: #f7b8aa;
+        font-size: 0.88rem;
+    }
+
+    .simple-ui .theme-checkbox {
+        box-shadow: none;
+    }
+
+    .simple-ui .theme-checkbox-label {
+        color: var(--simple-paper-text);
+    }
+
+    .simple-ui .metin2-auth-shell {
+        gap: 1.1rem;
+    }
+
+    .simple-ui .metin2-auth-intro {
+        margin-bottom: 0;
+        padding-bottom: 0.8rem;
+        border-bottom: 1px solid rgba(107, 70, 51, 0.88);
+    }
+
+    .simple-ui .public-auth-main-wide {
+        max-width: 54rem;
+    }
+
+    .simple-ui .public-landing-login-card,
+    .simple-ui .public-auth-main-standalone {
+        max-width: 34rem;
+    }
+
+    .simple-ui .metin2-race-grid {
+        gap: 0.75rem;
+    }
+
+    .simple-ui .metin2-race-card {
+        border: 1px solid rgba(107, 70, 51, 0.92);
+        border-radius: 0.9rem;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03));
+    }
+
+    .simple-ui .metin2-race-card-title {
+        color: var(--simple-text);
+        letter-spacing: 0.04em;
+    }
+
+    .simple-ui .portal-navbar {
+        gap: 0.8rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .simple-ui .portal-navbar-status {
+        gap: 0.5rem;
+    }
+
+    .simple-ui .portal-navbar-stat {
+        padding: 0.7rem 0.8rem;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03));
+    }
+
+    .simple-ui .portal-navbar-stat-value,
+    .simple-ui .dashboard-side-title,
+    .simple-ui .dashboard-side-stats li strong,
+    .simple-ui .dashboard-side-module .metin2-module-title {
+        color: var(--simple-text);
+        text-shadow: none;
+    }
+
+    .simple-ui .dashboard-classic-header .portal-navbar-copy {
+        display: block;
+    }
+
+    .simple-ui .dashboard-classic-header .portal-navbar-links {
+        gap: 0.5rem;
+    }
+
+    .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button,
+    .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-primary,
+    .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-secondary,
+    .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-danger {
+        min-height: 2.5rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button-muted,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-overlay-close {
+        min-height: 2.55rem;
+        padding: 0.7rem 0.95rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-shadow: none;
+    }
+
+    .simple-ui .inventory-list-pagination-copy,
+    .simple-ui .inventory-list-page-indicator,
+    .simple-ui .inventory-list-row-details-label,
+    .simple-ui .inventory-list-row-details-meta,
+    .simple-ui .inventory-detail-meta,
+    .simple-ui .inventory-card-meta {
+        color: var(--simple-muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+    }
+
+    .simple-ui .equipment-board-slot-kicker,
+    .simple-ui .equipment-board-slot-info-toggle,
+    .simple-ui .equipment-slot-popover-label,
+    .simple-ui .equipment-slot-popover-stat span,
+    .simple-ui .equipment-slot-popover-meta {
+        color: var(--simple-muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+    }
+
+    .simple-ui .dashboard-portal .dashboard-map-heading h1 {
+        font-size: clamp(1.55rem, 3vw, 2.1rem);
+    }
+
+    .simple-ui .dashboard-portal .scene-canvas {
+        min-height: clamp(18rem, 48vh, 30rem);
+        padding: 0.85rem;
+    }
+
+    .simple-ui .scene-copy,
+    .simple-ui .theme-paper-panel,
+    .simple-ui .theme-empty-state,
+    .simple-ui .paper-note,
+    .simple-ui .stat-card,
+    .simple-ui .scene-stat-pill,
+    .simple-ui .admin-row-card,
+    .simple-ui .inventory-summary-card {
+        border: 1px solid rgba(200, 162, 122, 0.98);
+        border-radius: 0.9rem;
+        background: linear-gradient(180deg, #fbf4e7, var(--simple-paper));
+        background-color: var(--simple-paper);
+        color: var(--simple-paper-text);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    .simple-ui .paper-note p.uppercase,
+    .simple-ui .theme-empty-state p.uppercase,
+    .simple-ui .theme-paper-panel p.uppercase,
+    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card p.text-xs.uppercase {
+        color: var(--simple-paper-muted) !important;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .simple-ui .scene-copy,
+    .simple-ui .scene-copy .text-amber-50,
+    .simple-ui .scene-copy .text-amber-50\/85,
+    .simple-ui .scene-copy .text-stone-300,
+    .simple-ui .scene-copy .text-stone-300\/75,
+    .simple-ui .theme-paper-panel,
+    .simple-ui .theme-empty-state,
+    .simple-ui .paper-note,
+    .simple-ui .stat-card,
+    .simple-ui .scene-stat-pill,
+    .simple-ui .admin-row-card {
+        text-shadow: none;
+    }
+
+    .simple-ui .scene-copy h2,
+    .simple-ui .scene-copy-kicker,
+    .simple-ui .scene-copy-description,
+    .simple-ui .paper-surface-meta,
+    .simple-ui .paper-surface-meta-compact,
+    .simple-ui .stat-label,
+    .simple-ui .scene-stat-label,
+    .simple-ui .admin-inline-hint,
+    .simple-ui .stat-note {
+        color: var(--simple-paper-text);
+    }
+
+    .simple-ui .dashboard-portal .dashboard-map-heading > div:first-child,
+    .simple-ui .dashboard-portal .dashboard-focus-panel-head,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-section-head,
+    .simple-ui .utility-page-section-titlebar {
+        min-height: 0;
+        padding: 0;
+        background: none;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .simple-ui .public-site-footer-inner {
+        gap: 0.75rem;
+    }
+
+    .simple-ui .public-footer-copy,
+    .simple-ui .public-footer-meta {
+        font-size: 0.92rem;
+    }
+
+    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card p.text-xs.uppercase {
+        color: var(--simple-muted) !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 1023px) {
+        .simple-ui .dashboard-classic-header .portal-navbar-title {
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
+        }
+
+        .simple-ui .dashboard-classic-header .portal-navbar-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+            overflow: visible;
+            width: 100%;
+        }
+
+        .simple-ui .dashboard-classic-header .portal-navbar-links form {
+            display: block;
+        }
+
+        .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button,
+        .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-primary,
+        .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-secondary,
+        .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-danger {
+            width: 100%;
+            justify-content: center;
+            white-space: normal;
+        }
+    }
+
+    @media (max-width: 639px) {
+        .simple-ui .public-site-header-wrap,
+        .simple-ui .public-site-main,
+        .simple-ui .public-site-footer,
+        .simple-ui .utility-page-header-wrap {
+            width: min(72rem, calc(100% - 0.75rem));
+        }
+
+        .simple-ui .public-site-header,
+        .simple-ui .public-surface,
+        .simple-ui .portal-shell,
+        .simple-ui .game-panel,
+        .simple-ui .dashboard-portal .dashboard-map-stage,
+        .simple-ui .dashboard-portal .dashboard-focus-panel,
+        .simple-ui .dashboard-portal .inventory-modern-panel,
+        .simple-ui .dashboard-side-shell,
+        .simple-ui .dashboard-side-module {
+            border-radius: 0.9rem;
+        }
+
+        .simple-ui .public-site-header,
+        .simple-ui .public-site-footer-inner,
+        .simple-ui .portal-navbar,
+        .simple-ui .dashboard-portal .dashboard-map-stage {
+            padding: 0.85rem;
+        }
+
+        .simple-ui .dashboard-classic-header .portal-navbar-links {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .simple-ui .dashboard-portal .scene-canvas {
+            min-height: clamp(16rem, 42vh, 20rem);
+        }
+
+        .simple-ui .scene-copy-description,
+        .simple-ui .public-footer-copy,
+        .simple-ui .public-footer-meta,
+        .simple-ui .metin2-auth-copy,
+        .simple-ui .metin2-race-card-copy {
+            font-size: 0.92rem;
+        }
+    }
+}
+
 @layer utilities {
     .game-panel,
     .game-panel::before,
@@ -5200,7 +6147,7 @@
     }
 
     .battle-replay-card-kicker {
-        @apply text-[0.62rem] uppercase tracking-[0.28em];
+        @apply text-[0.8rem] uppercase tracking-[0.2em];
         color: rgba(240, 215, 154, 0.88);
     }
 
@@ -5377,6 +6324,14 @@
             filter 220ms ease;
     }
 
+    .battle-enemy-card .cozy-chip {
+        flex: 0 0 auto;
+        align-self: flex-start;
+        min-width: max-content;
+        white-space: nowrap;
+        letter-spacing: 0.08em;
+    }
+
     .battle-damage-pop {
         position: absolute;
         top: -0.45rem;
@@ -5401,15 +6356,14 @@
     }
 
     .battle-damage-pop-enemy {
-        color: var(--accent-gold-light);
+        color: #7a2a12;
         text-shadow:
-            -1px -1px 0 rgba(88, 56, 16, 0.92),
-            1px -1px 0 rgba(88, 56, 16, 0.92),
-            -1px 1px 0 rgba(88, 56, 16, 0.92),
-            1px 1px 0 rgba(88, 56, 16, 0.92),
-            0 0 16px rgba(255, 211, 138, 0.4),
-            0 2px 0 rgba(88, 56, 16, 0.94),
-            0 12px 22px rgba(0, 0, 0, 0.34);
+            -1px -1px 0 rgba(255, 244, 219, 0.78),
+            1px -1px 0 rgba(255, 244, 219, 0.78),
+            -1px 1px 0 rgba(255, 244, 219, 0.78),
+            1px 1px 0 rgba(255, 244, 219, 0.78),
+            0 2px 0 rgba(96, 31, 13, 0.72),
+            0 12px 22px rgba(0, 0, 0, 0.24);
     }
 
     .battle-damage-pop-player {
@@ -5532,6 +6486,14 @@
 
     .battle-replay-card .battle-health-row span:first-child {
         color: rgba(240, 215, 154, 0.82);
+    }
+
+    .battle-replay-card .battle-enemy-card .battle-health-row span:first-child {
+        color: var(--text-on-paper-meta);
+    }
+
+    .battle-replay-card .battle-enemy-card .battle-health-row span:last-child {
+        color: var(--text-on-paper);
     }
 
     .inventory-use-quantity {
@@ -9352,6 +10314,48 @@
             border-bottom: 1px solid rgba(141, 106, 58, 0.22);
             box-shadow: none;
         }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .scene-board,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-lower,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-mobile-focus-bar {
+            display: none !important;
+        }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel.dashboard-overlay-panel-inventory {
+            position: relative;
+            inset: auto;
+            z-index: auto;
+            min-height: 0;
+        }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-backdrop {
+            display: none;
+        }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-window,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-window-inventory {
+            width: 100%;
+            height: auto;
+            max-height: none;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-head,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-head-inventory {
+            position: static;
+        }
+
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-scroll,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-map-overlay-panel .dashboard-overlay-scroll-inventory,
+        .dashboard-map-stage.dashboard-map-stage-system-panel-open .dashboard-focus-panel {
+            flex: 0 0 auto;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+            overscroll-behavior: auto;
+        }
     }
 
     @media (max-width: 1023px) {
@@ -9982,6 +10986,81 @@
 
         .equipment-slot-popover-stats {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
+@layer components {
+    .simple-ui .theme-button,
+    .simple-ui .theme-primary-button,
+    .simple-ui .theme-secondary-button,
+    .simple-ui .theme-danger-button,
+    .simple-ui .nav-pill,
+    .simple-ui .action-button,
+    .simple-ui .action-button-muted,
+    .simple-ui .dashboard-overlay-close,
+    .simple-ui .dashboard-map-window-close,
+    .simple-ui .public-site-nav-link,
+    .simple-ui .metin2-main-nav-link,
+    .simple-ui .dashboard-side-link,
+    .simple-ui .dashboard-side-utility-link,
+    .simple-ui .metin2-download-button {
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        box-shadow: none;
+    }
+
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .action-button-muted,
+    .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-overlay-close {
+        min-height: 2.55rem;
+        padding: 0.7rem 0.95rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-shadow: none;
+    }
+
+    .simple-ui .panel-kicker,
+    .simple-ui .shop-item-meta,
+    .simple-ui .scene-copy-kicker,
+    .simple-ui .portal-navbar-stat-label,
+    .simple-ui .portal-navbar-stat-note,
+    .simple-ui .theme-label,
+    .simple-ui .inventory-list-pagination-copy,
+    .simple-ui .inventory-list-page-indicator,
+    .simple-ui .inventory-list-row-details-label,
+    .simple-ui .inventory-list-row-details-meta,
+    .simple-ui .inventory-detail-meta,
+    .simple-ui .inventory-card-meta,
+    .simple-ui .equipment-board-slot-kicker,
+    .simple-ui .equipment-board-slot-info-toggle,
+    .simple-ui .equipment-slot-popover-label,
+    .simple-ui .equipment-slot-popover-stat span,
+    .simple-ui .equipment-slot-popover-meta,
+    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card p.text-xs.uppercase,
+    .simple-ui .paper-note p.uppercase,
+    .simple-ui .theme-empty-state p.uppercase,
+    .simple-ui .theme-paper-panel p.uppercase {
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+    }
+
+    .simple-ui .action-title {
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+    }
+
+    .simple-ui .action-copy,
+    .simple-ui .inventory-list-row-details-text,
+    .simple-ui .inventory-empty-copy {
+        font-size: 0.96rem;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 1023px) {
+        .simple-ui .dashboard-classic-header .portal-navbar-title {
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
         }
     }
 }

@@ -39,6 +39,13 @@ class AdminPanelTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_guest_users_are_redirected_from_the_admin_dashboard(): void
+    {
+        $response = $this->get(route('admin.dashboard'));
+
+        $response->assertRedirect(route('login'));
+    }
+
     public function test_guest_users_cannot_update_admin_user_records(): void
     {
         $targetUser = User::factory()->create();

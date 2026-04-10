@@ -44,15 +44,15 @@
                     <div class="admin-row-actions">
                         <button
                             type="button"
-                            class="admin-row-tool admin-row-handle"
+                            class="action-button-muted admin-row-tool admin-row-handle"
                             draggable="true"
                             @dragstart="startDrag(index)"
                             @dragend="clearDrag()"
                         >
                             Drag To Sort
                         </button>
-                        <button type="button" class="admin-row-tool" @click="duplicateRow(index)">Duplicate</button>
-                        <button type="button" class="admin-row-tool" @click="removeRow(index)">Remove</button>
+                        <button type="button" class="action-button-muted admin-row-tool" @click="duplicateRow(index)">Duplicate</button>
+                        <button type="button" class="action-button-muted admin-row-tool" @click="removeRow(index)">Remove</button>
                     </div>
                 </div>
 

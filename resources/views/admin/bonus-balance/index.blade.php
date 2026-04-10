@@ -1,9 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-amber-300/60">Admin</p>
-            <h1 class="font-[Cinzel] text-3xl font-semibold tracking-[0.16em] text-amber-50">Bonus Balance</h1>
-        </div>
+        <x-page-heading :eyebrow="__('Admin')" :title="__('Bonus Balance')" />
     </x-slot>
 
     <div class="portal-stage">
@@ -27,8 +24,8 @@
                         </p>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm text-stone-300">
+                    <div class="overflow-x-auto theme-table-wrap">
+                        <table class="theme-table">
                             <thead class="text-xs uppercase tracking-[0.25em] text-amber-200/60">
                                 <tr>
                                     <th class="px-4 py-3">Type</th>
@@ -128,7 +125,7 @@
                                     </div>
                                     <div class="md:col-span-2">
                                         <x-input-label for="soul_item_description_{{ $index }}" value="Description" />
-                                        <textarea id="soul_item_description_{{ $index }}" name="soul_items[{{ $index }}][description]" rows="3" class="mt-2 w-full rounded-[1.1rem] border border-amber-200/20 bg-gradient-to-b from-amber-50/95 to-amber-200/85 px-4 py-3 text-stone-900 focus:border-amber-400 focus:ring-amber-400">{{ old('soul_items.'.$index.'.description', $item->description) }}</textarea>
+                                        <textarea id="soul_item_description_{{ $index }}" name="soul_items[{{ $index }}][description]" rows="3" class="theme-input theme-textarea mt-2 w-full">{{ old('soul_items.'.$index.'.description', $item->description) }}</textarea>
                                     </div>
                                     <div>
                                         <x-input-label for="soul_item_level_{{ $index }}" value="Required Level" />
@@ -153,8 +150,8 @@
                         </p>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm text-stone-300">
+                    <div class="overflow-x-auto theme-table-wrap">
+                        <table class="theme-table">
                             <thead class="text-xs uppercase tracking-[0.25em] text-amber-200/60">
                                 <tr>
                                     <th class="px-4 py-3">Area</th>
@@ -179,8 +176,8 @@
                         </table>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-sm text-stone-300">
+                    <div class="overflow-x-auto theme-table-wrap">
+                        <table class="theme-table">
                             <thead class="text-xs uppercase tracking-[0.25em] text-amber-200/60">
                                 <tr>
                                     <th class="px-4 py-3">Area</th>

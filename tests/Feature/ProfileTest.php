@@ -238,6 +238,30 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
     }
 
+    public function test_profile_update_rejects_an_email_address_that_is_already_taken(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'player-one@example.test',
+        ]);
+        $otherUser = User::factory()->create([
+            'email' => 'player-two@example.test',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', [
+                'email' => $otherUser->email,
+                'locale_preference' => 'de',
+            ]);
+
+        $response
+            ->assertRedirect('/profile')
+            ->assertSessionHasErrors('email');
+
+        $this->assertSame('player-one@example.test', $user->fresh()->email);
+    }
+
     /**
      * @return array{0: User, 1: GameCharacter}
      */

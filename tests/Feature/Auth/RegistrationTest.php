@@ -6,6 +6,7 @@ use App\Models\CharacterItem;
 use App\Enums\GameCharacterState;
 use App\Models\GameCharacter;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -108,6 +109,87 @@ class RegistrationTest extends TestCase
             ->assertDontSee('name="faction"', false)
             ->assertSee('Betritt Lumiis')
             ->assertSee('Wähle deine Kampfrasse');
+    }
+
+    public function test_registration_rejects_duplicate_character_names(): void
+    {
+        $starterTown = Location::query()->firstOrCreate(
+            ['slug' => 'yongan'],
+            [
+                'name' => 'Yongan',
+                'region' => 'Shinsoo',
+                'description' => 'Starter town for validation tests.',
+                'threat_level' => 1,
+                'is_safe_zone' => true,
+            ],
+        );
+
+        $owner = User::factory()->create();
+
+        GameCharacter::query()->create([
+            'user_id' => $owner->id,
+            'location_id' => $starterTown->id,
+            'name' => 'BladeMaster',
+            'faction' => 'Shinsoo',
+            'race' => 'warrior',
+            'skill_group' => null,
+            'game_state' => GameCharacterState::Active,
+            'tutorial_step' => null,
+            'level' => 1,
+            'experience' => 0,
+            'yang' => 150,
+            'health' => 100,
+            'max_health' => 100,
+            'stamina' => 15,
+            'max_stamina' => 15,
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'sp' => 24,
+            'max_sp' => 24,
+            'last_active_at' => now(),
+            'stamina_updated_at' => now(),
+            'health_updated_at' => now(),
+            'sp_updated_at' => now(),
+            'version' => 1,
+        ]);
+
+        $response = $this->from('/register')->post('/register', [
+            'character_name' => 'BladeMaster',
+            'race' => 'warrior',
+            'email' => 'new-player@example.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('character_name');
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing(User::class, [
+            'email' => 'new-player@example.test',
+        ]);
+    }
+
+    public function test_registration_rejects_invalid_character_name_format(): void
+    {
+        $response = $this->from('/register')->post('/register', [
+            'character_name' => '<BladeMaster>',
+            'race' => 'warrior',
+            'email' => 'bad-name@example.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('character_name');
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing(User::class, [
+            'email' => 'bad-name@example.test',
+        ]);
     }
 
     public function test_registration_requests_are_rate_limited(): void

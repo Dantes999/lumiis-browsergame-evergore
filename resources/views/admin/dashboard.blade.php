@@ -1,9 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-amber-300/60">Admin</p>
-            <h1 class="font-[Cinzel] text-3xl font-semibold tracking-[0.16em] text-amber-50">Control Panel</h1>
-        </div>
+        <x-page-heading :eyebrow="__('Admin')" :title="__('Control Panel')" />
     </x-slot>
 
     <div class="portal-stage">

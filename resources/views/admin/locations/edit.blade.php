@@ -1,9 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-amber-300/60">Admin</p>
-            <h1 class="font-[Cinzel] text-3xl font-semibold tracking-[0.16em] text-amber-50">Edit Location</h1>
-        </div>
+        <x-page-heading :eyebrow="__('Admin')" :title="__('Edit Location')" />
     </x-slot>
 
     <div class="portal-stage">
@@ -39,7 +36,7 @@
 
                 <div>
                     <x-input-label for="description" value="Description" />
-                    <textarea id="description" name="description" rows="5" class="mt-2 w-full rounded-[1.1rem] border border-amber-200/20 bg-gradient-to-b from-amber-50/95 to-amber-200/85 px-4 py-3 text-stone-900 focus:border-amber-400 focus:ring-amber-400" required>{{ old('description', $location->description) }}</textarea>
+                    <textarea id="description" name="description" rows="5" class="theme-input theme-textarea mt-2 w-full" required>{{ old('description', $location->description) }}</textarea>
                 </div>
 
                 <div class="paper-note">

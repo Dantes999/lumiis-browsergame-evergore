@@ -60,6 +60,20 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_requires_both_email_and_password(): void
+    {
+        $response = $this->from('/login')->post('/login', [
+            'email' => '',
+            'password' => '',
+        ]);
+
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors(['email', 'password']);
+
+        $this->assertGuest();
+    }
+
     public function test_login_is_rate_limited_after_repeated_failures(): void
     {
         $user = User::factory()->create();

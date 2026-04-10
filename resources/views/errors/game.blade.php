@@ -8,15 +8,11 @@
 
 <x-guest-layout class="guest-card-wide">
     <div class="hero-banner mb-5">
-        <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-amber-100/65">{{ __('System Message') }}</p>
-            <h1 class="font-[Cinzel] text-3xl font-semibold tracking-[0.16em] text-amber-50 sm:text-4xl">
-                {{ $statusCode }} · {{ $statusTitle }}
-            </h1>
-            <p class="mt-3 max-w-3xl text-sm leading-6 text-amber-50/85">
-                {{ $statusMessage }}
-            </p>
-        </div>
+        <x-page-heading
+            :eyebrow="__('System Message')"
+            :title="$statusCode.' · '.$statusTitle"
+            :description="$statusMessage"
+        />
     </div>
 
     <div class="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">

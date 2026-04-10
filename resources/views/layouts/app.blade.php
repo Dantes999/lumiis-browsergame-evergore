@@ -33,7 +33,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body @class([
-        'game-shell antialiased',
+        'game-shell simple-ui antialiased',
         'app-shell-dashboard' => $isDashboardRoute,
         'app-shell-utility' => $useUtilityShell,
         'app-shell-admin' => $isAdminRoute,

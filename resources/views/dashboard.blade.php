@@ -2349,7 +2349,11 @@
         </section>
 
         <div class="dashboard-main-stack">
-            <article id="tutorial-map-panel" class="game-panel dashboard-map-stage {{ $tutorialActive && in_array($tutorialHighlight, ['map', 'town', 'hunting'], true) ? 'tutorial-focus-ring' : '' }}">
+            <article
+                id="tutorial-map-panel"
+                class="game-panel dashboard-map-stage {{ $tutorialActive && in_array($tutorialHighlight, ['map', 'town', 'hunting'], true) ? 'tutorial-focus-ring' : '' }}"
+                x-bind:class="{ 'dashboard-map-stage-system-panel-open': ['character', 'skills', 'quests', 'inventory', 'equipment', 'settings', 'focus'].includes(activePanel) }"
+            >
                 <div class="dashboard-map-heading">
                     <div>
                         <p class="panel-kicker">{{ __('Current Map') }}</p>

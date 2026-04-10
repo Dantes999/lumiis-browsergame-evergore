@@ -25,7 +25,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="game-shell public-login-page antialiased">
+    <body class="game-shell simple-ui public-login-page antialiased">
         <div class="public-site-shell public-site-shell-login public-site-shell-guest">
             @include('partials.metin2-header', ['compactHeader' => true])
 
