@@ -59,6 +59,7 @@ class GameCharacter extends Model
         'sp',
         'max_sp',
         'unspent_skill_points',
+        'unspent_status_points',
         'action_available_at',
         'last_active_at',
         'stamina_updated_at',

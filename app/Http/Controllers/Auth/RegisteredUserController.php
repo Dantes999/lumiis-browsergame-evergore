@@ -117,6 +117,7 @@ class RegisteredUserController extends Controller
                 'dexterity' => $startingStats['dexterity'] ?? 0,
                 'sp' => $startingSp,
                 'max_sp' => $startingStats['max_sp'] ?? 24,
+                'unspent_status_points' => 0,
                 'last_active_at' => now(),
                 'stamina_updated_at' => now(),
                 'health_updated_at' => now(),

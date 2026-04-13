@@ -5,12 +5,12 @@ namespace App\Enums;
 /**
  * Character-local quest state.
  *
- * Quests are auto-claimed on completion, so we only need to distinguish
- * between work-in-progress and finished content.
+ * Objectives can be finished before the player explicitly claims the reward.
  */
 enum CharacterQuestStatus: string
 {
     case Active = 'active';
+    case ReadyToClaim = 'ready_to_claim';
     case Completed = 'completed';
 
     /**

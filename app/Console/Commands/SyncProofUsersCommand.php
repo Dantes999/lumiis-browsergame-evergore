@@ -176,6 +176,7 @@ class SyncProofUsersCommand extends Command
             'sp' => (int) ($startingStats['sp'] ?? 22),
             'max_sp' => (int) ($startingStats['max_sp'] ?? 22),
             'unspent_skill_points' => 0,
+            'unspent_status_points' => 0,
             'action_available_at' => null,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),
@@ -243,6 +244,8 @@ class SyncProofUsersCommand extends Command
             if ($character->level % 2 === 0) {
                 $character->speed += 1;
             }
+
+            $character->unspent_status_points += 1;
 
             if ($character->level >= 5) {
                 $character->unspent_skill_points += 1;

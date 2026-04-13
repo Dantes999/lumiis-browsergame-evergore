@@ -42,6 +42,7 @@
         $completedBiologistStages = data_get($biologistResearch, 'completed', []);
         $completedBiologistResearch = data_get($biologistResearch, 'latest_completed');
         $biologistBonusSummary = data_get($biologistResearch, 'bonus_summary', []);
+        $readyQuestCount = (int) data_get($questline, 'ready_count', 0);
         $biologistCooldownLabel = function (?int $cooldownSeconds): string {
             if ($cooldownSeconds === null || $cooldownSeconds <= 0) {
                 return __('Ready now');
@@ -94,6 +95,29 @@
             ->filter()
             ->unique()
             ->values();
+        $activeAreaMonsterFamilies = $activeAreaMonsterAssignments
+            ->filter(fn ($assignment) => $assignment->monster !== null)
+            ->groupBy(fn ($assignment) => $assignment->monster->manualFamilyKey())
+            ->map(function ($assignments, $familyKey): array {
+                return [
+                    'key' => $familyKey,
+                    'label' => \App\Models\Monster::manualFamilyLabelFor((string) $familyKey),
+                    'examples' => $assignments
+                        ->map(fn ($assignment) => $assignment->monster?->name)
+                        ->filter()
+                        ->unique()
+                        ->take(3)
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->sortBy('label')
+            ->values();
+        $monsterDifficultyLabels = [
+            'easy' => __('Easy'),
+            'medium' => __('Medium'),
+            'hard' => __('Hard'),
+        ];
         $activeMonsterAssignment = $activeAreaMonsterAssignments
             ->filter(fn ($assignment): bool => $assignment->isEligibleForLevel($character->level))
             ->sortBy('sort_order')
@@ -412,6 +436,12 @@
                 'meta' => __('Step :step/:total', ['step' => $tutorialStep, 'total' => $tutorialTotalSteps]),
                 'body' => data_get($tutorialDefinition, 'body', __('Finish the onboarding sequence to unlock the full realm interface.')),
             ],
+            $questline && data_get($questline, 'ready_to_claim.0') !== null => [
+                'kicker' => __('Quest Ready'),
+                'title' => (string) data_get($questline, 'ready_to_claim.0.title', __('Ready Quest')),
+                'meta' => __(':count ready to claim', ['count' => number_format($readyQuestCount)]),
+                'body' => __('Open the quest log and claim the finished reward manually.'),
+            ],
             $questline && data_get($questline, 'active.0') !== null => [
                 'kicker' => __('Map Questline'),
                 'title' => (string) data_get($questline, 'active.0.title', __('Active Quest')),
@@ -526,7 +556,7 @@
                                         @click="openPanel('quests')"
                                         @disabled(! $dashboardCanOpenQuests)
                                     >
-                                        {{ __('Quests') }}
+                                            {{ __('Quests') }}{{ $readyQuestCount > 0 ? ' · '.$readyQuestCount : '' }}
                                     </button>
                                 </li>
                                 <li>
@@ -658,6 +688,9 @@
                                 <p class="dashboard-side-title">{{ $dashboardQuestSummary['title'] }}</p>
                                 <p class="dashboard-side-meta">{{ $dashboardQuestSummary['meta'] }}</p>
                                 <p class="dashboard-side-copy">{{ \Illuminate\Support\Str::limit($dashboardQuestSummary['body'], 92) }}</p>
+                                @if ($readyQuestCount > 0)
+                                    <p class="dashboard-side-meta">{{ __('Badge: :count ready', ['count' => $readyQuestCount]) }}</p>
+                                @endif
                             </div>
                         </div>
                         <div class="metin2-side-bottom"></div>
@@ -1585,7 +1618,7 @@
                                     @click="openPanel('quests')"
                                     @disabled(! $dashboardCanOpenQuests)
                                 >
-                                    {{ __('Open Quests') }}
+                                    {{ __('Open Quests') }}{{ $readyQuestCount > 0 ? ' · '.$readyQuestCount : '' }}
                                 </button>
                             </div>
                         </article>
@@ -1638,6 +1671,10 @@
                         <div class="stat-card">
                             <span class="stat-label">{{ __('Yang') }}</span>
                             <span class="stat-value">{{ number_format($character->yang) }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">{{ __('Status Points') }}</span>
+                            <span class="stat-value">{{ $character->unspent_status_points }}</span>
                         </div>
                         <div class="stat-card">
                             <span class="stat-label">{{ __('Skill Points') }}</span>
@@ -1724,7 +1761,25 @@
                             <span class="cozy-chip">{{ count($questline['completed']) }} {{ __('complete') }}</span>
                         </div>
 
-                        @if ($questline['active'] !== [])
+                        @if ($questline['ready_to_claim'] !== [])
+                            <div class="mt-4 space-y-3">
+                                @foreach ($questline['ready_to_claim'] as $quest)
+                                    <div class="paper-note">
+                                        <div class="flex flex-wrap items-start justify-between gap-2">
+                                            <p class="font-[Cinzel] text-lg tracking-[0.06em] text-stone-900">{{ $quest['title'] }}</p>
+                                            <span class="cozy-chip">{{ __('Ready') }}</span>
+                                        </div>
+                                        <p class="mt-2 text-sm leading-6 text-stone-700">{{ $quest['story_text'] }}</p>
+                                        <p class="mt-3 text-[0.68rem] uppercase tracking-[0.22em] text-amber-900/70">
+                                            {{ __('Reward') }}: +{{ number_format($quest['reward_experience']) }} EXP · +{{ number_format($quest['reward_yang']) }} Yang
+                                            @if ($quest['reward_bonus_description'])
+                                                · {{ $quest['reward_bonus_description'] }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif ($questline['active'] !== [])
                             <div class="mt-4 space-y-3">
                                 @foreach ($questline['active'] as $quest)
                                     <div class="paper-note">

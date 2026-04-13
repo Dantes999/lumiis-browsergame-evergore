@@ -189,15 +189,24 @@ class QuestProgressionTest extends TestCase
 
         $response->assertSessionMissing('status');
         $this->assertSame(2, (int) $progress->monster_fights);
-        $this->assertSame(CharacterQuestStatus::Completed, $firstSweep->status);
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $firstSweep->status);
         $this->assertSame(2, (int) $firstSweep->progress);
-        $this->assertSame(2, (int) $character->level);
-        $this->assertTrue($character->lumiisUnlocked());
-        $this->assertTrue($character->globalChatUnlocked());
+        $this->assertSame(1, (int) $character->level);
+        $this->assertFalse($character->lumiisUnlocked());
+        $this->assertFalse($character->globalChatUnlocked());
         $this->assertStringContainsString(
             trans('quests.yongan-first-sweep.title'),
             collect((array) session('quest_updates'))->implode(' || '),
         );
+
+        $this->claimQuestReward($user, $character, 'yongan-first-sweep', $area->slug);
+        $character->refresh();
+        $firstSweep->refresh();
+
+        $this->assertSame(2, (int) $character->level);
+        $this->assertTrue($character->lumiisUnlocked());
+        $this->assertTrue($character->globalChatUnlocked());
+        $this->assertSame(CharacterQuestStatus::Completed, $firstSweep->status);
 
         $dashboard = $this->actingAs($user)->get(route('dashboard', [
             'focus' => $area->slug,
@@ -246,12 +255,8 @@ class QuestProgressionTest extends TestCase
 
         $character->refresh();
         $response->assertSessionMissing('status');
-        $this->assertSame(3, (int) $character->level);
-        $this->assertTrue($character->whispersUnlocked());
-        $this->assertFalse($character->travelRoutesUnlocked());
         $questUpdateText = collect((array) session('quest_updates'))->implode(' || ');
         $this->assertStringContainsString(trans('quests.yongan-first-lumiis.title'), $questUpdateText);
-        $this->assertStringContainsString(trans('quests.yongan-field-rank.title'), $questUpdateText);
         $smallRedPotion = Item::query()->where('slug', 'small-red-potion')->firstOrFail();
         $smallBluePotion = Item::query()->where('slug', 'small-blue-potion')->firstOrFail();
         $smallRedQuantity = (int) CharacterItem::query()
@@ -263,23 +268,44 @@ class QuestProgressionTest extends TestCase
             ->where('item_id', $smallBluePotion->id)
             ->sum('quantity');
 
-        $this->assertGreaterThanOrEqual(2, $smallRedQuantity);
+        $this->assertSame(0, $smallRedQuantity);
         $this->assertSame(0, $smallBlueQuantity);
 
         $dashboard = $this->actingAs($user)->get(route('dashboard', [
             'focus' => $area->slug,
         ]));
         $firstLumiis = $this->questFor($character, 'yongan-first-lumiis');
+
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $firstLumiis->status);
+
+        $this->claimQuestReward($user, $character, 'yongan-first-lumiis', $area->slug);
         $fieldRank = $this->questFor($character, 'yongan-field-rank');
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $fieldRank->status);
+        $this->claimQuestReward($user, $character, 'yongan-field-rank', $area->slug);
+        $character->refresh();
+        $firstLumiis->refresh();
+        $fieldRank->refresh();
+
+        $smallRedQuantity = (int) CharacterItem::query()
+            ->where('game_character_id', $character->id)
+            ->where('item_id', $smallRedPotion->id)
+            ->sum('quantity');
+        $smallBlueQuantity = (int) CharacterItem::query()
+            ->where('game_character_id', $character->id)
+            ->where('item_id', $smallBluePotion->id)
+            ->sum('quantity');
 
         $dashboard
             ->assertOk()
-            ->assertSee(__('Chat and Whispers'))
-            ->assertSee(__('Send Whisper'))
-            ->assertDontSee(__('Whisper Lv 3'));
+            ->assertSee(__('Chat and Whispers'));
 
         $this->assertSame(CharacterQuestStatus::Completed, $firstLumiis->status);
         $this->assertSame(CharacterQuestStatus::Completed, $fieldRank->status);
+        $this->assertGreaterThanOrEqual(2, $smallRedQuantity);
+        $this->assertSame(0, $smallBlueQuantity);
+        $this->assertSame(3, (int) $character->level);
+        $this->assertTrue($character->whispersUnlocked());
+        $this->assertFalse($character->travelRoutesUnlocked());
     }
 
     public function test_locked_features_reject_direct_post_requests_until_their_required_level(): void
@@ -397,13 +423,15 @@ class QuestProgressionTest extends TestCase
 
         $response->assertSessionMissing('status');
         $this->assertSame('victory', $battle->status);
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $alphaRelease->status);
+
+        $this->claimQuestReward($user, $character, 'yongan-alpha-release', $area->slug);
+        $character->refresh();
+        $alphaRelease->refresh();
+
         $this->assertSame(CharacterQuestStatus::Completed, $alphaRelease->status);
         $this->assertGreaterThanOrEqual(5, (int) $character->level);
         $this->assertTrue($character->advancedTownServicesUnlocked());
-        $this->assertStringContainsString(
-            'Quest complete: Release The Alpha Soul.',
-            collect((array) session('quest_updates'))->implode(' || '),
-        );
         $mediumBluePotion = Item::query()->where('slug', 'medium-blue-potion')->firstOrFail();
         $mediumBlueQuantity = (int) CharacterItem::query()
             ->where('game_character_id', $character->id)
@@ -504,15 +532,15 @@ class QuestProgressionTest extends TestCase
 
         $character->refresh();
 
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $biologistQuest->status);
+        $this->claimQuestReward($user, $character, 'yongan-biologist-research', $biologistArea->slug);
+        $character->refresh();
+        $biologistQuest->refresh();
         $this->assertSame(CharacterQuestStatus::Completed, $biologistQuest->status);
         $this->assertSame(3, (int) $biologistQuest->progress);
         $this->assertSame(1, (int) $character->vitality);
         $this->assertSame(1, app(CharacterInventoryService::class)->quantityForSlug($character, 'research-catalyst'));
         $this->assertSame(0, app(CharacterInventoryService::class)->quantityForSlug($character, 'wolf-pelt'));
-        $this->assertStringContainsString(
-            trans('quests.yongan-biologist-research.title'),
-            collect((array) session('quest_updates'))->implode(' || '),
-        );
 
         $nextDashboard = $this->actingAs($user)->get(route('dashboard', [
             'focus' => $biologistArea->slug,
@@ -520,7 +548,6 @@ class QuestProgressionTest extends TestCase
 
         $nextDashboard
             ->assertOk()
-            ->assertSee(__('Quest Update'))
             ->assertSee(trans('quests.yongan-biologist-research-2.title'))
             ->assertSee(__('Stage :current / :total', ['current' => 2, 'total' => 5]))
             ->assertSee(__('4 successful submissions'))
@@ -584,6 +611,10 @@ class QuestProgressionTest extends TestCase
 
         $character->refresh();
 
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $biologistQuest->status);
+        $this->claimQuestReward($user, $character, 'yongan-biologist-research-3', $biologistArea->slug);
+        $character->refresh();
+        $biologistQuest->refresh();
         $this->assertSame(CharacterQuestStatus::Completed, $biologistQuest->status);
         $this->assertSame(5, (int) $biologistQuest->progress);
         $this->assertSame(4, (int) $character->monster_damage);
@@ -646,6 +677,10 @@ class QuestProgressionTest extends TestCase
 
         $character->refresh();
 
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $biologistQuest->status);
+        $this->claimQuestReward($user, $character, 'yongan-biologist-research-4', $biologistArea->slug);
+        $character->refresh();
+        $biologistQuest->refresh();
         $this->assertSame(CharacterQuestStatus::Completed, $biologistQuest->status);
         $this->assertSame(2, (int) $character->crit_chance);
         $this->assertSame(1, app(CharacterInventoryService::class)->quantityForSlug($character, 'research-report'));
@@ -729,6 +764,12 @@ class QuestProgressionTest extends TestCase
         }
 
         $character->refresh();
+        $levelsGained = (int) $character->level - $startingLevel;
+
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $biologistQuest->status);
+        $this->claimQuestReward($user, $character, 'yongan-biologist-research-2', $biologistArea->slug);
+        $character->refresh();
+        $biologistQuest->refresh();
         $levelsGained = (int) $character->level - $startingLevel;
 
         $this->assertSame(CharacterQuestStatus::Completed, $biologistQuest->status);
@@ -1021,6 +1062,7 @@ class QuestProgressionTest extends TestCase
             'defense' => 6,
             'speed' => 5,
             'unspent_skill_points' => 0,
+            'unspent_status_points' => 0,
             'version' => 1,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),
@@ -1063,5 +1105,18 @@ class QuestProgressionTest extends TestCase
             ->whereHas('quest', fn ($query) => $query->where('slug', $questSlug))
             ->with('quest')
             ->firstOrFail();
+    }
+
+    private function claimQuestReward(User $user, GameCharacter $character, string $questSlug, ?string $focus = null): void
+    {
+        $characterQuest = $this->questFor($character, $questSlug);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), array_filter([
+            'idempotency_key' => (string) Str::uuid(),
+            'character_quest_id' => $characterQuest->id,
+            'redirect_focus' => $focus,
+        ], static fn ($value): bool => $value !== null));
+
+        $response->assertSessionHas('status');
     }
 }

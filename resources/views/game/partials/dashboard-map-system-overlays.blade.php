@@ -80,6 +80,10 @@
                         <span class="stat-value">{{ number_format($character->yang) }}</span>
                     </div>
                     <div class="stat-card">
+                        <span class="stat-label">{{ __('Status Points') }}</span>
+                        <span class="stat-value">{{ $character->unspent_status_points }}</span>
+                    </div>
+                    <div class="stat-card">
                         <span class="stat-label">{{ __('Skill Points') }}</span>
                         <span class="stat-value">{{ $character->unspent_skill_points }}</span>
                     </div>
@@ -128,18 +132,66 @@
                     <div class="stat-card">
                         <span class="stat-label">VIT</span>
                         <span class="stat-value">{{ $character->effectiveVitality() }}</span>
+                        @if ($character->unspent_status_points > 0)
+                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'allocate-status-point']) }}" class="mt-3">
+                                @csrf
+                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                <input type="hidden" name="attribute" value="vitality">
+                                @if ($activeFocus)
+                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                @endif
+
+                                <button type="submit" class="action-button-muted w-full">+1 VIT</button>
+                            </form>
+                        @endif
                     </div>
                     <div class="stat-card">
                         <span class="stat-label">INT</span>
                         <span class="stat-value">{{ $character->effectiveIntelligence() }}</span>
+                        @if ($character->unspent_status_points > 0)
+                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'allocate-status-point']) }}" class="mt-3">
+                                @csrf
+                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                <input type="hidden" name="attribute" value="intelligence">
+                                @if ($activeFocus)
+                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                @endif
+
+                                <button type="submit" class="action-button-muted w-full">+1 INT</button>
+                            </form>
+                        @endif
                     </div>
                     <div class="stat-card">
                         <span class="stat-label">STR</span>
                         <span class="stat-value">{{ $character->effectiveStrength() }}</span>
+                        @if ($character->unspent_status_points > 0)
+                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'allocate-status-point']) }}" class="mt-3">
+                                @csrf
+                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                <input type="hidden" name="attribute" value="strength">
+                                @if ($activeFocus)
+                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                @endif
+
+                                <button type="submit" class="action-button-muted w-full">+1 STR</button>
+                            </form>
+                        @endif
                     </div>
                     <div class="stat-card">
                         <span class="stat-label">DEX</span>
                         <span class="stat-value">{{ $character->effectiveDexterity() }}</span>
+                        @if ($character->unspent_status_points > 0)
+                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'allocate-status-point']) }}" class="mt-3">
+                                @csrf
+                                <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                <input type="hidden" name="attribute" value="dexterity">
+                                @if ($activeFocus)
+                                    <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                @endif
+
+                                <button type="submit" class="action-button-muted w-full">+1 DEX</button>
+                            </form>
+                        @endif
                     </div>
                     <div class="stat-card">
                         <span class="stat-label">{{ __('Crit') }}</span>

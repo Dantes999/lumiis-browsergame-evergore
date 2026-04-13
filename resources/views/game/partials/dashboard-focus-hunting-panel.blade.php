@@ -137,22 +137,50 @@
             </button>
         </form>
 
-        <form method="POST" action="{{ route('game.actions.store', ['action' => 'start-manual-fight']) }}" class="mt-3">
-            @csrf
-            <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-            <input type="hidden" name="location_area_id" value="{{ $activeArea->id }}">
-            <input type="hidden" name="encounter_request" value="monster">
-            <input type="hidden" name="redirect_focus" value="{{ $activeArea->slug }}">
+        @if ($activeAreaMonsterFamilies->isNotEmpty())
+            <div class="mt-4 space-y-3">
+                <p class="text-xs uppercase tracking-[0.22em] text-amber-900/70">
+                    {{ __('Manual target selection') }}
+                </p>
 
-            <button
-                type="submit"
-                class="action-button-muted w-full"
-                x-bind:disabled="isActionLocked() || @js($monsterFightStaminaMissing > 0 || $monsterFightLocked)"
-                @disabled($monsterFightStaminaMissing > 0 || $monsterFightLocked)
-            >
-                {{ __('Manual Fight') }}
-            </button>
-        </form>
+                @foreach ($activeAreaMonsterFamilies as $family)
+                    <div class="paper-note">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <p class="font-[Cinzel] text-lg tracking-[0.06em] text-stone-900">{{ $family['label'] }}</p>
+                            <span class="cozy-chip">{{ implode(' · ', $family['examples']) }}</span>
+                        </div>
+
+                        <div class="mt-4 grid gap-2 md:grid-cols-3">
+                            @foreach ($monsterDifficultyLabels as $difficultyKey => $difficultyLabel)
+                                @php
+                                    $difficultyStaminaCost = $monsterFightStaminaCost + ($difficultyKey === 'hard' ? 2 : ($difficultyKey === 'medium' ? 1 : 0));
+                                    $difficultyStaminaMissing = $staminaMissingFor($difficultyStaminaCost);
+                                @endphp
+
+                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'start-manual-fight']) }}">
+                                    @csrf
+                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                    <input type="hidden" name="location_area_id" value="{{ $activeArea->id }}">
+                                    <input type="hidden" name="encounter_request" value="monster">
+                                    <input type="hidden" name="monster_family" value="{{ $family['key'] }}">
+                                    <input type="hidden" name="monster_difficulty" value="{{ $difficultyKey }}">
+                                    <input type="hidden" name="redirect_focus" value="{{ $activeArea->slug }}">
+
+                                    <button
+                                        type="submit"
+                                        class="action-button-muted w-full"
+                                        x-bind:disabled="isActionLocked() || @js($difficultyStaminaMissing > 0 || $monsterFightLocked)"
+                                        @disabled($difficultyStaminaMissing > 0 || $monsterFightLocked)
+                                    >
+                                        {{ $difficultyLabel }}
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         @if ($monsterFightLocked)
             <p class="action-cost-warning">{{ __('Recommended from level :level.', ['level' => $activeAreaLevelRequirement]) }}</p>

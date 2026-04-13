@@ -144,6 +144,7 @@ class ProcessGameAction
             GameActionType::SubmitQuestItem,
             GameActionType::BoostResearchSubmission,
             GameActionType::SkipResearchCooldown,
+            GameActionType::ClaimQuest,
         ], true) && isset($payload['character_quest_id'])) {
             $lockKeys[] = 'game-biologist-quest:'.(int) $payload['character_quest_id'];
         }
@@ -368,6 +369,8 @@ class ProcessGameAction
             GameActionType::StartManualFight => $this->startManualFight($character, $payload, $processedAt),
             GameActionType::BattleAttack => $this->battleAttack($character, $activeBattle, $payload, $processedAt),
             GameActionType::BattleUseSkill => $this->battleUseSkill($character, $activeBattle, $payload, $processedAt),
+            GameActionType::AllocateStatusPoint => $this->allocateStatusPoint($character, $payload),
+            GameActionType::ClaimQuest => $this->claimQuest($character, $payload),
             GameActionType::Rest => $this->rest($character, $payload, $processedAt),
             GameActionType::Travel => $this->travel($character, $payload, $processedAt),
             GameActionType::SubmitQuestItem => $this->submitQuestItem($character, $payload, $processedAt),

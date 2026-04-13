@@ -126,6 +126,7 @@ class AdminPanelTest extends TestCase
             'attack' => 8,
             'defense' => 6,
             'speed' => 5,
+            'unspent_status_points' => 0,
             'version' => 1,
             'last_active_at' => now(),
         ]);
@@ -190,6 +191,7 @@ class AdminPanelTest extends TestCase
             'attack' => 8,
             'defense' => 6,
             'speed' => 5,
+            'unspent_status_points' => 0,
             'version' => 4,
             'last_active_at' => now(),
         ]);

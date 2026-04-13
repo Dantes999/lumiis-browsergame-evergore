@@ -376,6 +376,7 @@ class ResolvesEncounterDataTest extends TestCase
             'defense' => 6,
             'speed' => 5,
             'unspent_skill_points' => 0,
+            'unspent_status_points' => 0,
             'version' => 1,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),

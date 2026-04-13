@@ -55,6 +55,8 @@ trait HandlesCombatActions
     private function startManualFight(GameCharacter $character, array $payload, Carbon $processedAt): array
     {
         $requestedEncounter = $this->normalizeEncounterRequest((string) $payload['encounter_request']);
+        $requestedFamily = $requestedEncounter === 'monster' ? trim((string) ($payload['monster_family'] ?? '')) : null;
+        $requestedDifficulty = $requestedEncounter === 'monster' ? trim((string) ($payload['monster_difficulty'] ?? 'medium')) : null;
         $area = $this->resolveHuntingArea($character, (int) $payload['location_area_id']);
         $useTutorialBattle = $this->shouldUseTutorialManualBattle($character, $area, $requestedEncounter);
 
@@ -69,7 +71,7 @@ trait HandlesCombatActions
         $battleBlueprint = $useTutorialBattle
             ? $this->initializeTutorialMonsterBattle($character, $area)
             : ($requestedEncounter === 'monster' && $area->monsterAssignments->isNotEmpty()
-                ? $this->initializeManualPackBattle($character, $area)
+                ? $this->initializeManualPackBattle($character, $area, $requestedFamily, $requestedDifficulty)
                 : $this->initializeManualEncounterBattle($character, $area, $requestedEncounter));
 
         $character->stamina -= (int) $battleBlueprint['rewards']['stamina_cost'];
@@ -404,7 +406,7 @@ trait HandlesCombatActions
      */
     private function fightMonsterPack(GameCharacter $character, LocationArea $area, Carbon $processedAt): array
     {
-        $assignment = $this->resolveMonsterAssignment($area, $character->level);
+        $assignment = $this->resolveMonsterAssignmentForCharacter($area, $character);
         $monster = $assignment->monster;
         $packSize = max(1, (int) $assignment->pack_size);
         $progress = $this->areaProgress($character, $area);
@@ -691,7 +693,14 @@ trait HandlesCombatActions
                     && random_int(1, 100) <= $effectiveEvadeChance;
                 $enemyDamage = $dodged
                     ? 0
-                    : max(1, $enemyAttack + $packAggressionBonus - max(0, intdiv($effectiveDefense, 2)) - $guardReduction);
+                    : max(
+                        $this->minimumEnemyDamage((int) $monster->level, (string) $monster->race, $aliveEnemyCount),
+                        $enemyAttack
+                        + $packAggressionBonus
+                        + $this->enemyPressureBonus((int) $monster->level, (int) $monster->rank)
+                        - $this->enemyDamageReduction($effectiveDefense)
+                        - $guardReduction,
+                    );
                 $playerHealth -= $enemyDamage;
                 $enemyAttackMessage = $dodged
                     ? __(':player dodges :enemy.', [
@@ -1112,12 +1121,18 @@ trait HandlesCombatActions
      *
      * @return array{encounter_type: string, encounter_name: string, state: array<string, mixed>, rewards: array<string, mixed>}
      */
-    private function initializeManualPackBattle(GameCharacter $character, LocationArea $area): array
+    private function initializeManualPackBattle(
+        GameCharacter $character,
+        LocationArea $area,
+        ?string $requestedFamily = null,
+        ?string $requestedDifficulty = null,
+    ): array
     {
-        $assignment = $this->resolveMonsterAssignment($area, $character->level);
+        $assignment = $this->resolveMonsterAssignmentForCharacter($area, $character, $requestedFamily, $requestedDifficulty);
         $monster = $assignment->monster;
         $packSize = max(1, (int) $assignment->pack_size);
-        $staminaCost = 4 + intdiv(max(0, $monster->level - 1), 12);
+        $difficultyProfile = $this->manualPackDifficultyProfile($requestedDifficulty);
+        $staminaCost = 4 + intdiv(max(0, $monster->level - 1), 12) + (int) $difficultyProfile['stamina_bonus'];
 
         if ($character->stamina < $staminaCost) {
             throw new GameActionException(__('You need at least :stamina stamina to challenge this hunting pack.', [
@@ -1132,18 +1147,31 @@ trait HandlesCombatActions
         $effectiveAttack = $character->effectiveAttack();
         $effectiveDefense = $character->effectiveDefense();
         $effectiveSpeed = $character->effectiveSpeed();
-        $lootDrops = $this->rollLoot($area->lootTable('monster'), $character->lootRatePercentBonus());
+        $enemyHealth = max(1, (int) round((int) $monster->maximum_health * (float) $difficultyProfile['enemy_stat_multiplier']));
+        $enemyMinAttack = max(1, (int) round((int) $monster->minimum_attack * (float) $difficultyProfile['enemy_stat_multiplier']));
+        $enemyMaxAttack = max($enemyMinAttack + 1, (int) round((int) $monster->maximum_attack * (float) $difficultyProfile['enemy_stat_multiplier']));
+        $enemyDefense = max(0, (int) round((int) $monster->defense * (float) $difficultyProfile['enemy_stat_multiplier']));
+        $lootDrops = $this->rollLoot(
+            $area->lootTable('monster'),
+            $character->lootRatePercentBonus() + (int) $difficultyProfile['loot_rate_bonus_percent'],
+        );
         $lootNames = [];
 
         foreach ($lootDrops as $drop) {
             $lootNames[] = $drop['label'].($drop['quantity'] > 1 ? ' x'.$drop['quantity'] : '');
         }
 
-        $yangGain = $this->resolveManualPackYangReward($character, $area, $monster, $packSize);
+        $yangGain = $this->resolveManualPackYangReward(
+            $character,
+            $area,
+            $monster,
+            $packSize,
+            (float) $difficultyProfile['reward_multiplier'],
+        );
 
         return [
             'encounter_type' => 'monster',
-            'encounter_name' => $packSize.'x '.$monster->name,
+            'encounter_name' => $packSize.'x '.$monster->name.' · '.$difficultyProfile['label'],
             'state' => [
                 'player' => $this->buildManualBattlePlayerState(
                     $character,
@@ -1157,16 +1185,16 @@ trait HandlesCombatActions
                         'name' => $monster->name,
                         'label' => $monster->name.' #'.$index,
                         'level' => (int) $monster->level,
-                        'current_health' => (int) $monster->maximum_health,
-                        'max_health' => (int) $monster->maximum_health,
-                        'minimum_attack' => (int) $monster->minimum_attack,
-                        'maximum_attack' => (int) $monster->maximum_attack,
-                        'defense' => (int) $monster->defense,
+                        'current_health' => $enemyHealth,
+                        'max_health' => $enemyHealth,
+                        'minimum_attack' => $enemyMinAttack,
+                        'maximum_attack' => $enemyMaxAttack,
+                        'defense' => $enemyDefense,
                         'category' => (string) $monster->race,
                     ])
                     ->all(),
                 'battle_log' => [__('Encounter: :pack (Lv :level) in :area.', [
-                    'pack' => $packSize.'x '.$monster->name,
+                    'pack' => $packSize.'x '.$monster->name.' · '.$difficultyProfile['label'],
                     'level' => $monster->level,
                     'area' => $area->name,
                 ])],
@@ -1179,13 +1207,21 @@ trait HandlesCombatActions
                 'enemy_name' => $monster->name,
                 'enemy_level' => (int) $monster->level,
                 'pack_size' => $packSize,
-                'experience' => $this->resolveManualPackExperienceReward($character, $area, $monster, $packSize),
+                'experience' => $this->resolveManualPackExperienceReward(
+                    $character,
+                    $area,
+                    $monster,
+                    $packSize,
+                    (float) $difficultyProfile['reward_multiplier'],
+                ),
                 'yang' => $yangGain,
                 'loot_drops' => $lootDrops,
                 'loot_names' => $lootNames,
                 'stamina_cost' => $staminaCost,
                 'pressure_gain' => (int) $area->monster_pressure_gain,
                 'cooldown_base' => (int) $area->monster_cooldown_seconds,
+                'difficulty_label' => $difficultyProfile['label'],
+                'monster_family' => $monster->manualFamilyKey(),
             ],
         ];
     }
@@ -1202,6 +1238,7 @@ trait HandlesCombatActions
         LocationArea $area,
         \App\Models\Monster $monster,
         int $packSize,
+        float $rewardMultiplier = 1.0,
     ): int {
         $baseAreaExperience = (int) round(
             (((int) $area->monster_exp_min) + ((int) $area->monster_exp_max)) / 2,
@@ -1211,7 +1248,7 @@ trait HandlesCombatActions
         $monsterRankBonus = max(0, ((int) $monster->rank - 1) * 6);
         $rawReward = max(
             1,
-            (int) round(($baseAreaExperience + $monsterLevelBonus + $monsterRankBonus) * $packMultiplier),
+            (int) round((($baseAreaExperience + $monsterLevelBonus + $monsterRankBonus) * $packMultiplier) * $rewardMultiplier),
         );
 
         return $this->applyRewardRateBonus($character, $rawReward, 'experience');
@@ -1227,6 +1264,7 @@ trait HandlesCombatActions
         LocationArea $area,
         \App\Models\Monster $monster,
         int $packSize,
+        float $rewardMultiplier = 1.0,
     ): int {
         $baseAreaYang = (int) round(
             (((int) $area->monster_yang_min) + ((int) $area->monster_yang_max)) / 2,
@@ -1236,7 +1274,7 @@ trait HandlesCombatActions
         $monsterRankBonus = max(0, ((int) $monster->rank - 1) * 4);
         $rawReward = max(
             1,
-            (int) round(($baseAreaYang + $monsterLevelBonus + $monsterRankBonus) * $packMultiplier),
+            (int) round((($baseAreaYang + $monsterLevelBonus + $monsterRankBonus) * $packMultiplier) * $rewardMultiplier),
         );
 
         return $this->applyRewardRateBonus($character, $rawReward, 'yang');
@@ -1553,7 +1591,7 @@ trait HandlesCombatActions
         $spawnedLabels = [];
 
         for ($waveIndex = 0; $waveIndex < $spawnCount; $waveIndex++) {
-            $assignment = $this->resolveMonsterAssignment($area, $character->level);
+            $assignment = $this->resolveMonsterAssignmentForCharacter($area, $character);
             $monster = $assignment->monster;
             $enemySequence = (int) data_get($state, 'next_enemy_sequence', 1);
             $state['next_enemy_sequence'] = $enemySequence + 1;
@@ -1914,14 +1952,19 @@ trait HandlesCombatActions
             $enemyDamage = $dodged
                 ? 0
                 : max(
-                    1,
+                    $this->minimumEnemyDamage(
+                        (int) ($enemy['level'] ?? 1),
+                        (string) ($enemy['category'] ?? 'Monster'),
+                        $aliveEnemies->count(),
+                    ),
                     $enemyAttack
                     + $this->resolvePackAggressionBonus(
                         $aliveEnemies->count(),
                         (int) ($enemy['level'] ?? 1),
                         (string) ($enemy['category'] ?? 'Monster'),
                     )
-                    - max(0, intdiv((int) data_get($state, 'player.defense', 0), 2))
+                    + $this->enemyPressureBonus((int) ($enemy['level'] ?? 1), 1)
+                    - $this->enemyDamageReduction((int) data_get($state, 'player.defense', 0))
                     - $guardReduction,
                 );
             $state['player']['current_health'] = max(0, (int) $state['player']['current_health'] - $enemyDamage);
@@ -1965,6 +2008,61 @@ trait HandlesCombatActions
         if ((int) data_get($state, 'player.temporary_attack_bonus_rounds', 0) === 0) {
             $state['player']['temporary_attack_bonus'] = 0;
         }
+    }
+
+    /**
+     * @return array{label: string, enemy_stat_multiplier: float, reward_multiplier: float, loot_rate_bonus_percent: int, stamina_bonus: int}
+     */
+    private function manualPackDifficultyProfile(?string $difficulty): array
+    {
+        return match ($difficulty) {
+            'easy' => [
+                'label' => __('Easy'),
+                'enemy_stat_multiplier' => 0.88,
+                'reward_multiplier' => 0.78,
+                'loot_rate_bonus_percent' => -30,
+                'stamina_bonus' => 0,
+            ],
+            'hard' => [
+                'label' => __('Hard'),
+                'enemy_stat_multiplier' => 1.24,
+                'reward_multiplier' => 1.38,
+                'loot_rate_bonus_percent' => 40,
+                'stamina_bonus' => 2,
+            ],
+            default => [
+                'label' => __('Medium'),
+                'enemy_stat_multiplier' => 1.0,
+                'reward_multiplier' => 1.0,
+                'loot_rate_bonus_percent' => 0,
+                'stamina_bonus' => 1,
+            ],
+        };
+    }
+
+    private function enemyDamageReduction(int $effectiveDefense): int
+    {
+        return max(0, intdiv($effectiveDefense, 4));
+    }
+
+    private function enemyPressureBonus(int $enemyLevel, int $enemyRank): int
+    {
+        return max(1, intdiv($enemyLevel, 6) + max(0, $enemyRank - 1));
+    }
+
+    private function minimumEnemyDamage(int $enemyLevel, string $enemyCategory, int $aliveEnemyCount): int
+    {
+        $base = 1 + intdiv(max(1, $enemyLevel), 10);
+
+        if ($aliveEnemyCount > 1) {
+            $base++;
+        }
+
+        if (str_contains(mb_strtolower($enemyCategory), 'boss')) {
+            $base += 2;
+        }
+
+        return $base;
     }
 
     /**

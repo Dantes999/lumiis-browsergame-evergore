@@ -293,6 +293,7 @@ class ProfileTest extends TestCase
             'sp' => 24,
             'max_sp' => 24,
             'unspent_skill_points' => 0,
+            'unspent_status_points' => 0,
             'version' => 1,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),

@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  *
  * The rules are intentionally conservative:
  * - objectives are derived from existing persistent game state
- * - rewards are granted immediately on completion
+ * - rewards are granted only when the player manually claims a finished quest
  * - only one source of truth calculates progress
  *
  * That keeps the system easy to maintain and hard to exploit.
@@ -95,12 +95,6 @@ class QuestProgressService
     {
         $resolvedMoment = $moment ?? now();
         $messages = [];
-        $rewardSummary = [
-            'experience' => 0,
-            'yang' => 0,
-            'quests_completed' => 0,
-            'items_found' => 0,
-        ];
 
         // Refresh these relations on every sync pass.
         // Action handlers may update quest rows or area progress through separate
@@ -111,61 +105,79 @@ class QuestProgressService
             'characterQuests.quest.location',
         ]);
 
-        for ($iteration = 0; $iteration < 5; $iteration++) {
-            $this->ensureAvailableQuests($character, $resolvedMoment);
-            $completedInPass = false;
+        $this->ensureAvailableQuests($character, $resolvedMoment);
 
-            foreach ($character->characterQuests as $characterQuest) {
-                $quest = $characterQuest->quest;
+        foreach ($character->characterQuests as $characterQuest) {
+            $quest = $characterQuest->quest;
 
-                if ($quest === null || $characterQuest->status !== CharacterQuestStatus::Active) {
-                    continue;
-                }
+            if ($quest === null || $characterQuest->status !== CharacterQuestStatus::Active) {
+                continue;
+            }
 
-                $progress = min($quest->objective_target, $this->currentProgressFor($character, $quest, $characterQuest));
+            $progress = min($quest->objective_target, $this->currentProgressFor($character, $quest, $characterQuest));
 
-                if ($progress !== $characterQuest->progress) {
-                    $characterQuest->progress = $progress;
-                    $characterQuest->save();
-                }
-
-                if ($progress < $quest->objective_target) {
-                    continue;
-                }
-
-                $characterQuest->status = CharacterQuestStatus::Completed;
-                $characterQuest->completed_at = $resolvedMoment;
+            if ($progress !== $characterQuest->progress) {
+                $characterQuest->progress = $progress;
                 $characterQuest->save();
-
-                $character->experience += (int) $quest->reward_experience;
-                $character->yang += (int) $quest->reward_yang;
-
-                $rewardSummary['experience'] += (int) $quest->reward_experience;
-                $rewardSummary['yang'] += (int) $quest->reward_yang;
-                $rewardSummary['quests_completed'] += 1;
-                $rewardSummary['permanent_bonuses'] = ($rewardSummary['permanent_bonuses'] ?? 0)
-                    + (($quest->reward_bonus_type !== null && $quest->reward_bonus_value > 0) ? 1 : 0);
-
-                if ($quest->reward_item_slug !== null) {
-                    $this->inventoryService->grant($character, $quest->reward_item_slug, (int) $quest->reward_item_quantity);
-                    $rewardSummary['items_found'] += (int) $quest->reward_item_quantity;
-                }
-
-                $this->applyRewardBonus($character, $quest);
-
-                $messages[] = $this->completionMessage($quest);
-                $completedInPass = true;
             }
 
-            if (! $completedInPass) {
-                break;
+            if ($progress < $quest->objective_target) {
+                continue;
             }
 
-            $character->load('characterQuests.quest.location');
+            $characterQuest->status = CharacterQuestStatus::ReadyToClaim;
+            $characterQuest->completed_at = $characterQuest->completed_at ?? $resolvedMoment;
+            $characterQuest->save();
+
+            $messages[] = __('Quest ready: :title. Claim it in the quest log.', [
+                'title' => $quest->translated('title'),
+            ]);
         }
 
         return [
             'messages' => $messages,
+            'rewards' => [],
+        ];
+    }
+
+    /**
+     * @return array{message: string, rewards: array<string, int>}
+     */
+    public function claimQuestReward(GameCharacter $character, CharacterQuest $characterQuest): array
+    {
+        $characterQuest->loadMissing('quest.location');
+
+        $quest = $characterQuest->quest;
+
+        if ($quest === null || $characterQuest->status !== CharacterQuestStatus::ReadyToClaim) {
+            throw new GameActionException(__('This quest is not ready to be claimed yet.'));
+        }
+
+        $characterQuest->status = CharacterQuestStatus::Completed;
+        $characterQuest->save();
+
+        $character->experience += (int) $quest->reward_experience;
+        $character->yang += (int) $quest->reward_yang;
+
+        $rewardSummary = [
+            'experience' => (int) $quest->reward_experience,
+            'yang' => (int) $quest->reward_yang,
+            'quests_completed' => 1,
+        ];
+
+        if ($quest->reward_item_slug !== null) {
+            $this->inventoryService->grant($character, $quest->reward_item_slug, (int) $quest->reward_item_quantity);
+            $rewardSummary['items_found'] = (int) $quest->reward_item_quantity;
+        }
+
+        if ($quest->reward_bonus_type !== null && $quest->reward_bonus_value > 0) {
+            $rewardSummary['permanent_bonuses'] = 1;
+        }
+
+        $this->applyRewardBonus($character, $quest);
+
+        return [
+            'message' => $this->completionMessage($quest),
             'rewards' => array_filter($rewardSummary, static fn (int $value): bool => $value > 0),
         ];
     }
@@ -186,6 +198,7 @@ class QuestProgressService
         $characterQuestByQuestId = $character->characterQuests->keyBy('quest_id');
 
         $active = [];
+        $readyToClaim = [];
         $completed = [];
         $upcoming = [];
 
@@ -203,6 +216,15 @@ class QuestProgressService
                 'progress_percent' => min(100, (int) round(($progress / max(1, $quest->objective_target)) * 100)),
                 'status' => $characterQuest?->status?->value ?? 'upcoming',
                 'required_level' => $quest->required_level,
+                'character_quest_id' => $characterQuest?->id,
+                'reward_experience' => (int) $quest->reward_experience,
+                'reward_yang' => (int) $quest->reward_yang,
+                'reward_item_label' => $quest->reward_item_slug === null
+                    ? null
+                    : (Item::query()->where('slug', $quest->reward_item_slug)->value('name') ?? $quest->reward_item_slug),
+                'reward_item_quantity' => (int) $quest->reward_item_quantity,
+                'reward_bonus_description' => Quest::rewardBonusDescription($quest->reward_bonus_type, (int) $quest->reward_bonus_value),
+                'completed_at_label' => $characterQuest?->completed_at?->format('d.m.Y H:i'),
             ];
 
             if ($characterQuest === null) {
@@ -217,14 +239,22 @@ class QuestProgressService
                 continue;
             }
 
+            if ($characterQuest->status === CharacterQuestStatus::ReadyToClaim) {
+                $readyToClaim[] = $payload;
+
+                continue;
+            }
+
             $active[] = $payload;
         }
 
         return [
             'title' => __(':location Questline', ['location' => $character->location->name]),
             'active' => $active,
+            'ready_to_claim' => $readyToClaim,
             'completed' => $completed,
             'upcoming' => $upcoming,
+            'ready_count' => count($readyToClaim),
         ];
     }
 
@@ -310,6 +340,22 @@ class QuestProgressService
                     $entry['sort'] = min((int) $entry['sort'], $stageNumber);
                     $completedBonusSummary[$bonusType] = $entry;
                 }
+
+                continue;
+            }
+
+            if ($characterQuest?->status === CharacterQuestStatus::ReadyToClaim && $activeQuest === null) {
+                $activeQuest = $this->biologistQuestPayload(
+                    $character,
+                    $quest,
+                    $characterQuest,
+                    $resolvedMoment,
+                    $itemNameMap,
+                    $stageNumber,
+                    $totalStages,
+                    $completedQuestSlugs,
+                    $prerequisiteQuests->all(),
+                );
 
                 continue;
             }
@@ -623,6 +669,7 @@ class QuestProgressService
             'completed_at_label' => $characterQuest?->completed_at?->format('d.m.Y H:i'),
             'can_submit' => $canSubmit,
             'ready_to_submit' => $canSubmit,
+            'can_claim' => $characterQuest?->status === CharacterQuestStatus::ReadyToClaim,
             'lock_reason' => $lockReason,
         ];
     }

@@ -149,13 +149,11 @@
         --theme-surface-public:
             radial-gradient(circle at 15% 0%, rgba(255, 212, 138, 0.16), transparent 14rem),
             radial-gradient(circle at 88% 14%, rgba(164, 65, 40, 0.18), transparent 12rem),
-            repeating-linear-gradient(
-                135deg,
+            repeating-linear-gradient(135deg,
                 rgba(255, 236, 192, 0.025) 0,
                 rgba(255, 236, 192, 0.025) 1px,
                 transparent 1px,
-                transparent 18px
-            ),
+                transparent 18px),
             linear-gradient(180deg, rgba(18, 9, 5, 0.95), rgba(10, 5, 3, 0.99));
         --theme-surface-hero:
             radial-gradient(circle at 24% 4%, rgba(255, 225, 164, 0.2), transparent 16rem),
@@ -169,13 +167,11 @@
             linear-gradient(180deg, rgba(18, 9, 5, 0.94), rgba(10, 5, 3, 0.99));
         --theme-surface-paper:
             radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.46), transparent 10rem),
-            repeating-linear-gradient(
-                135deg,
+            repeating-linear-gradient(135deg,
                 rgba(141, 106, 58, 0.045) 0,
                 rgba(141, 106, 58, 0.045) 1px,
                 transparent 1px,
-                transparent 14px
-            ),
+                transparent 14px),
             linear-gradient(180deg, rgba(255, 247, 229, 0.96), rgba(226, 203, 160, 0.98));
         --theme-surface-stat:
             radial-gradient(circle at 18% 0%, rgba(255, 211, 138, 0.12), transparent 9rem),
@@ -215,13 +211,11 @@
             linear-gradient(180deg, rgba(84, 33, 18, 0.95), rgba(39, 15, 7, 0.99));
         --theme-input-fill:
             linear-gradient(180deg, rgba(255, 250, 235, 0.84), rgba(232, 206, 156, 0.96)),
-            repeating-linear-gradient(
-                90deg,
+            repeating-linear-gradient(90deg,
                 rgba(141, 106, 58, 0.035) 0,
                 rgba(141, 106, 58, 0.035) 1px,
                 transparent 1px,
-                transparent 12px
-            );
+                transparent 12px);
     }
 
     html {
@@ -284,6 +278,7 @@
 }
 
 @layer components {
+
     .simple-ui .theme-button,
     .simple-ui .theme-primary-button,
     .simple-ui .theme-secondary-button,
@@ -330,7 +325,7 @@
     .simple-ui .equipment-slot-popover-label,
     .simple-ui .equipment-slot-popover-stat span,
     .simple-ui .equipment-slot-popover-meta,
-    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card>div>p:first-child,
     .simple-ui .utility-page-header-card p.text-xs.uppercase,
     .simple-ui .paper-note p.uppercase,
     .simple-ui .theme-empty-state p.uppercase,
@@ -549,10 +544,11 @@
         padding: 0.78rem 0.82rem;
     }
 
-    .simple-ui .admin-hub-nav > * {
+    .simple-ui .admin-hub-nav>* {
         flex: 1 1 calc(50% - 0.55rem);
     }
 }
+
 .simple-ui .theme-button,
 .simple-ui .theme-primary-button,
 .simple-ui .theme-secondary-button,
@@ -599,7 +595,7 @@
 .simple-ui .equipment-slot-popover-label,
 .simple-ui .equipment-slot-popover-stat span,
 .simple-ui .equipment-slot-popover-meta,
-.simple-ui .utility-page-header-card > div > p:first-child,
+.simple-ui .utility-page-header-card>div>p:first-child,
 .simple-ui .utility-page-header-card p.text-xs.uppercase,
 .simple-ui .paper-note p.uppercase,
 .simple-ui .theme-empty-state p.uppercase,
@@ -759,8 +755,8 @@
     .simple-ui .dashboard-portal .dashboard-focus-panel-head h3,
     .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-section-title,
     .simple-ui .dashboard-section-title,
-    .simple-ui .utility-page-header-card > :not(.hero-banner) h1,
-    .simple-ui .utility-page-header-card > :not(.hero-banner) h2 {
+    .simple-ui .utility-page-header-card> :not(.hero-banner) h1,
+    .simple-ui .utility-page-header-card> :not(.hero-banner) h2 {
         color: var(--simple-text);
         letter-spacing: 0.04em;
         text-shadow: none;
@@ -811,7 +807,7 @@
     .simple-ui .metin2-race-card-copy,
     .simple-ui .dashboard-overlay-subtitle,
     .simple-ui .scene-copy-description,
-    .simple-ui .utility-page-header-card > :not(.hero-banner) p:not(:first-child) {
+    .simple-ui .utility-page-header-card> :not(.hero-banner) p:not(:first-child) {
         color: var(--simple-muted);
         font-size: 0.98rem;
         line-height: 1.6;
@@ -1097,7 +1093,7 @@
     .simple-ui .paper-note p.uppercase,
     .simple-ui .theme-empty-state p.uppercase,
     .simple-ui .theme-paper-panel p.uppercase,
-    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card>div>p:first-child,
     .simple-ui .utility-page-header-card p.text-xs.uppercase {
         color: var(--simple-paper-muted) !important;
         font-size: 0.78rem;
@@ -1131,7 +1127,7 @@
         color: var(--simple-paper-text);
     }
 
-    .simple-ui .dashboard-portal .dashboard-map-heading > div:first-child,
+    .simple-ui .dashboard-portal .dashboard-map-heading>div:first-child,
     .simple-ui .dashboard-portal .dashboard-focus-panel-head,
     .simple-ui .dashboard-portal .dashboard-overlay-window-inventory .dashboard-section-head,
     .simple-ui .utility-page-section-titlebar {
@@ -1151,7 +1147,7 @@
         font-size: 0.92rem;
     }
 
-    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card>div>p:first-child,
     .simple-ui .utility-page-header-card p.text-xs.uppercase {
         color: var(--simple-muted) !important;
         font-size: 0.8rem !important;
@@ -1174,7 +1170,7 @@
             width: 100%;
         }
 
-        .simple-ui .dashboard-classic-header .portal-navbar-links > *,
+        .simple-ui .dashboard-classic-header .portal-navbar-links>*,
         .simple-ui .dashboard-classic-header .portal-navbar-links form {
             min-width: 0;
             display: block;
@@ -1191,6 +1187,7 @@
     }
 
     @media (max-width: 639px) {
+
         .simple-ui .public-site-header-wrap,
         .simple-ui .public-site-main,
         .simple-ui .public-site-footer,
@@ -1236,6 +1233,7 @@
 }
 
 @layer utilities {
+
     .game-panel,
     .game-panel::before,
     .paper-note,
@@ -4472,6 +4470,7 @@
     }
 
     @media (hover: hover) and (pointer: fine) {
+
         .inventory-list-row:hover .inventory-list-row-details,
         .inventory-list-row:focus-within .inventory-list-row-details {
             max-height: 40rem;
@@ -6762,13 +6761,20 @@
     }
 
     .dashboard-classic-header-wrapper {
-        min-height: 154px;
+        min-height: auto;
+        padding: 0.35rem 0 0.5rem;
         background-size: cover;
         background-position: 50% 0;
     }
 
     .portal-shell.dashboard-classic-header {
-        height: 136px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        min-height: 0;
+        height: auto;
+        padding: 0 0.55rem 0.15rem;
     }
 
     .dashboard-classic-header .portal-navbar-brand {
@@ -6985,6 +6991,10 @@
 
     .dashboard-side-body {
         align-content: start;
+    }
+
+    body.dashboard-mobile-panel-open .dashboard-classic-header-wrapper {
+        display: none;
     }
 
     .dashboard-overlay-panel {
@@ -7733,6 +7743,7 @@
 }
 
 @media (min-width: 1024px) {
+
     /* Desktop should use the full available viewport width instead of a centered fixed shell. */
     .portal-stage {
         max-width: none;
@@ -7845,7 +7856,7 @@
 
 @media (max-width: 1023px) and (orientation: landscape) {
     .dashboard-classic-header-wrapper {
-        padding-bottom: 4.25rem;
+        padding-bottom: 0.5rem;
     }
 
     .dashboard-classic-header .portal-navbar-links {
@@ -8031,10 +8042,10 @@
 
     .dashboard-classic-header-wrapper {
         min-height: auto;
-        padding-bottom: 8.75rem;
+        padding-bottom: 0.5rem;
     }
 
-    .app-shell-profile .min-h-screen > header.portal-stage {
+    .app-shell-profile .min-h-screen>header.portal-stage {
         margin-top: 2rem;
     }
 
@@ -9262,15 +9273,15 @@
             grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
         }
 
-        .app-shell-utility .public-site-nav > *,
-        .app-shell-utility .public-site-actions > *,
+        .app-shell-utility .public-site-nav>*,
+        .app-shell-utility .public-site-actions>*,
         .app-shell-utility .public-site-main,
         .app-shell-utility .public-site-header-wrap,
         .app-shell-utility .utility-page-header-stage,
         .app-shell-utility .utility-page-header-card,
         .app-shell-utility .portal-stage,
         .app-shell-utility .game-panel,
-        .app-shell-utility .game-panel > *,
+        .app-shell-utility .game-panel>*,
         .app-shell-utility form,
         .app-shell-utility section,
         .app-shell-utility .theme-page-heading,
@@ -9929,15 +9940,15 @@
         flex-wrap: wrap;
     }
 
-    .dashboard-map-overlay-panel .dashboard-overlay-head > div:first-child,
-    .dashboard-map-overlay-panel .dashboard-overlay-head-inventory > div:first-child,
-    .dashboard-focus-panel-head > div:first-child {
+    .dashboard-map-overlay-panel .dashboard-overlay-head>div:first-child,
+    .dashboard-map-overlay-panel .dashboard-overlay-head-inventory>div:first-child,
+    .dashboard-focus-panel-head>div:first-child {
         min-width: 0;
         flex: 1 1 auto;
     }
 
     .dashboard-map-overlay-panel .dashboard-overlay-head-actions,
-    .dashboard-focus-panel-head > .flex:last-child {
+    .dashboard-focus-panel-head>.flex:last-child {
         min-width: 0;
         flex-wrap: wrap;
     }
@@ -9989,6 +10000,7 @@
     }
 
     @media (min-width: 1024px) {
+
         .dashboard-map-overlay-panel,
         .dashboard-map-overlay-panel.dashboard-overlay-panel-inventory {
             position: absolute;
@@ -10103,7 +10115,7 @@
         }
 
         .dashboard-map-overlay-panel .dashboard-overlay-head-actions,
-        .dashboard-focus-panel-head > .flex:last-child {
+        .dashboard-focus-panel-head>.flex:last-child {
             width: 100%;
             justify-content: flex-start;
         }
@@ -10252,7 +10264,7 @@
         padding: 0;
     }
 
-    .dashboard-portal .dashboard-map-heading > div:first-child {
+    .dashboard-portal .dashboard-map-heading>div:first-child {
         min-width: 0;
     }
 
@@ -10296,10 +10308,10 @@
         justify-content: flex-start;
     }
 
-    .scene-hotspot-list-inner > .theme-button,
-    .scene-hotspot-list-inner > .theme-button-primary,
-    .scene-hotspot-list-inner > .theme-button-secondary,
-    .scene-hotspot-list-inner > .theme-button-danger {
+    .scene-hotspot-list-inner>.theme-button,
+    .scene-hotspot-list-inner>.theme-button-primary,
+    .scene-hotspot-list-inner>.theme-button-secondary,
+    .scene-hotspot-list-inner>.theme-button-danger {
         max-width: 100%;
     }
 
@@ -10449,7 +10461,7 @@
             display: none;
         }
 
-        .dashboard-classic-header .portal-navbar-links > *,
+        .dashboard-classic-header .portal-navbar-links>*,
         .dashboard-classic-header .portal-navbar-links form {
             min-width: 0;
             display: block;
@@ -10544,10 +10556,10 @@
             gap: 0.45rem;
         }
 
-        .scene-hotspot-list-inner > .theme-button,
-        .scene-hotspot-list-inner > .theme-button-primary,
-        .scene-hotspot-list-inner > .theme-button-secondary,
-        .scene-hotspot-list-inner > .theme-button-danger {
+        .scene-hotspot-list-inner>.theme-button,
+        .scene-hotspot-list-inner>.theme-button-primary,
+        .scene-hotspot-list-inner>.theme-button-secondary,
+        .scene-hotspot-list-inner>.theme-button-danger {
             width: 100%;
             min-width: 0;
             justify-content: center;
@@ -10661,6 +10673,7 @@
     }
 
     @keyframes portal-gauge-refill-pulse {
+
         0%,
         100% {
             filter: brightness(1);
@@ -10870,6 +10883,7 @@
     }
 
     @media (hover: hover) and (pointer: fine) {
+
         .equipment-board-slot-card:hover .equipment-board-slot-popover,
         .equipment-board-slot-card:focus-within .equipment-board-slot-popover {
             opacity: 1;
@@ -11012,7 +11026,7 @@
         gap: 0.45rem;
     }
 
-    .equipment-slot-popover-actions > .mt-3 {
+    .equipment-slot-popover-actions>.mt-3 {
         margin-top: 0;
     }
 
@@ -11063,7 +11077,9 @@
         }
     }
 }
+
 @layer components {
+
     .simple-ui .theme-button,
     .simple-ui .theme-primary-button,
     .simple-ui .theme-secondary-button,
@@ -11110,7 +11126,7 @@
     .simple-ui .equipment-slot-popover-label,
     .simple-ui .equipment-slot-popover-stat span,
     .simple-ui .equipment-slot-popover-meta,
-    .simple-ui .utility-page-header-card > div > p:first-child,
+    .simple-ui .utility-page-header-card>div>p:first-child,
     .simple-ui .utility-page-header-card p.text-xs.uppercase,
     .simple-ui .paper-note p.uppercase,
     .simple-ui .theme-empty-state p.uppercase,

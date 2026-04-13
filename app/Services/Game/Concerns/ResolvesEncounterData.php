@@ -9,6 +9,7 @@ use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\LocationArea;
 use App\Models\LocationAreaMonster;
+use Illuminate\Support\Collection;
 
 /**
  * Read-side encounter helpers.
@@ -78,6 +79,173 @@ trait ResolvesEncounterData
         }
 
         return $eligibleAssignments->last();
+    }
+
+    /**
+     * Automatic hunting now considers the whole build, not just the raw character level.
+     * Manual fights may also explicitly target one monster family and a difficulty tier.
+     */
+    private function resolveMonsterAssignmentForCharacter(
+        LocationArea $area,
+        GameCharacter $character,
+        ?string $requestedFamily = null,
+        ?string $requestedDifficulty = null,
+    ): LocationAreaMonster {
+        $allAssignments = $area->monsterAssignments->values();
+
+        if ($allAssignments->isEmpty()) {
+            throw new GameActionException(__('No monster packs are configured for this area yet.'));
+        }
+
+        $requestedFamily = trim((string) $requestedFamily);
+        $requestedDifficulty = trim((string) $requestedDifficulty);
+
+        if ($requestedFamily !== '') {
+            $familyAssignments = $allAssignments
+                ->filter(fn (LocationAreaMonster $assignment): bool => $assignment->monster?->manualFamilyKey() === $requestedFamily)
+                ->values();
+
+            if ($familyAssignments->isEmpty()) {
+                throw new GameActionException(__('That monster group is not available in this hunting area.'));
+            }
+
+            $tierCandidates = $this->manualDifficultyBucket($familyAssignments, $requestedDifficulty);
+
+            return $this->nearestAssignmentToCharacter($tierCandidates, $character);
+        }
+
+        $eligibleAssignments = $allAssignments
+            ->filter(fn (LocationAreaMonster $assignment): bool => $this->assignmentMatchesCharacter($assignment, $character))
+            ->values();
+
+        if ($eligibleAssignments->isEmpty()) {
+            $minimumAssignmentLevel = $area->minimumMonsterAssignmentLevel();
+
+            if ($minimumAssignmentLevel !== null && $character->level < $minimumAssignmentLevel) {
+                throw new GameActionException(__('You need to reach level :level or grow stronger before hunting in :area.', [
+                    'level' => $minimumAssignmentLevel,
+                    'area' => $area->name,
+                ]));
+            }
+
+            return $this->nearestAssignmentToCharacter($allAssignments, $character);
+        }
+
+        $combatRating = $this->characterCombatRating($character);
+        $weightedAssignments = $eligibleAssignments->map(function (LocationAreaMonster $assignment) use ($combatRating): array {
+            $distance = abs($this->assignmentThreatScore($assignment) - $combatRating);
+            $ratingWeight = max(8, 120 - (int) floor($distance / 4));
+
+            return [
+                'assignment' => $assignment,
+                'weight' => max(1, (int) $assignment->weight) + $ratingWeight,
+            ];
+        });
+
+        $totalWeight = max(1, (int) $weightedAssignments->sum('weight'));
+        $roll = random_int(1, $totalWeight);
+        $cursor = 0;
+
+        foreach ($weightedAssignments as $entry) {
+            $cursor += (int) $entry['weight'];
+
+            if ($roll <= $cursor) {
+                return $entry['assignment'];
+            }
+        }
+
+        return $eligibleAssignments->last();
+    }
+
+    private function assignmentMatchesCharacter(LocationAreaMonster $assignment, GameCharacter $character): bool
+    {
+        if ($assignment->isEligibleForLevel($character->level)) {
+            return true;
+        }
+
+        return $this->characterCombatRating($character) >= (int) floor($this->assignmentThreatScore($assignment) * 0.82);
+    }
+
+    private function characterCombatRating(GameCharacter $character): int
+    {
+        return max(1,
+            ($character->level * 12)
+            + ($character->effectiveAttack() * 5)
+            + ($character->effectiveDefense() * 4)
+            + ($character->effectiveVitality() * 6)
+            + ($character->effectiveStrength() * 6)
+            + ($character->effectiveDexterity() * 5)
+            + ($character->effectiveIntelligence() * 4)
+            + (int) floor($character->effectiveMaxHealth() / 8)
+            + (int) floor($character->effectiveMaxSp() / 10)
+        );
+    }
+
+    private function assignmentThreatScore(LocationAreaMonster $assignment): int
+    {
+        $monster = $assignment->monster;
+
+        if ($monster === null) {
+            return max(1, $assignment->minimum_character_level * 12);
+        }
+
+        $averageAttack = (int) floor((((int) $monster->minimum_attack) + ((int) $monster->maximum_attack)) / 2);
+
+        return max(1,
+            (((int) $monster->level) * 12)
+            + ($averageAttack * 5)
+            + (((int) $monster->defense) * 4)
+            + (int) floor(((int) $monster->maximum_health) / 7)
+            + (((int) $monster->rank) * 18)
+            + (max(1, (int) $assignment->pack_size) * 14)
+        );
+    }
+
+    /**
+     * @param  Collection<int, LocationAreaMonster>  $assignments
+     * @return Collection<int, LocationAreaMonster>
+     */
+    private function manualDifficultyBucket(Collection $assignments, ?string $requestedDifficulty): Collection
+    {
+        $difficulty = match ($requestedDifficulty) {
+            'easy', 'hard' => $requestedDifficulty,
+            default => 'medium',
+        };
+
+        $sorted = $assignments
+            ->sortBy(fn (LocationAreaMonster $assignment): int => $this->assignmentThreatScore($assignment))
+            ->values();
+        $bucketSize = max(1, (int) ceil($sorted->count() / 3));
+        $buckets = [
+            'easy' => $sorted->slice(0, $bucketSize)->values(),
+            'medium' => $sorted->slice($bucketSize, $bucketSize)->values(),
+            'hard' => $sorted->slice($bucketSize * 2)->values(),
+        ];
+
+        if ($buckets[$difficulty]->isNotEmpty()) {
+            return $buckets[$difficulty];
+        }
+
+        return match ($difficulty) {
+            'easy' => $sorted->take(max(1, min(2, $sorted->count())))->values(),
+            'hard' => $sorted->slice(max(0, $sorted->count() - max(1, min(2, $sorted->count()))))->values(),
+            default => $sorted,
+        };
+    }
+
+    /**
+     * @param  Collection<int, LocationAreaMonster>  $assignments
+     */
+    private function nearestAssignmentToCharacter(Collection $assignments, GameCharacter $character): LocationAreaMonster
+    {
+        $combatRating = $this->characterCombatRating($character);
+
+        /** @var LocationAreaMonster $assignment */
+        $assignment = $assignments
+            ->sortBy(fn (LocationAreaMonster $entry): int => abs($this->assignmentThreatScore($entry) - $combatRating))
+            ->first();
+
+        return $assignment;
     }
 
     /**
@@ -207,7 +375,7 @@ trait ResolvesEncounterData
             }
 
             $chance = max(0, min(10000, (int) data_get($entry, 'chance', 0)));
-            $adjustedChance = min(10000, $chance + (int) floor($chance * (max(0, $bonusPercent) / 100)));
+            $adjustedChance = max(0, min(10000, $chance + (int) floor($chance * ($bonusPercent / 100))));
 
             if ($adjustedChance === 0 || random_int(1, 10000) > $adjustedChance) {
                 continue;

@@ -72,6 +72,7 @@ class NormalSimulationCharacterFactory
                 'dexterity' => $startingStats['dexterity'] ?? 0,
                 'sp' => (int) ($startingStats['max_sp'] ?? 24) + ($startingIntelligence * 6),
                 'max_sp' => $startingStats['max_sp'] ?? 24,
+                'unspent_status_points' => 0,
                 'last_active_at' => $now,
                 'stamina_updated_at' => $now,
                 'health_updated_at' => $now,
@@ -169,6 +170,8 @@ class NormalSimulationCharacterFactory
             if ($character->level % 2 === 0) {
                 $character->speed += 1;
             }
+
+            $character->unspent_status_points += 1;
 
             if ($character->level >= 5) {
                 $character->unspent_skill_points += 1;

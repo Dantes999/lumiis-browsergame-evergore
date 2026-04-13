@@ -19,7 +19,7 @@ class PerformGameActionRequest extends FormRequest
     {
         $trimmed = [];
 
-        foreach (['message', 'recipient_name', 'skill_slug', 'encounter_request', 'redirect_focus', 'skill_group'] as $field) {
+        foreach (['message', 'recipient_name', 'skill_slug', 'encounter_request', 'redirect_focus', 'skill_group', 'monster_family', 'monster_difficulty', 'attribute'] as $field) {
             $value = $this->input($field);
 
             if (is_string($value)) {
@@ -86,6 +86,7 @@ class PerformGameActionRequest extends FormRequest
                     GameActionType::SubmitQuestItem,
                     GameActionType::BoostResearchSubmission,
                     GameActionType::SkipResearchCooldown,
+                    GameActionType::ClaimQuest,
                 ], true)),
                 'nullable',
                 'integer',
@@ -208,6 +209,23 @@ class PerformGameActionRequest extends FormRequest
                 'string',
                 Rule::in(['monster', 'lumiis', 'boss']),
             ],
+            'monster_family' => [
+                'nullable',
+                'string',
+                'max:40',
+                'regex:/^[a-z-]+$/',
+            ],
+            'monster_difficulty' => [
+                'nullable',
+                'string',
+                Rule::in(['easy', 'medium', 'hard']),
+            ],
+            'attribute' => [
+                Rule::requiredIf($action === GameActionType::AllocateStatusPoint),
+                'nullable',
+                'string',
+                Rule::in(['vitality', 'intelligence', 'strength', 'dexterity']),
+            ],
             'recipient_name' => [
                 Rule::requiredIf($action === GameActionType::Whisper),
                 'nullable',
@@ -252,6 +270,7 @@ class PerformGameActionRequest extends FormRequest
             'target_location_id.required' => 'Waehle ein gueltiges Reiseziel.',
             'location_area_id.required' => 'Waehle ein gueltiges Gebiet auf der Karte.',
             'character_quest_id.required' => 'Waehle einen gueltigen Forschungsauftrag.',
+            'attribute.required' => 'Waehle ein gueltiges Statusattribut.',
             'character_item_id.required' => 'Waehle ein gueltiges Inventarobjekt.',
             'target_character_item_id.required' => 'Waehle ein gueltiges Zielobjekt fuer den Bonus.',
             'inventory_column.required' => 'Waehle ein gueltiges Inventarziel.',

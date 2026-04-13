@@ -147,6 +147,7 @@ class RegistrationTest extends TestCase
             'speed' => 5,
             'sp' => 24,
             'max_sp' => 24,
+            'unspent_status_points' => 0,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),
             'health_updated_at' => now(),

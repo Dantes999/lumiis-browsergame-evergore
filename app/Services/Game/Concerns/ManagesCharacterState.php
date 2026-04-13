@@ -32,6 +32,8 @@ trait ManagesCharacterState
                 $character->speed += 1;
             }
 
+            $character->unspent_status_points += 1;
+
             if ($character->level >= 5) {
                 $character->unspent_skill_points += 1;
             }

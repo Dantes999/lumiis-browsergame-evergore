@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CharacterQuestStatus;
 use App\Enums\GameCharacterState;
 use App\Models\CharacterEquipment;
 use App\Models\CharacterItem;
 use App\Models\CharacterItemBonus;
+use App\Models\CharacterQuest;
 use App\Models\CharacterSkill;
 use App\Models\GameActionLog;
 use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\LocationArea;
+use App\Models\Quest;
 use App\Models\ShopItem;
 use App\Models\Skill;
 use App\Models\User;
@@ -705,6 +708,56 @@ class GameActionBranchCoverageTest extends TestCase
         $this->assertSame(0, CharacterEquipment::query()->count());
     }
 
+    public function test_allocate_status_point_invests_into_the_selected_attribute(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'strength' => 2,
+            'unspent_status_points' => 1,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'allocate-status-point']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'attribute' => 'strength',
+        ]);
+
+        $character->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(3, (int) $character->strength);
+        $this->assertSame(0, (int) $character->unspent_status_points);
+    }
+
+    public function test_claim_quest_marks_ready_rewards_as_completed_and_grants_the_payout(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'experience' => 10,
+            'yang' => 5,
+        ]);
+
+        $quest = Quest::query()->where('slug', 'yongan-first-sweep')->firstOrFail();
+        $characterQuest = CharacterQuest::query()->create([
+            'game_character_id' => $character->id,
+            'quest_id' => $quest->id,
+            'status' => CharacterQuestStatus::ReadyToClaim,
+            'progress' => (int) $quest->objective_target,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'character_quest_id' => $characterQuest->id,
+        ]);
+
+        $character->refresh();
+        $characterQuest->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(CharacterQuestStatus::Completed, $characterQuest->status);
+        $this->assertSame(10 + (int) $quest->reward_experience, (int) $character->experience);
+        $this->assertSame(5 + (int) $quest->reward_yang, (int) $character->yang);
+    }
+
     private function createCharacterAt(string $locationSlug, array $overrides = []): array
     {
         $location = Location::query()->where('slug', $locationSlug)->firstOrFail();
@@ -733,6 +786,7 @@ class GameActionBranchCoverageTest extends TestCase
             'sp' => 24,
             'max_sp' => 24,
             'unspent_skill_points' => 0,
+            'unspent_status_points' => 0,
             'version' => 1,
             'last_active_at' => now(),
             'stamina_updated_at' => now(),

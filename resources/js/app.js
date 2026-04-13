@@ -547,6 +547,7 @@ Alpine.data(
         init() {
             this.syncBattleTitle();
             this.startActionLockCountdown();
+            this.syncMobileChromeState();
 
             if (this.tutorial?.active) {
                 this.applyTutorialLayout();
@@ -568,12 +569,30 @@ Alpine.data(
                 this.activePanel = this.requestedPanel;
             }
 
+            this.syncMobileChromeState();
+
             this.$nextTick(() => {
                 window.requestAnimationFrame(() => this.scrollMobileFocusIntoView());
             });
 
-            this.$watch('activePanel', () => this.persistState());
+            this.$watch('activePanel', () => {
+                this.persistState();
+                this.syncMobileChromeState();
+            });
             this.$watch('chatTab', () => this.persistState());
+        },
+
+        syncMobileChromeState() {
+            const body = document.body;
+
+            if (!(body instanceof HTMLElement)) {
+                return;
+            }
+
+            const fullscreenPanels = ['character', 'skills', 'quests', 'inventory', 'equipment', 'settings', 'chat', 'mobile-info', 'focus'];
+            const shouldHideHeader = window.innerWidth < 1024 && fullscreenPanels.includes(this.activePanel);
+
+            body.classList.toggle('dashboard-mobile-panel-open', shouldHideHeader);
         },
 
         startActionLockCountdown() {
@@ -618,10 +637,12 @@ Alpine.data(
             }
 
             this.activePanel = panel;
+            this.syncMobileChromeState();
         },
 
         closePanel() {
             this.activePanel = null;
+            this.syncMobileChromeState();
         },
 
         isActionLocked() {
@@ -696,6 +717,7 @@ Alpine.data(
 
             this.chatTab = tab;
             this.activePanel = 'chat';
+            this.syncMobileChromeState();
         },
 
         canOpenPanel(panel) {

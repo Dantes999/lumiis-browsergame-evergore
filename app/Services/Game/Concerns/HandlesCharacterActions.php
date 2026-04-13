@@ -2,6 +2,7 @@
 
 namespace App\Services\Game\Concerns;
 
+use App\Enums\CharacterQuestStatus;
 use App\Exceptions\GameActionException;
 use App\Models\CharacterQuest;
 use App\Models\CharacterSkill;
@@ -16,6 +17,13 @@ use Illuminate\Support\Carbon;
  */
 trait HandlesCharacterActions
 {
+    private const STATUS_POINT_ATTRIBUTES = [
+        'vitality' => 'Vitality',
+        'intelligence' => 'Intelligence',
+        'strength' => 'Strength',
+        'dexterity' => 'Dexterity',
+    ];
+
     private const RESEARCH_CATALYST_ITEM_SLUG = 'research-catalyst';
 
     private const RESEARCH_REPORT_ITEM_SLUG = 'research-report';
@@ -231,6 +239,40 @@ trait HandlesCharacterActions
     }
 
     /**
+     * Status points are separate from combat skill points so the player can keep growing
+     * core attributes without starving the class skill tree.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{message: string, cooldown_seconds: int, rewards: array<string, int>, target_location_id: int}
+     */
+    private function allocateStatusPoint(GameCharacter $character, array $payload): array
+    {
+        if ($character->unspent_status_points < 1) {
+            throw new GameActionException(__('You do not have any unspent status points.'));
+        }
+
+        $attribute = (string) ($payload['attribute'] ?? '');
+
+        if (! array_key_exists($attribute, self::STATUS_POINT_ATTRIBUTES)) {
+            throw new GameActionException(__('Choose a valid status attribute.'));
+        }
+
+        $character->{$attribute} = (int) $character->{$attribute} + 1;
+        $character->unspent_status_points -= 1;
+
+        return [
+            'message' => __('You invest 1 status point into :attribute.', [
+                'attribute' => __(self::STATUS_POINT_ATTRIBUTES[$attribute]),
+            ]),
+            'cooldown_seconds' => 0,
+            'rewards' => [
+                'status_points' => -1,
+            ],
+            'target_location_id' => $character->location_id,
+        ];
+    }
+
+    /**
      * Skill learning stays here because it is direct character progression state.
      *
      * @param  array<string, mixed>  $payload
@@ -425,6 +467,36 @@ trait HandlesCharacterActions
     }
 
     /**
+     * Quest objectives can finish during combat or gathering, but the player now explicitly
+     * decides when to collect the payout and unlock the next quest step.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{message: string, cooldown_seconds: int, rewards: array<string, int>, target_location_id: int}
+     */
+    private function claimQuest(GameCharacter $character, array $payload): array
+    {
+        /** @var CharacterQuest|null $characterQuest */
+        $characterQuest = CharacterQuest::query()
+            ->where('game_character_id', $character->id)
+            ->with('quest.location')
+            ->lockForUpdate()
+            ->find((int) $payload['character_quest_id']);
+
+        if ($characterQuest === null) {
+            throw new GameActionException(__('That quest does not belong to your character.'));
+        }
+
+        $claim = $this->questProgressService->claimQuestReward($character, $characterQuest);
+
+        return [
+            'message' => $claim['message'],
+            'cooldown_seconds' => 0,
+            'rewards' => $claim['rewards'],
+            'target_location_id' => $character->location_id,
+        ];
+    }
+
+    /**
      * Research catalysts make one risky Biologist turn-in safer.
      *
      * The boost is stored on the active CharacterQuest row, so it survives a refresh but cannot
@@ -546,7 +618,7 @@ trait HandlesCharacterActions
             throw new GameActionException(__('This research order belongs to another town.'));
         }
 
-        if (! $characterQuest->quest?->requiresBiologistTurnIn() || $characterQuest->status !== \App\Enums\CharacterQuestStatus::Active) {
+        if (! $characterQuest->quest?->requiresBiologistTurnIn() || $characterQuest->status !== CharacterQuestStatus::Active) {
             throw new GameActionException(__('Only an active Biologist research order can be managed here.'));
         }
 

@@ -13,6 +13,8 @@ enum GameActionType: string
     case StartManualFight = 'start-manual-fight';
     case BattleAttack = 'battle-attack';
     case BattleUseSkill = 'battle-use-skill';
+    case AllocateStatusPoint = 'allocate-status-point';
+    case ClaimQuest = 'claim-quest';
     case Rest = 'rest';
     case Travel = 'travel';
     case SubmitQuestItem = 'submit-quest-item';
@@ -56,6 +58,8 @@ enum GameActionType: string
             self::StartManualFight => 'Start Manual Fight',
             self::BattleAttack => 'Battle Attack',
             self::BattleUseSkill => 'Battle Use Skill',
+            self::AllocateStatusPoint => 'Allocate Status Point',
+            self::ClaimQuest => 'Claim Quest',
             self::Rest => 'Rest',
             self::Travel => 'Travel',
             self::SubmitQuestItem => 'Submit Quest Item',
