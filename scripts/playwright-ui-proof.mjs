@@ -154,14 +154,19 @@ async function auditPage(page, label, options = {}) {
                 && rect.left < window.innerWidth;
         };
 
-        const isTopLayer = (element) => {
-            const rect = element.getBoundingClientRect();
-            const probeX = Math.min(Math.max(rect.left + Math.min(rect.width / 2, 24), 1), window.innerWidth - 1);
-            const probeY = Math.min(Math.max(rect.top + Math.min(rect.height / 2, 24), 1), window.innerHeight - 1);
+        const topLayerAtPoint = (element, probeX, probeY) => {
             const topElement = document.elementFromPoint(probeX, probeY);
 
             return topElement instanceof Element
                 && (topElement === element || topElement.contains(element) || element.contains(topElement));
+        };
+
+        const isTopLayer = (element) => {
+            const rect = element.getBoundingClientRect();
+            const probeX = Math.min(Math.max(rect.left + Math.min(rect.width / 2, 24), 1), window.innerWidth - 1);
+            const probeY = Math.min(Math.max(rect.top + Math.min(rect.height / 2, 24), 1), window.innerHeight - 1);
+
+            return topLayerAtPoint(element, probeX, probeY);
         };
 
         const describe = (element) => {
@@ -200,6 +205,25 @@ async function auditPage(page, label, options = {}) {
 
         if (root.scrollWidth > window.innerWidth + 2) {
             issues.push(`Horizontal overflow: ${root.scrollWidth}px content width on ${window.innerWidth}px viewport.`);
+        }
+
+        const navbarWrapper = document.querySelector('.dashboard-classic-header-wrapper');
+        const navbarLinks = document.querySelector('.dashboard-classic-header .portal-navbar-links');
+
+        if (window.innerWidth < 1024 && navbarWrapper instanceof HTMLElement && navbarLinks instanceof HTMLElement && visibleOnScreen(navbarLinks)) {
+            const blockedNavbarControl = Array.from(navbarLinks.querySelectorAll('a[href], button, [role="button"]'))
+                .filter(visibleOnScreen)
+                .find((element) => {
+                    const rect = element.getBoundingClientRect();
+                    const probeX = Math.min(Math.max(rect.left + (rect.width / 2), 1), window.innerWidth - 1);
+                    const probeY = Math.min(Math.max(rect.top + (rect.height / 2), 1), window.innerHeight - 1);
+
+                    return !topLayerAtPoint(element, probeX, probeY);
+                });
+
+            if (blockedNavbarControl) {
+                issues.push(`Blocked navbar control: ${describe(blockedNavbarControl)}`);
+            }
         }
 
         const textCandidates = Array.from(document.querySelectorAll('a[href], button, label, input, select, textarea, h1, h2, h3, p'))

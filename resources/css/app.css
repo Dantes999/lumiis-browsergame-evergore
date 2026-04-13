@@ -1165,13 +1165,18 @@
         }
 
         .simple-ui .dashboard-classic-header .portal-navbar-links {
+            position: static;
+            inset: auto;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+            align-items: stretch;
             overflow: visible;
             width: 100%;
         }
 
+        .simple-ui .dashboard-classic-header .portal-navbar-links > *,
         .simple-ui .dashboard-classic-header .portal-navbar-links form {
+            min-width: 0;
             display: block;
         }
 
@@ -1181,7 +1186,7 @@
         .simple-ui .dashboard-classic-header .portal-navbar-links .theme-button-danger {
             width: 100%;
             justify-content: center;
-            white-space: normal;
+            white-space: nowrap;
         }
     }
 
@@ -7839,20 +7844,20 @@
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
-    .dashboard-classic-header .portal-navbar-links {
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        display: flex;
-        max-width: calc(100% - 144px);
-        gap: 0.3rem;
-        overflow-x: auto;
-        padding-bottom: 0.1rem;
-        scrollbar-width: none;
+    .dashboard-classic-header-wrapper {
+        padding-bottom: 4.25rem;
     }
 
-    .dashboard-classic-header .portal-navbar-links::-webkit-scrollbar {
-        display: none;
+    .dashboard-classic-header .portal-navbar-links {
+        position: static;
+        inset: auto;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        max-width: none;
+        gap: 0.4rem;
+        overflow: visible;
+        padding-bottom: 0;
+        scrollbar-width: auto;
     }
 
     .dashboard-classic-header .portal-navbar-links .nav-pill {
@@ -8025,32 +8030,24 @@
     }
 
     .dashboard-classic-header-wrapper {
-        min-height: 144px;
+        min-height: auto;
+        padding-bottom: 8.75rem;
     }
 
-    .portal-shell.dashboard-classic-header {
-        height: 130px;
-    }
-
-    .dashboard-classic-header .portal-navbar-brand {
-        top: 14px;
-        left: 14px;
+    .app-shell-profile .min-h-screen > header.portal-stage {
+        margin-top: 2rem;
     }
 
     .dashboard-classic-header .portal-navbar-links {
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        display: flex;
-        max-width: calc(100% - 144px);
-        gap: 0.3rem;
-        overflow-x: auto;
-        padding-bottom: 0.1rem;
-        scrollbar-width: none;
-    }
-
-    .dashboard-classic-header .portal-navbar-links::-webkit-scrollbar {
-        display: none;
+        position: static;
+        inset: auto;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: none;
+        gap: 0.4rem;
+        overflow: visible;
+        padding-bottom: 0;
+        scrollbar-width: auto;
     }
 
     .dashboard-classic-header .portal-navbar-links .nav-pill {
@@ -9252,6 +9249,46 @@
             justify-content: flex-start;
         }
 
+        .app-shell-utility .utility-site-header {
+            grid-template-columns: minmax(0, 1fr);
+            align-items: start;
+        }
+
+        .app-shell-utility .public-site-nav,
+        .app-shell-utility .public-site-actions {
+            width: 100%;
+            min-width: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        }
+
+        .app-shell-utility .public-site-nav > *,
+        .app-shell-utility .public-site-actions > *,
+        .app-shell-utility .public-site-main,
+        .app-shell-utility .public-site-header-wrap,
+        .app-shell-utility .utility-page-header-stage,
+        .app-shell-utility .utility-page-header-card,
+        .app-shell-utility .portal-stage,
+        .app-shell-utility .game-panel,
+        .app-shell-utility .game-panel > *,
+        .app-shell-utility form,
+        .app-shell-utility section,
+        .app-shell-utility .theme-page-heading,
+        .app-shell-utility .theme-table-wrap {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .app-shell-utility .public-site-nav-link,
+        .app-shell-utility .public-site-cta-link,
+        .app-shell-utility .utility-site-logout-button {
+            width: 100%;
+        }
+
+        .app-shell-admin .theme-table-wrap {
+            overflow-x: auto;
+        }
+
         .public-preview-stage-wide {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -9335,6 +9372,10 @@
         .action-button-muted {
             width: 100%;
             justify-content: center;
+        }
+
+        .app-shell-admin .admin-hub-nav {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 }
@@ -9783,6 +9824,10 @@
     }
 
     @media (max-width: 1023px) and (orientation: landscape) {
+        .dashboard-classic-header .portal-navbar-links {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
         .dashboard-classic-header .portal-navbar-status {
             grid-template-columns: repeat(6, minmax(0, 1fr));
         }
@@ -10360,15 +10405,23 @@
 
     @media (max-width: 1023px) {
         .dashboard-classic-header-wrapper {
-            padding: 0.35rem 0 0.4rem;
+            position: relative;
+            z-index: 12;
+            padding: 0.35rem 0 0.5rem;
         }
 
         .portal-shell.dashboard-classic-header {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
             gap: 0.55rem;
+            min-height: 0;
+            height: auto;
             padding: 0 0.55rem 0.15rem;
         }
 
         .dashboard-classic-header .portal-navbar-brand {
+            flex: 0 0 auto;
             gap: 0.55rem;
         }
 
@@ -10378,21 +10431,42 @@
         }
 
         .dashboard-classic-header .portal-navbar-links {
-            flex-wrap: nowrap;
+            position: static;
+            inset: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+            flex: 0 0 auto;
+            align-self: stretch;
+            gap: 0.45rem;
+            width: 100%;
+            max-width: none;
+            overflow: visible;
+            padding: 0;
+            margin: 0;
         }
 
         .dashboard-classic-header .portal-navbar-status {
             display: none;
         }
 
+        .dashboard-classic-header .portal-navbar-links > *,
+        .dashboard-classic-header .portal-navbar-links form {
+            min-width: 0;
+            display: block;
+        }
+
         .dashboard-classic-header .portal-navbar-links .theme-button,
         .dashboard-classic-header .portal-navbar-links .theme-button-primary,
         .dashboard-classic-header .portal-navbar-links .theme-button-secondary,
         .dashboard-classic-header .portal-navbar-links .theme-button-danger {
+            width: 100%;
+            min-width: 0;
             min-height: 2.15rem;
             padding: 0.5rem 0.72rem;
             font-size: 0.54rem;
             letter-spacing: 0.12em;
+            justify-content: center;
+            white-space: nowrap;
         }
 
         .dashboard-portal .dashboard-map-stage {
