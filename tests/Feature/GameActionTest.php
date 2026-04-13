@@ -220,13 +220,17 @@ class GameActionTest extends TestCase
             'redirect_focus' => $area->slug,
         ]);
 
-        $response = $this->actingAs($user)->get(route('dashboard', [
-            'focus' => $area->slug,
-        ]));
+        $response = $this
+            ->withSession(['status' => __('Manual battle connection stable.')])
+            ->actingAs($user)
+            ->get(route('dashboard', [
+                'focus' => $area->slug,
+            ]));
 
         $response
             ->assertOk()
             ->assertSee(__('Abandon Fight'))
+            ->assertSee(__('Manual battle connection stable.'))
             ->assertSee(__('Closing the tab pauses this fight. Use Abandon Fight to end it with no rewards.'));
     }
 
@@ -397,6 +401,11 @@ class GameActionTest extends TestCase
             'yang' => 123,
         ]);
 
+        $shopItem = ShopItem::query()
+            ->whereHas('shop.location', fn ($query) => $query->where('slug', 'yongan'))
+            ->whereHas('item', fn ($query) => $query->where('slug', 'small-red-potion'))
+            ->firstOrFail();
+
         $response = $this->actingAs($user)->get(route('dashboard', [
             'focus' => 'general-store',
         ]));
@@ -407,8 +416,68 @@ class GameActionTest extends TestCase
             ->assertSee('Small Red Potion')
             ->assertSee(__('Wallet').': 123 '.__('Yang'))
             ->assertSee(__('Buy'))
+            ->assertSee('shop-buy-quantity-'. $shopItem->id, false)
+                ->assertSee('quantity-stepper-button', false)
+                ->assertSee('quantity-stepper-max', false)
+            ->assertSee(__('Wallet Max:'), false)
             ->assertSee('+35 HP')
             ->assertSee('+6 SP');
+    }
+
+    public function test_dashboard_inventory_groups_items_into_subinventories_and_shows_multi_use_controls(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'health' => 20,
+            'max_health' => 100,
+        ]);
+
+        $inventory = app(CharacterInventoryService::class);
+        $potion = Item::query()->where('slug', 'small-red-potion')->firstOrFail();
+        $spPotion = Item::query()->where('slug', 'small-blue-potion')->firstOrFail();
+        $skillBook = Item::query()->where('slug', \App\Support\Game\MetinClassCatalog::skillBookSlug('aura-of-the-sword'))->firstOrFail();
+        $upgradeItem = Item::query()->where('slug', 'soul-prism')->firstOrFail();
+        $smithItem = Item::query()->where('slug', 'lumiis-shard')->firstOrFail();
+        $questItem = Item::query()->where('slug', 'research-catalyst')->firstOrFail();
+        $weapon = Item::query()->where('slug', 'recruit-blade')->firstOrFail();
+        $material = Item::query()->where('slug', 'wolf-pelt')->firstOrFail();
+
+        $inventory->grant($character, $potion, 4);
+        $inventory->grant($character, $spPotion, 3);
+        $inventory->grant($character, $skillBook, 2);
+        $inventory->grant($character, $upgradeItem, 1);
+        $inventory->grant($character, $smithItem, 2);
+        $inventory->grant($character, $questItem, 2);
+        $inventory->grant($character, $weapon, 1);
+        $inventory->grant($character, $material, 2);
+
+        $potionStack = CharacterItem::query()
+            ->where('game_character_id', $character->id)
+            ->where('item_id', $potion->id)
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('dashboard', [
+            'focus' => 'general-store',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSee(__('Bag Page'))
+            ->assertSeeInOrder([
+                __('HP Potions'),
+                __('SP Potions'),
+                __('Books'),
+                __('Soul Upgrade'),
+                __('Smith Upgrade'),
+                __('Equipment'),
+                __('Quest'),
+                __('Materials'),
+            ])
+            ->assertSee('Bag I')
+            ->assertSee('inventory-list-use-quantity-'.$potionStack->id, false)
+            ->assertSee('quantity-stepper-button', false)
+            ->assertSee('quantity-stepper-max', false)
+            ->assertSee(__('Fill'))
+            ->assertSee('inventory-list-sell-quantity-'.$potionStack->id, false);
     }
 
     public function test_weapon_and_armor_dealers_show_the_midgame_alpha_progression_items(): void
@@ -466,12 +535,16 @@ class GameActionTest extends TestCase
 
         app(CharacterInventoryService::class)->grant($character, 'wolf-pelt', 2);
 
-        $response = $this->actingAs($user)->get(route('dashboard', [
-            'focus' => 'biologist-study',
-        ]));
+        $response = $this
+            ->withSession(['status' => __('Biologist message delivered.')])
+            ->actingAs($user)
+            ->get(route('dashboard', [
+                'focus' => 'biologist-study',
+            ]));
 
         $response
             ->assertOk()
+            ->assertSee(__('Biologist message delivered.'))
             ->assertSee(__('Research Board'))
             ->assertSee(trans('quests.yongan-biologist-research.title'))
             ->assertSee(__('Submit :count x :item', [
@@ -2197,6 +2270,37 @@ class GameActionTest extends TestCase
             'game_character_id' => $character->id,
             'item_id' => $shopItem->item->id,
             'quantity' => 1,
+        ]);
+    }
+
+    public function test_store_purchase_can_buy_multiple_copies_in_one_request(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'yang' => 500,
+        ]);
+
+        $shopItem = ShopItem::query()
+            ->whereHas('shop.location', fn ($query) => $query->where('slug', 'yongan'))
+            ->whereHas('item', fn ($query) => $query->where('slug', 'small-red-potion'))
+            ->with('item')
+            ->firstOrFail();
+        $vendorArea = LocationArea::query()->where('slug', 'general-store')->firstOrFail();
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'buy-item']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $vendorArea->id,
+            'shop_item_id' => $shopItem->id,
+            'quantity' => 3,
+        ]);
+
+        $character->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(500 - ($shopItem->price * 3), (int) $character->yang);
+        $this->assertDatabaseHas('character_items', [
+            'game_character_id' => $character->id,
+            'item_id' => $shopItem->item->id,
+            'quantity' => 3,
         ]);
     }
 

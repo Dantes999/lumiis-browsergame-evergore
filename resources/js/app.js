@@ -1681,15 +1681,90 @@ Alpine.data('battleResolution', ({ result = null, autoOpen = false, labels = {} 
 }));
 
 Alpine.data(
+    'quantityStepper',
+    ({ min = 1, max = 1, value = 1 } = {}) => ({
+        min: Math.max(1, Number(min) || 1),
+        max: Math.max(1, Number(max) || 1),
+        value: Number(value) || 1,
+
+        init() {
+            this.sync();
+        },
+
+        clamp(candidate) {
+            const parsed = Math.trunc(Number(candidate));
+
+            if (Number.isNaN(parsed)) {
+                return this.min;
+            }
+
+            return Math.max(this.min, Math.min(this.max, parsed));
+        },
+
+        sync() {
+            this.value = this.clamp(this.value);
+
+            if (this.$refs.input) {
+                this.$refs.input.value = this.value;
+            }
+        },
+
+        decrement() {
+            this.value = this.clamp(this.value - 1);
+            this.sync();
+        },
+
+        increment() {
+            this.value = this.clamp(this.value + 1);
+            this.sync();
+        },
+
+        setMax() {
+            this.value = this.max;
+            this.sync();
+        },
+    }),
+);
+
+Alpine.data(
     'inventoryList',
-    ({ totalItems = 0, perPage = 10 } = {}) => ({
+    ({ totalItems = 0, perPage = 10, categories = [], defaultCategory = null } = {}) => ({
+        storageKey: 'dashboard.inventory.activeCategory',
         totalItems,
         perPage,
+        categories,
+        activeCategory: defaultCategory,
         currentPage: 1,
         infoItemId: null,
 
+        init() {
+            const savedCategory = window.localStorage?.getItem(this.storageKey);
+
+            if (savedCategory && this.categories.some((candidate) => candidate.key === savedCategory)) {
+                this.activeCategory = savedCategory;
+            }
+
+            if (!this.activeCategory && this.categories.length > 0) {
+                this.activeCategory = this.categories[0].key;
+            }
+        },
+
+        categoryCount(categoryKey) {
+            const category = this.categories.find((candidate) => candidate.key === categoryKey);
+
+            return Number(category?.count ?? 0);
+        },
+
+        filteredTotalItems() {
+            if (!this.activeCategory) {
+                return this.totalItems;
+            }
+
+            return this.categoryCount(this.activeCategory);
+        },
+
         totalPages() {
-            return Math.max(1, Math.ceil(this.totalItems / this.perPage));
+            return Math.max(1, Math.ceil(this.filteredTotalItems() / this.perPage));
         },
 
         startIndex() {
@@ -1697,10 +1772,28 @@ Alpine.data(
         },
 
         endIndex() {
-            return Math.min(this.totalItems, this.startIndex() + this.perPage);
+            return Math.min(this.filteredTotalItems(), this.startIndex() + this.perPage);
         },
 
-        isVisible(index) {
+        visibleStartNumber() {
+            return this.filteredTotalItems() === 0 ? 0 : this.startIndex() + 1;
+        },
+
+        setCategory(categoryKey) {
+            if (!this.categories.some((candidate) => candidate.key === categoryKey)) {
+                return;
+            }
+
+            this.activeCategory = categoryKey;
+            window.localStorage?.setItem(this.storageKey, categoryKey);
+            this.goToPage(1);
+        },
+
+        isVisible(categoryKey, index) {
+            if (this.activeCategory && this.activeCategory !== categoryKey) {
+                return false;
+            }
+
             return index >= this.startIndex() && index < this.startIndex() + this.perPage;
         },
 

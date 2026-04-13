@@ -43,6 +43,55 @@
         $completedBiologistResearch = data_get($biologistResearch, 'latest_completed');
         $biologistBonusSummary = data_get($biologistResearch, 'bonus_summary', []);
         $readyQuestCount = (int) data_get($questline, 'ready_count', 0);
+        $dashboardServerMessages = [];
+        $statusMessage = trim((string) session('status', ''));
+
+        if ($statusMessage !== '') {
+            $dashboardServerMessages[] = [
+                'tone' => 'success',
+                'title' => __('Realm Update'),
+                'lines' => [$statusMessage],
+            ];
+        }
+
+        $questUpdateMessages = collect((array) session('quest_updates', []))
+            ->map(fn ($line): string => trim((string) $line))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($questUpdateMessages !== []) {
+            $dashboardServerMessages[] = [
+                'tone' => 'info',
+                'title' => __('Quest Update'),
+                'lines' => $questUpdateMessages,
+            ];
+        }
+
+        $errorMessage = trim((string) session('error', ''));
+
+        if ($errorMessage !== '') {
+            $dashboardServerMessages[] = [
+                'tone' => 'danger',
+                'title' => __('Action Failed'),
+                'lines' => [$errorMessage],
+            ];
+        }
+
+        $validationMessages = collect($errors->all())
+            ->map(fn ($line): string => trim((string) $line))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($validationMessages !== []) {
+            $dashboardServerMessages[] = [
+                'tone' => 'danger',
+                'title' => __('Check Your Input'),
+                'lines' => $validationMessages,
+            ];
+        }
+
         $biologistCooldownLabel = function (?int $cooldownSeconds): string {
             if ($cooldownSeconds === null || $cooldownSeconds <= 0) {
                 return __('Ready now');
@@ -506,6 +555,8 @@
         @dashboard-panel-open.window="openPanel($event.detail?.panel ?? $event.detail)"
         @dashboard-chat-open.window="openChatTab($event.detail?.tab ?? 'global')"
     >
+        @include('game.partials.dashboard-server-messages', ['dashboardServerMessages' => $dashboardServerMessages])
+
         <div class="metin2-container-wrapper dashboard-portal-frame">
             <div class="metin2-container dashboard-metin2-layout">
                 <aside class="metin2-column-left dashboard-metin2-column dashboard-mobile-rail">
@@ -699,40 +750,6 @@
                 </aside>
 
                 <section class="metin2-column-center dashboard-metin2-center-column">
-        @if (session('status'))
-            <div class="theme-status-flash theme-status-success mb-6">
-                {{ session('status') }}
-            </div>
-        @endif
-
-        @if (session('quest_updates'))
-            <div class="theme-status-flash theme-status-info mb-6">
-                <div class="space-y-2">
-                    <p class="text-[0.7rem] uppercase tracking-[0.24em]">{{ __('Quest Update') }}</p>
-
-                    @foreach ((array) session('quest_updates') as $questUpdate)
-                        <p>{{ $questUpdate }}</p>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="theme-status-flash theme-status-danger mb-6">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="theme-status-flash theme-status-danger mb-6">
-                <ul class="space-y-1">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         @if ($tutorialActive)
             <article
                 class="game-panel tutorial-guide-panel mb-6 {{ $tutorialHighlight ? 'tutorial-guide-panel-'.$tutorialHighlight : '' }}"

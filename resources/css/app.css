@@ -308,6 +308,59 @@
         text-shadow: none;
     }
 
+    .dashboard-server-message-stack {
+        position: fixed;
+        top: max(0.85rem, env(safe-area-inset-top));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 90;
+        display: grid;
+        gap: 0.75rem;
+        width: min(42rem, calc(100vw - 1.5rem));
+        pointer-events: none;
+    }
+
+    .dashboard-server-message-card {
+        box-shadow:
+            0 18px 38px rgba(15, 10, 7, 0.42),
+            inset 0 1px 0 rgba(255, 250, 235, 0.08);
+        backdrop-filter: blur(10px);
+        pointer-events: auto;
+    }
+
+    .dashboard-server-message-kicker {
+        margin: 0;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: inherit;
+        opacity: 0.86;
+    }
+
+    .dashboard-server-message-lines {
+        display: grid;
+        gap: 0.35rem;
+        margin-top: 0.45rem;
+    }
+
+    .dashboard-server-message-lines p {
+        margin: 0;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 767px) {
+        .dashboard-server-message-stack {
+            top: max(0.65rem, env(safe-area-inset-top));
+            width: min(100vw - 1rem, 34rem);
+        }
+
+        .dashboard-server-message-card {
+            border-radius: 0.9rem;
+            padding: 0.85rem 0.95rem;
+        }
+    }
+
     .simple-ui .panel-kicker,
     .simple-ui .shop-item-meta,
     .simple-ui .scene-copy-kicker,
@@ -2428,7 +2481,7 @@
     }
 
     .cozy-chip {
-        @apply inline-flex items-center rounded-[0.35rem] px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.22em];
+        @apply inline-flex items-center rounded-[0.35rem] px-3 py-1 text-[0.75rem] font-semibold uppercase tracking-[0.22em];
         border: 1px solid rgba(143, 109, 57, 0.8);
         background:
             linear-gradient(180deg, rgba(248, 214, 147, 0.12), rgba(248, 214, 147, 0) 34%),
@@ -2881,6 +2934,97 @@
     .shop-item-values {
         @apply mt-2 text-sm leading-6;
         color: rgba(247, 238, 216, 0.92);
+    }
+
+    .shop-purchase-form {
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .quantity-stepper {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+    }
+
+    .quantity-stepper-controls {
+        display: grid;
+        grid-template-columns: 2.3rem minmax(0, 1fr) 2.3rem auto;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .quantity-stepper-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.45rem;
+        border: 1px solid rgba(141, 106, 58, 0.24);
+        background:
+            linear-gradient(180deg, rgba(255, 250, 235, 0.9), rgba(221, 199, 150, 0.88));
+        color: #5b341a;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow:
+            0 6px 14px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .quantity-stepper-button:disabled {
+        opacity: 0.45;
+        box-shadow: none;
+    }
+
+    .quantity-stepper-max {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.45rem;
+        padding: 0 0.7rem;
+        border: 1px solid rgba(141, 106, 58, 0.24);
+        background: rgba(255, 250, 235, 0.82);
+        color: #6f2600;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .quantity-stepper-max:disabled {
+        opacity: 0.45;
+    }
+
+    .shop-purchase-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 5.5rem) minmax(0, 1fr);
+        align-items: end;
+        gap: 0.75rem;
+    }
+
+    .shop-purchase-quantity-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: var(--accent-gold-light);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .shop-purchase-quantity {
+        width: 100%;
+        min-height: 2.45rem;
+    }
+
+    .shop-purchase-meta {
+        margin: 0;
+        color: rgba(247, 238, 216, 0.72);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        line-height: 1.45;
     }
 
     .paper-note .shop-item-values {
@@ -3836,7 +3980,7 @@
     .dashboard-portal .cozy-chip,
     .dashboard-portal .dashboard-scene-banner-item {
         padding: 0.45rem 0.8rem;
-        font-size: 0.62rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.18em;
         line-height: 1.08;
@@ -4243,7 +4387,7 @@
         z-index: 1;
         display: block;
         color: #8d0404;
-        font-size: 0.58rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.16em;
         text-transform: uppercase;
@@ -4276,6 +4420,112 @@
         gap: 1rem;
     }
 
+    .inventory-subinventory-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+    }
+
+    .inventory-subinventory-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        min-width: 0;
+        border: 1px solid rgba(141, 106, 58, 0.24);
+        background:
+            linear-gradient(180deg, rgba(255, 250, 235, 0.82), rgba(235, 221, 188, 0.82));
+        padding: 0.72rem 0.9rem;
+        color: #6f2600;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        box-shadow:
+            0 8px 16px rgba(15, 23, 42, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .inventory-subinventory-tab-copy {
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .inventory-subinventory-page-label {
+        color: rgba(111, 38, 0, 0.7);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .inventory-subinventory-tab-active {
+        border-color: rgba(129, 20, 0, 0.36);
+        background:
+            linear-gradient(180deg, rgba(131, 32, 15, 0.94), rgba(76, 24, 12, 0.96));
+        color: #f8dd9d;
+        box-shadow:
+            0 12px 18px rgba(82, 19, 6, 0.24),
+            inset 0 1px 0 rgba(254, 230, 162, 0.12);
+    }
+
+    .inventory-subinventory-tab-active .inventory-subinventory-page-label {
+        color: rgba(248, 221, 157, 0.78);
+    }
+
+    .inventory-subinventory-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.8rem;
+        min-height: 1.4rem;
+        border: 1px solid currentcolor;
+        padding: 0 0.42rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+    }
+
+    .inventory-subinventory-section {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .inventory-subinventory-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding: 0.95rem 1rem;
+        border: 1px solid rgba(141, 106, 58, 0.18);
+        background:
+            linear-gradient(180deg, rgba(255, 250, 235, 0.76), rgba(231, 215, 178, 0.72));
+    }
+
+    .inventory-subinventory-title {
+        margin: 0.3rem 0 0;
+        font-family: "Cinzel", Georgia, serif;
+        font-size: 1rem;
+        line-height: 1.2;
+        color: #4a1e00;
+    }
+
+    .inventory-subinventory-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.34rem 0.7rem;
+        border: 1px solid rgba(141, 106, 58, 0.2);
+        background: rgba(255, 250, 235, 0.42);
+        color: rgba(123, 19, 0, 0.76);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
     .inventory-list-pagination {
         display: flex;
         align-items: center;
@@ -4293,7 +4543,7 @@
     .inventory-list-pagination-copy {
         margin: 0;
         color: rgba(123, 19, 0, 0.76);
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -4396,7 +4646,7 @@
         background: rgba(255, 250, 235, 0.34);
         padding: 0.2rem 0.5rem;
         color: rgba(123, 19, 0, 0.76);
-        font-size: 0.58rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -4418,9 +4668,28 @@
         flex-wrap: wrap;
     }
 
+    .inventory-list-row-action-form-quantity {
+        align-items: end;
+    }
+
     .inventory-list-row-action-form .action-button,
     .inventory-list-row-action-form .action-button-muted {
         min-width: 5.8rem;
+    }
+
+    .inventory-list-row-quantity-field {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 9.6rem;
+    }
+
+    .inventory-list-row-quantity-label {
+        margin: 0;
+        color: rgba(123, 19, 0, 0.76);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
     }
 
     .inventory-list-row-quantity {
@@ -4493,7 +4762,7 @@
     .inventory-list-row-details-label {
         margin: 0;
         color: #8d0404;
-        font-size: 0.6rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -4522,7 +4791,7 @@
     .inventory-list-row-details-stat span {
         display: block;
         color: #8d0404;
-        font-size: 0.56rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -4540,7 +4809,7 @@
     .inventory-list-row-details-meta {
         margin: 0;
         color: rgba(123, 19, 0, 0.72);
-        font-size: 0.62rem;
+        font-size: 0.75rem;
         line-height: 1.55;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -4574,7 +4843,31 @@
         width: 100%;
     }
 
+    @media (max-width: 900px) {
+        .shop-purchase-controls {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
     @media (max-width: 767px) {
+        .shop-purchase-controls {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .quantity-stepper-controls {
+            grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem auto;
+        }
+
+        .inventory-subinventory-nav {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .inventory-subinventory-head {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
         .inventory-list-pagination {
             align-items: flex-start;
             flex-direction: column;
@@ -4592,6 +4885,20 @@
 
         .inventory-list-row-actions {
             justify-content: flex-start;
+        }
+
+        .inventory-list-row-action-form,
+        .inventory-list-row-action-form-quantity {
+            width: 100%;
+        }
+
+        .inventory-list-row-quantity-field {
+            width: 100%;
+        }
+
+        .inventory-list-row-quantity {
+            width: 100%;
+            max-width: none;
         }
 
         .inventory-list-row-action-form .action-button,
@@ -5266,7 +5573,7 @@
         background: rgba(255, 250, 235, 0.34);
         padding: 0.45rem 0.8rem;
         color: rgba(123, 19, 0, 0.72);
-        font-size: 0.58rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.2em;
         text-transform: uppercase;
@@ -7586,7 +7893,7 @@
     .dashboard-section-badge {
         min-height: 1.7rem;
         padding: 0.32rem 0.55rem;
-        font-size: 0.5rem;
+        font-size: 0.75rem;
         letter-spacing: 0.16em;
     }
 
@@ -10496,7 +10803,7 @@
 
         .dashboard-map-chipbar .cozy-chip {
             padding: 0.35rem 0.55rem;
-            font-size: 0.56rem;
+            font-size: 0.75rem;
             letter-spacing: 0.12em;
         }
 

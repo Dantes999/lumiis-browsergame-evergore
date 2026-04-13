@@ -66,34 +66,56 @@ trait HandlesInventoryActions
             throw new GameActionException(__('That offer is not available in this store.'));
         }
 
+        $requestedQuantity = max(1, (int) ($payload['quantity'] ?? 1));
+
         if ($character->level < $shopItem->item->required_level) {
             throw new GameActionException(__('Your level is too low for that item.'));
-        }
-
-        if ($character->yang < $shopItem->price) {
-            throw new GameActionException(__('You do not have enough yang for that purchase.'));
         }
 
         if ($shopItem->stock !== null && $shopItem->stock < 1) {
             throw new GameActionException(__('That item is currently out of stock.'));
         }
 
-        $character->yang -= $shopItem->price;
-        $this->inventoryService->grant($character, $shopItem->item);
+        if ($shopItem->stock !== null && $requestedQuantity > (int) $shopItem->stock) {
+            throw new GameActionException(__('Only :count x :item are currently in stock.', [
+                'count' => number_format((int) $shopItem->stock),
+                'item' => $shopItem->item->name,
+            ]));
+        }
+
+        $totalPrice = (int) $shopItem->price * $requestedQuantity;
+
+        if ($character->yang < $totalPrice) {
+            throw new GameActionException($requestedQuantity > 1
+                ? __('You do not have enough yang for :count x :item.', [
+                    'count' => number_format($requestedQuantity),
+                    'item' => $shopItem->item->name,
+                ])
+                : __('You do not have enough yang for that purchase.'));
+        }
+
+        $character->yang -= $totalPrice;
+        $this->inventoryService->grant($character, $shopItem->item, $requestedQuantity);
 
         if ($shopItem->stock !== null) {
             // Stock is locked above so two players cannot both buy the final copy at once.
-            $shopItem->decrement('stock');
+            $shopItem->decrement('stock', $requestedQuantity);
         }
 
         return [
-            'message' => __('You buy :item from :shop.', [
-                'item' => $shopItem->item->name,
-                'shop' => $shop->name,
-            ]),
+            'message' => $requestedQuantity > 1
+                ? __('You buy :count x :item from :shop.', [
+                    'count' => number_format($requestedQuantity),
+                    'item' => $shopItem->item->name,
+                    'shop' => $shop->name,
+                ])
+                : __('You buy :item from :shop.', [
+                    'item' => $shopItem->item->name,
+                    'shop' => $shop->name,
+                ]),
             'cooldown_seconds' => 0,
             'rewards' => [
-                'yang' => -$shopItem->price,
+                'yang' => -$totalPrice,
             ],
             'target_location_id' => $character->location_id,
         ];

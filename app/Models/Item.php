@@ -98,6 +98,68 @@ class Item extends Model
         return $this->equipment_slot !== null;
     }
 
+    public function isInventoryUpgradeItem(): bool
+    {
+        return in_array($this->slug, [
+            MetinClassCatalog::soulStoneSlug(),
+            'soul-prism',
+            'soul-imprint',
+            'soul-reweaver',
+            'soul-anchor',
+        ], true);
+    }
+
+    public function isInventorySmithItem(): bool
+    {
+        return in_array($this->slug, [
+            'lumiis-shard',
+        ], true);
+    }
+
+    public function isInventoryQuestItem(): bool
+    {
+        return in_array($this->slug, [
+            'research-catalyst',
+            'research-report',
+            'orc-tooth',
+            'orc-chief-seal',
+            'black-orc-medallion',
+            'ape-lord-emblem',
+        ], true);
+    }
+
+    public function inventoryCategoryKey(): string
+    {
+        return match (true) {
+            $this->isInventoryQuestItem() => 'quest',
+            $this->isInventoryUpgradeItem() => 'soul-upgrade',
+            $this->isInventorySmithItem() => 'smith-upgrade',
+            $this->isSkillBook() => 'skill-books',
+            $this->isConsumable() && (int) $this->heal_amount > 0 => 'hp-potions',
+            $this->isConsumable() && (int) $this->sp_restore > 0 => 'sp-potions',
+            $this->isConsumable() => 'consumables',
+            $this->isEquippable() => 'equipment',
+            $this->item_type === 'material' => 'materials',
+            default => 'misc',
+        };
+    }
+
+    public function inventoryCategoryLabel(): string
+    {
+        return match ($this->inventoryCategoryKey()) {
+            'hp-potions' => __('HP Potions'),
+            'sp-potions' => __('SP Potions'),
+            'skill-books' => __('Books'),
+            'soul-upgrade' => __('Soul Upgrade'),
+            'smith-upgrade' => __('Smith Upgrade'),
+            'consumables' => __('Potions & Use'),
+            'equipment' => __('Equipment'),
+            'quest' => __('Quest'),
+            'materials' => __('Materials'),
+            default => __('Misc'),
+        };
+    }
+
     /**
      * Most early items stay universal, but later class weapons need a readable ownership rule.
      *

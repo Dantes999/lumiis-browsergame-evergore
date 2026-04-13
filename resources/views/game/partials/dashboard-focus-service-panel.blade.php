@@ -208,6 +208,15 @@
                 </div>
             @else
                 @foreach ($activeAreaShop->shopItems->sortBy('sort_order') as $shopItem)
+                    @php
+                        $shopPurchaseMax = $shopItem->stock === null
+                            ? 999
+                            : max(1, min(999, (int) $shopItem->stock));
+                        $walletPurchaseMax = $shopItem->price > 0
+                            ? intdiv(max(0, (int) $character->yang), max(1, (int) $shopItem->price))
+                            : 999;
+                        $shopQuantityInputMax = max(1, min($shopPurchaseMax, max(1, $walletPurchaseMax)));
+                    @endphp
                     <div class="form-card">
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div>
@@ -220,20 +229,53 @@
                                 @endif
                             </div>
 
-                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'buy-item']) }}" class="w-full lg:w-auto lg:min-w-[10rem]">
+                            <form method="POST" action="{{ route('game.actions.store', ['action' => 'buy-item']) }}" class="shop-purchase-form w-full lg:w-auto lg:min-w-[16rem]">
                                 @csrf
                                 <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
                                 <input type="hidden" name="location_area_id" value="{{ $activeAreaShop->location_area_id }}">
                                 <input type="hidden" name="shop_item_id" value="{{ $shopItem->id }}">
                                 <input type="hidden" name="redirect_focus" value="{{ $activeArea->slug }}">
 
-                                <button
-                                    type="submit"
-                                    class="action-button w-full"
-                                    @disabled($character->yang < $shopItem->price || $character->level < $shopItem->item->required_level)
-                                >
-                                    {{ __('Buy') }}
-                                </button>
+                                <div class="shop-purchase-controls">
+                                    <div class="quantity-stepper" x-data="quantityStepper({ min: 1, max: {{ $shopQuantityInputMax }}, value: 1 })">
+                                        <label class="shop-purchase-quantity-label" for="shop-buy-quantity-{{ $shopItem->id }}">{{ __('Qty') }}</label>
+                                        <div class="quantity-stepper-controls">
+                                            <button type="button" class="quantity-stepper-button" @click="decrement()" x-bind:disabled="value <= min" aria-label="{{ __('Decrease quantity') }}">-</button>
+                                            <input
+                                                x-ref="input"
+                                                x-model="value"
+                                                @input="sync()"
+                                                id="shop-buy-quantity-{{ $shopItem->id }}"
+                                                type="number"
+                                                name="quantity"
+                                                min="1"
+                                                max="{{ $shopQuantityInputMax }}"
+                                                value="1"
+                                                class="inventory-use-quantity shop-purchase-quantity"
+                                            >
+                                            <button type="button" class="quantity-stepper-button" @click="increment()" x-bind:disabled="value >= max" aria-label="{{ __('Increase quantity') }}">+</button>
+                                            <button type="button" class="quantity-stepper-max" @click="setMax()" x-bind:disabled="value >= max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        class="action-button w-full"
+                                        @disabled($character->yang < $shopItem->price || $character->level < $shopItem->item->required_level || ($shopItem->stock !== null && $shopItem->stock < 1))
+                                    >
+                                        {{ __('Buy') }}
+                                    </button>
+                                </div>
+
+                                <p class="shop-purchase-meta">
+                                    @if ($shopItem->stock !== null)
+                                        {{ __('Stock: :count', ['count' => number_format($shopItem->stock)]) }}
+                                    @else
+                                        {{ __('Stock: Unlimited') }}
+                                    @endif
+                                    ·
+                                    {{ __('Wallet Max: :count', ['count' => number_format(max(0, $walletPurchaseMax))]) }}
+                                </p>
                             </form>
                         </div>
                     </div>
