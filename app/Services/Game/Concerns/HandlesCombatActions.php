@@ -134,6 +134,98 @@ trait HandlesCombatActions
     }
 
     /**
+     * Closing the browser should pause a manual fight, not mutate it further.
+     * This explicit action exists for players who intentionally want to drop the fight
+     * with no rewards and no hidden extra penalty beyond already spent stamina/damage.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{message: string, cooldown_seconds: int, rewards: array<string, int>, target_location_id: int, battle_log: list<string>, battle_summary: array<string, mixed>, battle_replay: array<string, mixed>}
+     */
+    private function abandonManualFight(
+        GameCharacter $character,
+        ?GameBattle $battle,
+        array $payload,
+        Carbon $processedAt,
+    ): array {
+        $requestedBattleId = (int) ($payload['battle_id'] ?? 0);
+
+        if (
+            $battle === null
+            || $battle->id !== $requestedBattleId
+            || $battle->game_character_id !== $character->id
+            || $battle->status !== 'ongoing'
+        ) {
+            throw new GameActionException(__('That manual battle is no longer active.'));
+        }
+
+        /** @var array<string, mixed> $state */
+        $state = $battle->state ?? [];
+        /** @var array<string, mixed> $rewards */
+        $rewards = $battle->rewards ?? [];
+
+        if ((bool) ($rewards['tutorial_battle'] ?? false)) {
+            throw new GameActionException(__('Finish the tutorial fight before leaving it.'));
+        }
+
+        $area = LocationArea::query()->findOrFail($battle->location_area_id);
+        $roundsFought = max(1, (int) ($state['round'] ?? $battle->round ?? 1));
+        $currentHealth = max(1, (int) data_get($state, 'player.current_health', $character->health));
+        $currentSp = max(0, min((int) data_get($state, 'player.current_sp', $character->effectiveCurrentSp()), $character->effectiveMaxSp()));
+        $startingHealth = (int) data_get($state, 'player.starting_health', $character->health);
+        $healthLost = max(0, $startingHealth - $currentHealth);
+        $resolvedRewards = array_merge($rewards, [
+            'experience' => 0,
+            'yang' => 0,
+            'loot_drops' => [],
+            'loot_names' => [],
+            'pressure_gain' => 0,
+        ]);
+
+        $state['battle_log'][] = __('You abandon the fight and retreat from the field.');
+        $character->health = $currentHealth;
+        $character->sp = $currentSp;
+
+        $message = __('You abandon the fight against :enemy. No rewards were gained.', [
+            'enemy' => (string) ($resolvedRewards['enemy_name'] ?? $battle->encounter_name),
+        ]);
+
+        $battle->status = 'abandoned';
+        $battle->resolved_at = $processedAt;
+        $battle->round = $roundsFought;
+        $battle->state = $state;
+        $battle->rewards = $resolvedRewards;
+        $battle->save();
+
+        return [
+            'message' => $message,
+            'cooldown_seconds' => 0,
+            'rewards' => array_filter([
+                'health' => -$healthLost,
+            ], static fn (mixed $value): bool => $value !== 0),
+            'target_location_id' => $character->location_id,
+            'battle_log' => collect($state['battle_log'] ?? [])->values()->all(),
+            'battle_summary' => [
+                'monster_name' => (string) ($resolvedRewards['enemy_name'] ?? $battle->encounter_name),
+                'pack_size' => (int) ($resolvedRewards['pack_size'] ?? 1),
+                'rounds' => $roundsFought,
+                'victory' => false,
+                'encounter_type' => $this->normalizeEncounterRequest((string) ($resolvedRewards['encounter_type'] ?? $battle->encounter_type)),
+            ],
+            'battle_replay' => $this->buildResolvedBattleReplay(
+                $character,
+                $state,
+                $resolvedRewards,
+                $area,
+                $message,
+                0,
+                $healthLost,
+                $roundsFought,
+                false,
+            ),
+        ];
+    }
+
+    /**
      * Resolves exactly one manual round per request.
      * That makes the battle state easy to persist, replay and debug.
      *

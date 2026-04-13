@@ -531,6 +531,7 @@ Alpine.data(
         actionLockSeconds = 0,
         resting = null,
         activeBattleRound = 0,
+        hasActiveBattle = false,
     } = {}) => ({
         activePanel,
         requestedPanel,
@@ -539,15 +540,22 @@ Alpine.data(
         actionLockSeconds,
         resting,
         activeBattleRound,
+        hasActiveBattle,
         tutorialDriver: null,
         tutorialDriverActive: false,
         actionLockIntervalId: null,
         hasAutoRefreshedAfterRest: false,
+        beforeUnloadHandler: null,
+        submitNavigationHandler: null,
+        linkNavigationHandler: null,
+        internalNavigationAway: false,
+        internalNavigationResetId: null,
 
         init() {
             this.syncBattleTitle();
             this.startActionLockCountdown();
             this.syncMobileChromeState();
+            this.installUnloadProtection();
 
             if (this.tutorial?.active) {
                 this.applyTutorialLayout();
@@ -593,6 +601,69 @@ Alpine.data(
             const shouldHideHeader = window.innerWidth < 1024 && fullscreenPanels.includes(this.activePanel);
 
             body.classList.toggle('dashboard-mobile-panel-open', shouldHideHeader);
+        },
+
+        installUnloadProtection() {
+            this.beforeUnloadHandler = (event) => {
+                if (!this.hasActiveBattle || this.internalNavigationAway) {
+                    return undefined;
+                }
+
+                event.preventDefault();
+                event.returnValue = '';
+
+                return '';
+            };
+
+            this.submitNavigationHandler = () => {
+                this.markInternalNavigationAway();
+            };
+
+            this.linkNavigationHandler = (event) => {
+                const target = event.target;
+
+                if (!(target instanceof Element)) {
+                    return;
+                }
+
+                const anchor = target.closest('a[href]');
+
+                if (!(anchor instanceof HTMLAnchorElement)) {
+                    return;
+                }
+
+                if (
+                    anchor.target === '_blank'
+                    || anchor.hasAttribute('download')
+                    || event.defaultPrevented
+                    || event.button !== 0
+                    || event.metaKey
+                    || event.ctrlKey
+                    || event.shiftKey
+                    || event.altKey
+                ) {
+                    return;
+                }
+
+                this.markInternalNavigationAway();
+            };
+
+            window.addEventListener('beforeunload', this.beforeUnloadHandler);
+            document.addEventListener('submit', this.submitNavigationHandler, true);
+            document.addEventListener('click', this.linkNavigationHandler, true);
+        },
+
+        markInternalNavigationAway() {
+            this.internalNavigationAway = true;
+
+            if (this.internalNavigationResetId !== null) {
+                window.clearTimeout(this.internalNavigationResetId);
+            }
+
+            this.internalNavigationResetId = window.setTimeout(() => {
+                this.internalNavigationAway = false;
+                this.internalNavigationResetId = null;
+            }, 4000);
         },
 
         startActionLockCountdown() {

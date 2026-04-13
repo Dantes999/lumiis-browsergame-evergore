@@ -204,6 +204,74 @@ class GameActionTest extends TestCase
             ->assertSee($area->name);
     }
 
+    public function test_active_manual_battle_overlay_shows_pause_and_abandon_guidance(): void
+    {
+        [$user] = $this->createCharacterAt('yongan');
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard', [
+            'focus' => $area->slug,
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSee(__('Abandon Fight'))
+            ->assertSee(__('Closing the tab pauses this fight. Use Abandon Fight to end it with no rewards.'));
+    }
+
+    public function test_dashboard_reload_does_not_advance_or_duplicate_an_ongoing_manual_battle(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan');
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->actingAs($user)->get(route('dashboard', [
+            'focus' => $area->slug,
+        ]))->assertOk();
+
+        $this->actingAs($user)->get(route('dashboard', [
+            'focus' => $area->slug,
+        ]))->assertOk();
+
+        $character->refresh();
+        $battle->refresh();
+
+        $this->assertSame('ongoing', $battle->status);
+        $this->assertSame(1, (int) $battle->round);
+        $this->assertSame(7, (int) $character->stamina);
+        $this->assertSame(1, GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->count());
+    }
+
     public function test_dashboard_skill_panel_shows_the_soul_stone_action_for_m10_skills(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
@@ -857,7 +925,8 @@ class GameActionTest extends TestCase
             'defense' => 50,
         ]);
 
-        $character->experience = $character->nextLevelExperience() - 1;
+        $quest = Quest::query()->where('slug', 'yongan-first-sweep')->firstOrFail();
+        $character->experience = max(0, $character->nextLevelExperience() - (int) $quest->reward_experience);
         $character->save();
 
         $armor = Item::query()->where('slug', 'cotton-armor')->firstOrFail();
@@ -872,25 +941,23 @@ class GameActionTest extends TestCase
             'slot' => 'armor',
         ]);
 
-        $area = LocationArea::query()
-            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
-            ->where('slug', 'riverbank')
-            ->firstOrFail();
-        $area->update([
-            'boss_base_chance' => 0,
-            'boss_pressure_chance_per_point' => 0,
-            'boss_pressure_threshold' => 9999,
+        $characterQuest = CharacterQuest::query()->create([
+            'game_character_id' => $character->id,
+            'quest_id' => $quest->id,
+            'status' => CharacterQuestStatus::ReadyToClaim,
+            'progress' => (int) $quest->objective_target,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now(),
         ]);
 
-        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'fight-monsters']), [
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), [
             'idempotency_key' => (string) Str::uuid(),
-            'location_area_id' => $area->id,
-            'redirect_focus' => $area->slug,
+            'character_quest_id' => $characterQuest->id,
         ]);
 
         $character->refresh()->load('equipment.characterItem.item');
 
-        $response->assertSessionMissing('status');
+        $response->assertSessionHas('status');
         $this->assertSame(2, (int) $character->level);
         $this->assertSame($character->effectiveMaxHealth(), (int) $character->health);
         $this->assertSame($character->effectiveMaxStamina(), (int) $character->stamina);
@@ -967,6 +1034,54 @@ class GameActionTest extends TestCase
         $this->assertStringEndsWith(' · Medium', $battle->encounter_name);
         $this->assertCount(3, data_get($battle->state, 'enemies', []));
         $this->assertSame(100, (int) data_get($battle->state, 'player.current_health'));
+    }
+
+    public function test_manual_fight_can_be_abandoned_without_rewards_or_duplicate_side_effects(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'experience' => 21,
+            'yang' => 17,
+        ]);
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'abandon-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'battle_id' => $battle->id,
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $character->refresh();
+        $battle->refresh();
+        $actionLog = GameActionLog::query()->latest('id')->firstOrFail();
+
+        $response->assertSessionMissing('status');
+        $response->assertSessionHas('manual_battle_result_log_id');
+        $this->assertSame('abandoned', $battle->status);
+        $this->assertSame(21, (int) $character->experience);
+        $this->assertSame(17, (int) $character->yang);
+        $this->assertSame(7, (int) $character->stamina);
+        $this->assertSame(0, GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->count());
+        $this->assertStringContainsString('No rewards were gained', (string) data_get($actionLog->outcome, 'message'));
     }
 
     public function test_midgame_manual_pack_rewards_do_not_grant_nearly_a_full_level_anymore(): void

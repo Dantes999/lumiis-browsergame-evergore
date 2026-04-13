@@ -8,6 +8,7 @@ use App\Models\CharacterEquipment;
 use App\Models\CharacterItem;
 use App\Models\CharacterItemBonus;
 use App\Models\CharacterQuest;
+use App\Models\GameBattle;
 use App\Models\CharacterSkill;
 use App\Models\GameActionLog;
 use App\Models\GameCharacter;
@@ -109,6 +110,82 @@ class GameActionBranchCoverageTest extends TestCase
         $this->assertSame(297, (int) $character->yang);
         $this->assertSame(19, (int) $character->experience);
         $this->assertNull($character->action_available_at);
+    }
+
+    public function test_rest_completion_is_resolved_only_once_after_reopening_the_dashboard(): void
+    {
+        $this->freezeTime();
+
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'health' => 8,
+            'stamina' => 1,
+            'yang' => 77,
+            'experience' => 19,
+        ]);
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'rest']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'rest_minutes' => 120,
+        ])->assertSessionHas('status');
+
+        $this->travel(121)->minutes();
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        $character->refresh();
+
+        $resolvedState = [
+            'health' => (int) $character->health,
+            'stamina' => (int) $character->stamina,
+            'sp' => (int) $character->sp,
+            'yang' => (int) $character->yang,
+            'experience' => (int) $character->experience,
+            'action_available_at' => $character->action_available_at,
+        ];
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        $character->refresh();
+
+        $this->assertSame($resolvedState['health'], (int) $character->health);
+        $this->assertSame($resolvedState['stamina'], (int) $character->stamina);
+        $this->assertSame($resolvedState['sp'], (int) $character->sp);
+        $this->assertSame($resolvedState['yang'], (int) $character->yang);
+        $this->assertSame($resolvedState['experience'], (int) $character->experience);
+        $this->assertSame($resolvedState['action_available_at'], $character->action_available_at);
+    }
+
+    public function test_start_manual_fight_is_idempotent_and_does_not_double_spend_stamina(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan');
+
+        $area = LocationArea::query()->where('slug', 'riverbank')->firstOrFail();
+        $idempotencyKey = (string) Str::uuid();
+        $payload = [
+            'idempotency_key' => $idempotencyKey,
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ];
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), $payload)
+            ->assertRedirect();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), $payload)
+            ->assertRedirect();
+
+        $character->refresh();
+
+        $this->assertSame(7, (int) $character->stamina);
+        $this->assertSame(1, GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->count());
+        $this->assertSame(1, GameActionLog::query()
+            ->where('game_character_id', $character->id)
+            ->where('action', 'start-manual-fight')
+            ->where('idempotency_key', $idempotencyKey)
+            ->count());
     }
 
     public function test_travel_is_disabled_even_when_the_character_has_a_route_target(): void

@@ -76,7 +76,7 @@ class GameActionController extends Controller
 
                     // Manual battles should end inside the fight window itself.
                     // Auto-fights still use the replay overlay after redirect.
-                    if ($actionType->isBattleTurnAction()) {
+                    if ($actionType->requiresActiveBattle()) {
                         $response->with('manual_battle_result_log_id', $actionLog->id);
                     } else {
                         $response->with('battle_replay_log_id', $actionLog->id);

@@ -13,6 +13,7 @@ enum GameActionType: string
     case StartManualFight = 'start-manual-fight';
     case BattleAttack = 'battle-attack';
     case BattleUseSkill = 'battle-use-skill';
+    case AbandonManualFight = 'abandon-manual-fight';
     case AllocateStatusPoint = 'allocate-status-point';
     case ClaimQuest = 'claim-quest';
     case Rest = 'rest';
@@ -58,6 +59,7 @@ enum GameActionType: string
             self::StartManualFight => 'Start Manual Fight',
             self::BattleAttack => 'Battle Attack',
             self::BattleUseSkill => 'Battle Use Skill',
+            self::AbandonManualFight => 'Abandon Manual Fight',
             self::AllocateStatusPoint => 'Allocate Status Point',
             self::ClaimQuest => 'Claim Quest',
             self::Rest => 'Rest',
@@ -114,6 +116,16 @@ enum GameActionType: string
         return match ($this) {
             self::BattleAttack,
             self::BattleUseSkill => true,
+            default => false,
+        };
+    }
+
+    public function requiresActiveBattle(): bool
+    {
+        return match ($this) {
+            self::BattleAttack,
+            self::BattleUseSkill,
+            self::AbandonManualFight => true,
             default => false,
         };
     }

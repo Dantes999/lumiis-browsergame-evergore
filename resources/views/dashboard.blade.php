@@ -498,6 +498,7 @@
                 actionLockSeconds: {{ $character->cooldownSecondsRemaining() }},
                 resting: @js($restingState),
                 activeBattleRound: {{ $hasActiveBattle ? max(1, (int) data_get($activeBattleState, 'round', 1)) : 0 }},
+                hasActiveBattle: @js($hasActiveBattle),
             })"
         class="portal-stage dashboard-portal"
         data-tutorial-step="{{ $tutorialActive ? $tutorialStep : '' }}"
@@ -846,7 +847,28 @@
                         <div class="battle-replay-actions">
                             <span class="cozy-chip">{{ __('Round') }} {{ data_get($activeBattleState, 'round', 1) }}</span>
                             <span class="cozy-chip">{{ ! $tutorialActive && $activeBattleSkills->isNotEmpty() ? __('Skills Ready') : __('Attack Only') }}</span>
+                            @if (! $tutorialActive)
+                                <form method="POST" action="{{ route('game.actions.store', ['action' => 'abandon-manual-fight']) }}">
+                                    @csrf
+                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                    <input type="hidden" name="battle_id" value="{{ $activeBattle->id }}">
+                                    @if ($activeFocus)
+                                        <input type="hidden" name="redirect_focus" value="{{ $activeFocus }}">
+                                    @endif
+
+                                    <button type="submit" class="action-button-muted">
+                                        {{ __('Abandon Fight') }}
+                                    </button>
+                                </form>
+                            @endif
                         </div>
+                    </div>
+
+                    <div class="paper-note battle-stage-message mb-4">
+                        <p class="text-[0.65rem] uppercase tracking-[0.26em] text-amber-900/70">{{ __('Safety') }}</p>
+                        <p class="mt-3 text-base leading-7 text-stone-800">
+                            {{ __('Closing the tab pauses this fight. Use Abandon Fight to end it with no rewards.') }}
+                        </p>
                     </div>
 
                     <div class="battle-replay-grid">

@@ -157,6 +157,10 @@ class ProcessGameAction
             $lockKeys[] = 'game-bonus-item:'.(int) $payload['target_character_item_id'];
         }
 
+        if ($action->requiresActiveBattle() && isset($payload['battle_id'])) {
+            $lockKeys[] = 'game-battle:'.(int) $payload['battle_id'];
+        }
+
         sort($lockKeys);
 
         return array_values(array_unique($lockKeys));
@@ -271,7 +275,7 @@ class ProcessGameAction
         $this->guardTutorialActionAvailability($action, $character, $payload, $activeBattle);
         $this->guardFeatureAvailability($action, $character, $payload);
 
-        if ($activeBattle !== null && ! $action->isBattleTurnAction()) {
+        if ($activeBattle !== null && ! $action->requiresActiveBattle()) {
             if (
                 $character->isInTutorial()
                 && TutorialFlow::currentStep($character) === TutorialFlow::STEP_BATTLE_UI
@@ -287,7 +291,7 @@ class ProcessGameAction
             throw new GameActionException(__('You are already inside a battle. Finish it before using other actions.'));
         }
 
-        if ($activeBattle === null && $action->isBattleTurnAction()) {
+        if ($activeBattle === null && $action->requiresActiveBattle()) {
             throw new GameActionException(__('There is no active manual battle to continue.'));
         }
 
@@ -369,6 +373,7 @@ class ProcessGameAction
             GameActionType::StartManualFight => $this->startManualFight($character, $payload, $processedAt),
             GameActionType::BattleAttack => $this->battleAttack($character, $activeBattle, $payload, $processedAt),
             GameActionType::BattleUseSkill => $this->battleUseSkill($character, $activeBattle, $payload, $processedAt),
+            GameActionType::AbandonManualFight => $this->abandonManualFight($character, $activeBattle, $payload, $processedAt),
             GameActionType::AllocateStatusPoint => $this->allocateStatusPoint($character, $payload),
             GameActionType::ClaimQuest => $this->claimQuest($character, $payload),
             GameActionType::Rest => $this->rest($character, $payload, $processedAt),

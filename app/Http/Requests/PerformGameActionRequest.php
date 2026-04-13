@@ -96,6 +96,7 @@ class PerformGameActionRequest extends FormRequest
                 Rule::requiredIf(in_array($action, [
                     GameActionType::BattleAttack,
                     GameActionType::BattleUseSkill,
+                    GameActionType::AbandonManualFight,
                 ], true)),
                 'nullable',
                 'integer',
