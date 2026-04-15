@@ -1,13 +1,12 @@
 @php
     $authUser = Auth::user();
-    $currentCharacter = $authUser?->character()
-        ->with([
+    $activeCharacterResolver = app(\App\Services\Game\ActiveCharacterResolver::class);
+    $currentCharacter = $activeCharacterResolver->current($authUser, request(), [
             'location',
             'equipment.characterItem.item',
             'equipment.characterItem.bonuses',
             'learnedSkills.skill',
-        ])
-        ->first();
+        ]);
     $navbarMoment = now();
     $staminaNavbarPreview = $currentCharacter?->staminaRecoveryState($navbarMoment);
     $healthNavbarPreview = $currentCharacter?->healthRecoveryState($navbarMoment);
@@ -46,6 +45,7 @@
     $navbarCanOpenSettings = $currentCharacter && ! $navbarTutorialActive;
     $navbarCanOpenMobileInfo = $currentCharacter && ! $navbarTutorialActive;
     $settingsUrl = $currentCharacter ? route('dashboard', ['panel' => 'settings']) : route('profile.edit');
+    $charactersUrl = route('characters.index');
     $settingsLinkIsActive = request()->routeIs('profile.*')
         || (request()->routeIs('dashboard', 'game.dashboard') && request()->query('panel') === 'settings');
     $useClassicDashboardHeader = request()->routeIs('dashboard', 'game.dashboard', 'profile.*') && $currentCharacter !== null;
@@ -87,12 +87,26 @@
                     </a>
                 @endif
 
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="theme-secondary-button public-site-cta-link utility-site-logout-button">
-                        {{ __('Logout') }}
-                    </button>
-                </form>
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button type="button" class="theme-secondary-button public-site-cta-link utility-site-logout-button">
+                            {{ __('Exit') }}
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <a href="{{ $charactersUrl }}" class="theme-dropdown-link">
+                            {{ __('Change Character') }}
+                        </a>
+
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="theme-dropdown-link">
+                                {{ __('Logout') }}
+                            </button>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
             </div>
         </header>
     </div>
@@ -318,12 +332,36 @@
                     </a>
                 @endif
 
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="theme-button theme-button-primary theme-button-compact">
-                        {{ __('Logout') }}
-                    </button>
-                </form>
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button type="button" class="theme-button theme-button-primary theme-button-compact">
+                            {{ __('Exit') }}
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        @if (request()->routeIs('dashboard', 'game.dashboard'))
+                            <button
+                                type="button"
+                                class="theme-dropdown-link"
+                                x-on:click="$dispatch('dashboard-active-battle-link', { href: '{{ $charactersUrl }}' })"
+                            >
+                                {{ __('Change Character') }}
+                            </button>
+                        @else
+                            <a href="{{ $charactersUrl }}" class="theme-dropdown-link">
+                                {{ __('Change Character') }}
+                            </a>
+                        @endif
+
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="theme-dropdown-link">
+                                {{ __('Logout') }}
+                            </button>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
             </div>
         </div>
     </nav>

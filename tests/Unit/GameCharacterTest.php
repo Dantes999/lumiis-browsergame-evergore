@@ -152,6 +152,124 @@ class GameCharacterTest extends TestCase
         $this->assertSame(13, $character->effectiveAttack());
     }
 
+    public function test_equipped_weapon_type_reads_the_weapon_slot_item(): void
+    {
+        $character = new GameCharacter([
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'max_health' => 100,
+            'max_stamina' => 12,
+        ]);
+
+        $character->setRelation('equipment', new Collection([
+            $this->equippedItem([
+                'weapon_type' => 'dagger',
+            ]),
+            $this->equippedItem([
+                'equipment_slot' => 'armor',
+            ]),
+        ]));
+        $character->setRelation('learnedSkills', new Collection());
+
+        $this->assertSame('dagger', $character->equippedWeaponType());
+    }
+
+    public function test_warrior_skill_groups_split_into_offense_and_defense_profiles(): void
+    {
+        $bodyWarrior = new GameCharacter([
+            'race' => 'warrior',
+            'skill_group' => 'body',
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'max_health' => 100,
+            'max_stamina' => 12,
+            'strength' => 4,
+            'dexterity' => 6,
+            'vitality' => 3,
+        ]);
+        $bodyWarrior->setRelation('equipment', new Collection());
+        $bodyWarrior->setRelation('learnedSkills', new Collection());
+
+        $mentalWarrior = new GameCharacter([
+            'race' => 'warrior',
+            'skill_group' => 'mental',
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'max_health' => 100,
+            'max_stamina' => 12,
+            'strength' => 4,
+            'dexterity' => 6,
+            'vitality' => 3,
+        ]);
+        $mentalWarrior->setRelation('equipment', new Collection());
+        $mentalWarrior->setRelation('learnedSkills', new Collection());
+
+        $this->assertSame(15, $bodyWarrior->effectiveAttack());
+        $this->assertSame(7, $bodyWarrior->effectiveDefense());
+        $this->assertSame(7, $bodyWarrior->effectiveSpeed());
+        $this->assertSame(4, $bodyWarrior->criticalChancePercent());
+        $this->assertSame(4, $bodyWarrior->averageDamagePercentBonus());
+
+        $this->assertSame(13, $mentalWarrior->effectiveAttack());
+        $this->assertSame(9, $mentalWarrior->effectiveDefense());
+        $this->assertSame(6, $mentalWarrior->effectiveSpeed());
+        $this->assertSame(148, $mentalWarrior->effectiveMaxHealth());
+        $this->assertSame(4, $mentalWarrior->evadeChancePercent());
+    }
+
+    public function test_magic_skill_groups_split_between_hybrid_and_caster_profiles(): void
+    {
+        $weaponarySura = new GameCharacter([
+            'race' => 'sura',
+            'skill_group' => 'weaponary-magic',
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'max_health' => 100,
+            'max_stamina' => 12,
+            'max_sp' => 28,
+            'magic_attack' => 4,
+            'intelligence' => 5,
+            'strength' => 4,
+            'dexterity' => 3,
+            'vitality' => 4,
+        ]);
+        $weaponarySura->setRelation('equipment', new Collection());
+        $weaponarySura->setRelation('learnedSkills', new Collection());
+
+        $blackMagicSura = new GameCharacter([
+            'race' => 'sura',
+            'skill_group' => 'black-magic',
+            'attack' => 8,
+            'defense' => 6,
+            'speed' => 5,
+            'max_health' => 100,
+            'max_stamina' => 12,
+            'max_sp' => 28,
+            'magic_attack' => 4,
+            'intelligence' => 5,
+            'strength' => 4,
+            'dexterity' => 3,
+            'vitality' => 4,
+        ]);
+        $blackMagicSura->setRelation('equipment', new Collection());
+        $blackMagicSura->setRelation('learnedSkills', new Collection());
+
+        $this->assertSame(13, $weaponarySura->effectiveAttack());
+        $this->assertSame(9, $weaponarySura->effectiveDefense());
+        $this->assertSame(16, $weaponarySura->effectiveMagicAttack());
+        $this->assertSame(2, $weaponarySura->averageDamagePercentBonus());
+
+        $this->assertSame(12, $blackMagicSura->effectiveAttack());
+        $this->assertSame(8, $blackMagicSura->effectiveDefense());
+        $this->assertSame(18, $blackMagicSura->effectiveMagicAttack());
+        $this->assertSame(68, $blackMagicSura->effectiveMaxSp());
+        $this->assertSame(5, $blackMagicSura->skillDamagePercentBonus());
+    }
+
     public function test_next_level_experience_curve_stays_fast_early_and_slows_after_level_three(): void
     {
         $starter = new GameCharacter(['level' => 1]);

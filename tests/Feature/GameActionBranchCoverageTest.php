@@ -440,6 +440,66 @@ class GameActionBranchCoverageTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_buy_item_rejects_equipment_for_the_wrong_race(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'yang' => 1000,
+            'level' => 10,
+            'race' => 'warrior',
+        ]);
+
+        $weaponDealerArea = LocationArea::query()->where('slug', 'weapon-dealer')->firstOrFail();
+        $foreignWeaponOffer = ShopItem::query()
+            ->whereHas('shop.location', fn ($query) => $query->where('slug', 'yongan'))
+            ->whereHas('item', fn ($query) => $query->where('slug', 'cobra-dagger'))
+            ->with('item')
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'buy-item']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $weaponDealerArea->id,
+            'shop_item_id' => $foreignWeaponOffer->id,
+        ]);
+
+        $response->assertSessionHas('error');
+        $character->refresh();
+        $this->assertSame(1000, (int) $character->yang);
+        $this->assertDatabaseMissing('character_items', [
+            'game_character_id' => $character->id,
+            'item_id' => $foreignWeaponOffer->item->id,
+        ]);
+    }
+
+    public function test_shaman_cannot_buy_one_hand_weapon(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'yang' => 1000,
+            'level' => 10,
+            'race' => 'shaman',
+        ]);
+
+        $weaponDealerArea = LocationArea::query()->where('slug', 'weapon-dealer')->firstOrFail();
+        $oneHandOffer = ShopItem::query()
+            ->whereHas('shop.location', fn ($query) => $query->where('slug', 'yongan'))
+            ->whereHas('item', fn ($query) => $query->where('slug', 'recruit-blade'))
+            ->with('item')
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'buy-item']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $weaponDealerArea->id,
+            'shop_item_id' => $oneHandOffer->id,
+        ]);
+
+        $response->assertSessionHas('error');
+        $character->refresh();
+        $this->assertSame(1000, (int) $character->yang);
+        $this->assertDatabaseMissing('character_items', [
+            'game_character_id' => $character->id,
+            'item_id' => $oneHandOffer->item->id,
+        ]);
+    }
+
     public function test_blue_potions_stay_locked_until_skills_unlock_at_level_five(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [

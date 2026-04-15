@@ -532,6 +532,11 @@ Alpine.data(
         resting = null,
         activeBattleRound = 0,
         hasActiveBattle = false,
+        activeBattleCloseTitle = 'Manual Fight Still Active',
+        activeBattleCloseConfirmation = 'Closing this panel does not abort the fight. Your manual fight stays active and can be resumed from the dashboard.',
+        activeBattleCloseWarning = 'Use Abandon Fight only if you want to end it with no rewards.',
+        activeBattleCloseStayLabel = 'Keep Fight Open',
+        activeBattleCloseProceedLabel = 'Close View',
     } = {}) => ({
         activePanel,
         requestedPanel,
@@ -541,6 +546,11 @@ Alpine.data(
         resting,
         activeBattleRound,
         hasActiveBattle,
+        activeBattleCloseTitle,
+        activeBattleCloseConfirmation,
+        activeBattleCloseWarning,
+        activeBattleCloseStayLabel,
+        activeBattleCloseProceedLabel,
         tutorialDriver: null,
         tutorialDriverActive: false,
         actionLockIntervalId: null,
@@ -550,6 +560,9 @@ Alpine.data(
         linkNavigationHandler: null,
         internalNavigationAway: false,
         internalNavigationResetId: null,
+        activeBattleCloseModalOpen: false,
+        activeBattleCloseAction: null,
+        activeBattleCloseActionLabel: null,
 
         init() {
             this.syncBattleTitle();
@@ -666,6 +679,17 @@ Alpine.data(
             }, 4000);
         },
 
+        resetInternalNavigationAway() {
+            this.internalNavigationAway = false;
+
+            if (this.internalNavigationResetId === null) {
+                return;
+            }
+
+            window.clearTimeout(this.internalNavigationResetId);
+            this.internalNavigationResetId = null;
+        },
+
         startActionLockCountdown() {
             if (this.actionLockSeconds <= 0) {
                 return;
@@ -712,8 +736,97 @@ Alpine.data(
         },
 
         closePanel() {
+            if (this.activePanel === null) {
+                return;
+            }
+
+            if (this.hasActiveBattle) {
+                this.openActiveBattleCloseModal(() => {
+                    this.performPanelClose();
+                }, 'Close Panel');
+
+                return;
+            }
+
+            this.performPanelClose();
+        },
+
+        performPanelClose() {
             this.activePanel = null;
             this.syncMobileChromeState();
+        },
+
+        confirmActiveBattleClose(event = null) {
+            if (!this.hasActiveBattle) {
+                return true;
+            }
+
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            this.resetInternalNavigationAway();
+
+            const anchor = event?.currentTarget instanceof HTMLAnchorElement
+                ? event.currentTarget
+                : event?.target instanceof Element
+                    ? event.target.closest('a[href]')
+                    : null;
+            const href = anchor instanceof HTMLAnchorElement ? anchor.href : null;
+
+            this.openActiveBattleCloseModal(() => {
+                if (typeof href === 'string' && href !== '') {
+                    this.markInternalNavigationAway();
+                    window.location.assign(href);
+                }
+            });
+
+            return false;
+        },
+
+        confirmNavigation(href = null) {
+            if (typeof href !== 'string' || href === '') {
+                return;
+            }
+
+            if (!this.hasActiveBattle) {
+                this.markInternalNavigationAway();
+                window.location.assign(href);
+
+                return;
+            }
+
+            this.resetInternalNavigationAway();
+            this.openActiveBattleCloseModal(() => {
+                this.markInternalNavigationAway();
+                window.location.assign(href);
+            }, 'Leave View');
+        },
+
+        openActiveBattleCloseModal(action = null, actionLabel = null) {
+            this.activeBattleCloseAction = typeof action === 'function' ? action : null;
+            this.activeBattleCloseActionLabel = actionLabel ?? this.activeBattleCloseProceedLabel;
+            this.activeBattleCloseModalOpen = true;
+        },
+
+        dismissActiveBattleCloseModal() {
+            this.activeBattleCloseModalOpen = false;
+            this.activeBattleCloseAction = null;
+            this.activeBattleCloseActionLabel = null;
+            this.resetInternalNavigationAway();
+        },
+
+        proceedActiveBattleCloseModal() {
+            const action = this.activeBattleCloseAction;
+
+            this.activeBattleCloseModalOpen = false;
+            this.activeBattleCloseAction = null;
+            this.activeBattleCloseActionLabel = null;
+
+            if (typeof action === 'function') {
+                action();
+            }
         },
 
         isActionLocked() {

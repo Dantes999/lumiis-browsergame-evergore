@@ -72,6 +72,10 @@ trait HandlesInventoryActions
             throw new GameActionException(__('Your level is too low for that item.'));
         }
 
+        if ($shopItem->item->isEquippable() && ! $shopItem->item->canBeEquippedByRace($character->chosenRace())) {
+            throw new GameActionException(__('Your race cannot buy that equipment.'));
+        }
+
         if ($shopItem->stock !== null && $shopItem->stock < 1) {
             throw new GameActionException(__('That item is currently out of stock.'));
         }

@@ -492,8 +492,8 @@ class GameActionTest extends TestCase
 
         $weaponDealer
             ->assertOk()
-            ->assertSee('Frontier Blade')
-            ->assertSee('Valley Blade');
+            ->assertSee('Sickle Sword')
+            ->assertSee('Broad Sword');
 
         $armorDealer = $this->actingAs($user)->get(route('dashboard', [
             'focus' => 'armor-dealer',
@@ -689,7 +689,7 @@ class GameActionTest extends TestCase
         $response
             ->assertOk()
             ->assertSee(__('Weapon Upgrades +0 to +9'))
-            ->assertSee('Recruit Blade +0')
+            ->assertSee('Sword +0')
             ->assertSee(__('Upgrade'));
     }
 
@@ -1405,15 +1405,216 @@ class GameActionTest extends TestCase
         $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_attack_bonus'));
         $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_attack_bonus_rounds'));
         $this->assertStringContainsString(
-            'surrounds the weapon with Aura of the Sword',
+            'invokes Aura of the Sword',
             implode(' ', data_get($battle->state, 'battle_log', [])),
         );
+    }
+
+    public function test_dark_protection_applies_a_temporary_sp_shield_in_manual_battle(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'level' => 7,
+            'race' => 'sura',
+            'skill_group' => 'black-magic',
+            'sp' => 40,
+            'max_sp' => 40,
+        ]);
+
+        $skill = Skill::query()->where('slug', 'dark-protection')->firstOrFail();
+
+        CharacterSkill::query()->create([
+            'game_character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'rank' => 1,
+        ]);
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        $enemyMaxHealth = (int) data_get($battle->state, 'enemies.0.max_health');
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'battle-use-skill']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'battle_id' => $battle->id,
+            'battle_round' => $battle->round,
+            'enemy_id' => 'enemy-1',
+            'skill_slug' => 'dark-protection',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(2, (int) data_get($battle->state, 'round'));
+        $this->assertSame($enemyMaxHealth, (int) data_get($battle->state, 'enemies.0.current_health'));
+        $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_damage_to_sp_percent'));
+        $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_damage_to_sp_percent_rounds'));
+        $this->assertStringContainsString(
+            'invokes Dark Protection',
+            implode(' ', data_get($battle->state, 'battle_log', [])),
+        );
+    }
+
+    public function test_help_of_the_dragon_applies_a_temporary_crit_buff_in_manual_battle(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'level' => 9,
+            'race' => 'shaman',
+            'skill_group' => 'dragon',
+            'sp' => 42,
+            'max_sp' => 42,
+        ]);
+
+        $skill = Skill::query()->where('slug', 'dragons-strength')->firstOrFail();
+
+        CharacterSkill::query()->create([
+            'game_character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'rank' => 1,
+        ]);
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        $enemyMaxHealth = (int) data_get($battle->state, 'enemies.0.max_health');
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'battle-use-skill']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'battle_id' => $battle->id,
+            'battle_round' => $battle->round,
+            'enemy_id' => 'enemy-1',
+            'skill_slug' => 'dragons-strength',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(2, (int) data_get($battle->state, 'round'));
+        $this->assertLessThanOrEqual($enemyMaxHealth, (int) data_get($battle->state, 'enemies.0.current_health'));
+        $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_crit_bonus'));
+        $this->assertGreaterThan(0, (int) data_get($battle->state, 'player.temporary_crit_bonus_rounds'));
+        $this->assertStringContainsString(
+            'invokes Help of the Dragon',
+            implode(' ', data_get($battle->state, 'battle_log', [])),
+        );
+    }
+
+    public function test_bash_can_stagger_an_enemy_and_cancel_its_turn(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'level' => 5,
+            'race' => 'warrior',
+            'skill_group' => 'mental',
+            'vitality' => 18,
+            'strength' => 8,
+        ]);
+
+        $skill = Skill::query()->where('slug', 'bash')->firstOrFail();
+
+        CharacterSkill::query()->create([
+            'game_character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'rank' => 1,
+        ]);
+
+        $area = LocationArea::query()
+            ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
+            ->where('slug', 'riverbank')
+            ->firstOrFail();
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'monster',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        $battleState = $battle->state;
+        $battleState['enemies'] = collect($battleState['enemies'] ?? [])
+            ->map(function (array $enemy, int $index): array {
+                if ($index === 0) {
+                    return [
+                        ...$enemy,
+                        'current_health' => 60,
+                        'max_health' => 60,
+                        'minimum_attack' => 7,
+                        'maximum_attack' => 7,
+                    ];
+                }
+
+                return [
+                    ...$enemy,
+                    'current_health' => 0,
+                ];
+            })
+            ->values()
+            ->all();
+        $battle->update([
+            'state' => $battleState,
+        ]);
+
+        $startingHealth = (int) data_get($battleState, 'player.current_health', $character->health);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'battle-use-skill']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'battle_id' => $battle->id,
+            'battle_round' => $battle->round,
+            'enemy_id' => 'enemy-1',
+            'skill_slug' => 'bash',
+            'redirect_focus' => $area->slug,
+        ]);
+
+        $battle->refresh();
+        $battleLog = implode(' ', data_get($battle->state, 'battle_log', []));
+
+        $response->assertSessionHas('status');
+        $this->assertSame(2, (int) data_get($battle->state, 'round'));
+        $this->assertSame($startingHealth, (int) data_get($battle->state, 'player.current_health'));
+        $this->assertStringContainsString('staggered and may lose the next turn', $battleLog);
+        $this->assertStringContainsString('staggered and loses the turn', $battleLog);
     }
 
     public function test_poison_skill_applies_a_damage_over_time_effect_during_manual_battle(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 8,
+            'level' => 9,
             'race' => 'ninja',
             'skill_group' => 'dagger',
             'attack' => 9,
@@ -1424,7 +1625,7 @@ class GameActionTest extends TestCase
             'max_sp' => 40,
         ]);
 
-        $skill = Skill::query()->where('slug', 'poisonous-cloud')->firstOrFail();
+        $skill = Skill::query()->where('slug', 'insidious-poison')->firstOrFail();
 
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
@@ -1455,7 +1656,7 @@ class GameActionTest extends TestCase
             'battle_id' => $battle->id,
             'battle_round' => $battle->round,
             'enemy_id' => 'enemy-1',
-            'skill_slug' => 'poisonous-cloud',
+            'skill_slug' => 'insidious-poison',
             'redirect_focus' => $area->slug,
         ]);
 
@@ -1463,7 +1664,7 @@ class GameActionTest extends TestCase
         $battleLog = implode(' ', data_get($battle->state, 'battle_log', []));
         $enemies = collect(data_get($battle->state, 'enemies', []));
 
-        $response->assertSessionHas('status');
+        $response->assertSessionMissing('error');
         $this->assertStringContainsString('poisoned', $battleLog);
         $this->assertStringContainsString('poison damage', $battleLog);
         $this->assertTrue($enemies->contains(fn (array $enemy): bool => ((int) ($enemy['poison_rounds'] ?? 0)) > 0));

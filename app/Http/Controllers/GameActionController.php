@@ -7,6 +7,7 @@ use App\Exceptions\GameActionException;
 use App\Http\Requests\PerformGameActionRequest;
 use App\Models\GameActionLog;
 use App\Models\GameBattle;
+use App\Services\Game\ActiveCharacterResolver;
 use App\Services\Game\ProcessGameAction;
 use Illuminate\Http\RedirectResponse;
 
@@ -21,14 +22,21 @@ class GameActionController extends Controller
     public function __invoke(
         PerformGameActionRequest $request,
         string $action,
+        ActiveCharacterResolver $activeCharacterResolver,
         ProcessGameAction $processGameAction,
     ): RedirectResponse {
         $actionType = GameActionType::from($action);
         $redirectParameters = [];
         $redirectFocus = trim((string) $request->input('redirect_focus'));
+        $activeCharacter = $activeCharacterResolver->current($request->user(), $request);
 
         if ($redirectFocus !== '') {
             $redirectParameters['focus'] = $redirectFocus;
+        }
+
+        if ($activeCharacter === null) {
+            return to_route('characters.index')
+                ->with('error', __('Create or select a character before entering the realm.'));
         }
 
         try {
@@ -38,10 +46,11 @@ class GameActionController extends Controller
                 $request->user(),
                 $actionType,
                 $validated,
+                $activeCharacter,
             );
 
             $response = to_route('dashboard', $redirectParameters);
-            $characterId = $request->user()->character()->value('id');
+            $characterId = $activeCharacter->id;
             $flashStatus = true;
 
             if ($characterId !== null) {

@@ -8,6 +8,7 @@ use App\Models\GameMessage;
 use App\Models\GameCharacter;
 use App\Models\LocationArea;
 use App\Models\Skill;
+use App\Services\Game\ActiveCharacterResolver;
 use App\Services\Game\CharacterInventoryService;
 use App\Services\Game\QuestProgressService;
 use App\Services\Game\RestStateService;
@@ -15,6 +16,7 @@ use App\Support\Game\FeatureUnlocks;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
@@ -27,17 +29,19 @@ class GameDashboardController extends Controller
 {
     public function __invoke(
         Request $request,
+        ActiveCharacterResolver $activeCharacterResolver,
         CharacterInventoryService $inventoryService,
         QuestProgressService $questProgressService,
         RestStateService $restStateService,
-    ): View
+    ): View|RedirectResponse
     {
         // Load everything the dashboard needs up front so the Blade template can stay mostly declarative.
         // Location areas are refreshed with their full column set below because the dashboard accesses
         // many area attributes directly (cooldowns, pressure thresholds, names, descriptions).
-        $character = $request->user()
-            ->character()
-            ->with([
+        $character = $activeCharacterResolver->current(
+            $request->user(),
+            $request,
+            [
                 'location.outgoingConnections.toLocation',
                 'location.areas.shop.shopItems.item',
                 'actionLogs' => fn ($query) => $query
@@ -56,8 +60,12 @@ class GameDashboardController extends Controller
                 'equipment.characterItem.item',
                 'equipment.characterItem.bonuses',
                 'learnedSkills.skill',
-            ])
-            ->firstOrFail();
+            ],
+        );
+
+        if (! $character instanceof GameCharacter) {
+            return to_route('characters.index');
+        }
 
         // The dashboard is the main inventory read surface, so we repair stale slot data here too.
         // That keeps older characters compatible after bag-layout schema changes.
@@ -98,12 +106,24 @@ class GameDashboardController extends Controller
             ->values();
 
         $chosenRace = $character->chosenRace();
-        $skillGroupOptions = MetinClassCatalog::groupsForRace($chosenRace);
+        $skillGroupOptions = collect(MetinClassCatalog::groupsForRace($chosenRace))
+            ->map(function (array $groupOption, string $groupKey) use ($chosenRace): array {
+                return [
+                    ...$groupOption,
+                    'identity' => MetinClassCatalog::skillGroupIdentityLabel($chosenRace, $groupKey),
+                    'passive_summary' => MetinClassCatalog::skillGroupPassiveSummary($chosenRace, $groupKey),
+                    'combat_summary' => MetinClassCatalog::skillGroupCombatSummary($chosenRace, $groupKey),
+                ];
+            })
+            ->all();
         $selectedSkillGroup = $character->hasChosenSkillGroup()
             ? [
                 'key' => $character->skill_group,
                 'label' => MetinClassCatalog::skillGroupLabel($chosenRace, $character->skill_group),
+                'identity' => MetinClassCatalog::skillGroupIdentityLabel($chosenRace, $character->skill_group),
                 'description' => data_get($skillGroupOptions, $character->skill_group.'.description'),
+                'passive_summary' => MetinClassCatalog::skillGroupPassiveSummary($chosenRace, (string) $character->skill_group),
+                'combat_summary' => MetinClassCatalog::skillGroupCombatSummary($chosenRace, (string) $character->skill_group),
             ]
             : null;
         $availableSkills = $character->hasChosenSkillGroup()

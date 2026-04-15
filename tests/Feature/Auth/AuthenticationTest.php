@@ -30,7 +30,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('characters.index', absolute: false));
     }
 
     public function test_successful_login_regenerates_the_session_id(): void
@@ -43,9 +43,24 @@ class AuthenticationTest extends TestCase
         $this->withSession(['pre_auth_probe' => 'present'])->post('/login', [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertRedirect(route('dashboard', absolute: false));
+        ])->assertRedirect(route('characters.index', absolute: false));
 
         $this->assertNotSame($beforeLoginSessionId, $this->app['session.store']->getId());
+    }
+
+    public function test_login_redirects_to_character_selection_even_if_a_dashboard_url_was_intended(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->withSession([
+            'url.intended' => route('dashboard', absolute: false),
+        ])->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('characters.index', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

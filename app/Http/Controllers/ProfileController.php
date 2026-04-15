@@ -20,7 +20,7 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View|RedirectResponse
     {
-        if ($request->user()?->character()->exists()) {
+        if ($request->user()?->characters()->exists()) {
             return Redirect::route('dashboard', ['panel' => 'settings']);
         }
 
@@ -110,7 +110,7 @@ class ProfileController extends Controller
 
     private function settingsRedirect(Request $request): RedirectResponse
     {
-        if ($request->user()?->character()->exists()) {
+        if ($request->user()?->characters()->exists()) {
             return Redirect::route('dashboard', ['panel' => 'settings']);
         }
 

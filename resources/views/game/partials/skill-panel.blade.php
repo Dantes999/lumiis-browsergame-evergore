@@ -29,15 +29,30 @@
         <div class="mt-6 grid gap-4 lg:grid-cols-2">
             @foreach ($skillGroupOptions as $groupKey => $groupOption)
                 <div class="paper-note flex h-full flex-col justify-between gap-4">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <p class="font-[Cinzel] text-xl tracking-[0.08em] text-stone-900">{{ $groupOption['label'] }}</p>
-                            <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
-                                {{ $currentRaceLabel }}
-                            </span>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="font-[Cinzel] text-xl tracking-[0.08em] text-stone-900">{{ $groupOption['label'] }}</p>
+                                <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
+                                    {{ $currentRaceLabel }}
+                                </span>
+                                @if (! empty($groupOption['identity']))
+                                    <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
+                                        {{ $groupOption['identity'] }}
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="mt-2 text-sm leading-6 text-stone-700">{{ $groupOption['description'] }}</p>
+                            @if (! empty($groupOption['passive_summary']))
+                                <p class="mt-3 text-xs uppercase tracking-[0.24em] text-stone-700">
+                                    {{ __('Passive: :bonuses', ['bonuses' => implode(' · ', $groupOption['passive_summary'])]) }}
+                                </p>
+                            @endif
+                            @if (! empty($groupOption['combat_summary']))
+                                <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">
+                                    {{ __('Battle: :bonuses', ['bonuses' => implode(' · ', $groupOption['combat_summary'])]) }}
+                                </p>
+                            @endif
                         </div>
-                        <p class="mt-2 text-sm leading-6 text-stone-700">{{ $groupOption['description'] }}</p>
-                    </div>
 
                     <form method="POST" action="{{ route('game.actions.store', ['action' => 'choose-skill-group']) }}">
                         @csrf
@@ -51,15 +66,30 @@
             @endforeach
         </div>
     @else
-        <div class="paper-note mt-6">
-            <div class="flex flex-wrap items-center gap-2">
-                <p class="font-[Cinzel] text-lg tracking-[0.08em] text-stone-900">{{ $selectedSkillGroup['label'] }}</p>
-                <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
-                    {{ $currentRaceLabel }}
-                </span>
+            <div class="paper-note mt-6">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-[Cinzel] text-lg tracking-[0.08em] text-stone-900">{{ $selectedSkillGroup['label'] }}</p>
+                    <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
+                        {{ $currentRaceLabel }}
+                    </span>
+                    @if (! empty($selectedSkillGroup['identity']))
+                        <span class="rounded-full border border-amber-900/15 px-2 py-1 text-[0.58rem] uppercase tracking-[0.22em] text-stone-700">
+                            {{ $selectedSkillGroup['identity'] }}
+                        </span>
+                    @endif
+                </div>
+                <p class="mt-2 text-sm leading-6 text-stone-700">{{ $selectedSkillGroup['description'] }}</p>
+                @if (! empty($selectedSkillGroup['passive_summary']))
+                    <p class="mt-3 text-xs uppercase tracking-[0.24em] text-stone-700">
+                        {{ __('Passive: :bonuses', ['bonuses' => implode(' · ', $selectedSkillGroup['passive_summary'])]) }}
+                    </p>
+                @endif
+                @if (! empty($selectedSkillGroup['combat_summary']))
+                    <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">
+                        {{ __('Battle: :bonuses', ['bonuses' => implode(' · ', $selectedSkillGroup['combat_summary'])]) }}
+                    </p>
+                @endif
             </div>
-            <p class="mt-2 text-sm leading-6 text-stone-700">{{ $selectedSkillGroup['description'] }}</p>
-        </div>
 
         <div class="mt-6 grid gap-4 lg:grid-cols-2">
             @foreach ($availableSkills as $skill)

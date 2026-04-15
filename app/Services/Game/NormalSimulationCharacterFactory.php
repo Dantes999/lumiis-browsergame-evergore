@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\User;
 use App\Support\Game\ExperienceCurve;
 use App\Support\Game\MetinClassCatalog;
+use App\Support\Game\WeaponTypeCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -185,7 +186,7 @@ class NormalSimulationCharacterFactory
 
     private function grantBaselineLoadout(GameCharacter $character, int $level): void
     {
-        foreach ($this->baselineEquipmentSlugs($level) as $itemSlug) {
+        foreach ($this->baselineEquipmentSlugs($character->chosenRace(), $level) as $itemSlug) {
             if (! Item::query()->where('slug', $itemSlug)->exists()) {
                 continue;
             }
@@ -231,11 +232,9 @@ class NormalSimulationCharacterFactory
     /**
      * @return list<string>
      */
-    private function baselineEquipmentSlugs(int $level): array
+    private function baselineEquipmentSlugs(string $race, int $level): array
     {
-        $weapon = $level >= 20
-            ? 'valley-blade'
-            : ($level >= 8 ? 'frontier-blade' : 'recruit-blade');
+        $weapon = WeaponTypeCatalog::baselineWeaponSlugForRaceAndLevel($race, $level);
 
         $armor = $level >= 22
             ? 'orc-mail'

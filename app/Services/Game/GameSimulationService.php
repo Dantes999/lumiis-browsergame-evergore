@@ -236,6 +236,7 @@ class GameSimulationService
             $character->user,
             $action,
             array_merge($payload, ['idempotency_key' => $idempotencyKey]),
+            $character,
         );
 
         return GameActionLog::query()

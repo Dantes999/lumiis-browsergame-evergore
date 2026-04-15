@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\AdminQuestController;
 use App\Http\Controllers\Admin\AdminShopController;
 use App\Http\Controllers\Admin\AdminSmithRefineRateController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\CharacterSelectionController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameDashboardController;
 use App\Http\Controllers\ProfileController;
@@ -29,6 +30,12 @@ Route::get('/', function () {
 
 // Normal player routes. Everything inside this group requires a signed-in account.
 Route::middleware(['auth', 'no-store'])->group(function () {
+    Route::get('/characters', [CharacterSelectionController::class, 'index'])->name('characters.index');
+    Route::post('/characters', [CharacterSelectionController::class, 'store'])->name('characters.store');
+    Route::patch('/characters/{character}', [CharacterSelectionController::class, 'update'])->name('characters.update');
+    Route::delete('/characters/{character}', [CharacterSelectionController::class, 'destroy'])->name('characters.destroy');
+    Route::post('/characters/{character}/select', [CharacterSelectionController::class, 'select'])->name('characters.select');
+
     Route::get('/dashboard', GameDashboardController::class)
         ->middleware('throttle:dashboard-views')
         ->name('dashboard');

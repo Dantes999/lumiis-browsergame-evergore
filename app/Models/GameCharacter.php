@@ -313,6 +313,14 @@ class GameCharacter extends Model
         return MetinClassCatalog::groupsForRace($this->chosenRace());
     }
 
+    public function skillGroupPassiveBonuses(): array
+    {
+        return MetinClassCatalog::skillGroupPassiveBonuses(
+            $this->chosenRace(),
+            $this->hasChosenSkillGroup() ? (string) $this->skill_group : null,
+        );
+    }
+
     public function biologistResearchUnlocked(): bool
     {
         return FeatureUnlocks::isUnlocked($this, 'biologist_research');
@@ -330,7 +338,8 @@ class GameCharacter extends Model
             + $this->equippedBonus('attack_bonus')
             + $this->skillBonus('attack')
             + $this->effectiveStrength()
-            + intdiv($this->effectiveDexterity(), 4),
+            + intdiv($this->effectiveDexterity(), 4)
+            + $this->skillGroupPassiveBonus('attack'),
         );
     }
 
@@ -341,7 +350,8 @@ class GameCharacter extends Model
             $this->defense
             + $this->equippedBonus('defense_bonus')
             + $this->skillBonus('defense')
-            + intdiv($this->effectiveVitality(), 2),
+            + intdiv($this->effectiveVitality(), 2)
+            + $this->skillGroupPassiveBonus('defense'),
         );
     }
 
@@ -352,7 +362,8 @@ class GameCharacter extends Model
             $this->speed
             + $this->equippedBonus('speed_bonus')
             + $this->skillBonus('speed')
-            + intdiv($this->effectiveDexterity(), 5),
+            + intdiv($this->effectiveDexterity(), 5)
+            + $this->skillGroupPassiveBonus('speed'),
         );
     }
 
@@ -363,7 +374,8 @@ class GameCharacter extends Model
             $this->max_health
             + $this->equippedBonus('health_bonus')
             + ($this->effectiveVitality() * 10)
-            + $this->equippedBonusType('max_health'),
+            + $this->equippedBonusType('max_health')
+            + $this->skillGroupPassiveBonus('max_health'),
         );
     }
 
@@ -408,7 +420,13 @@ class GameCharacter extends Model
 
     public function effectiveMaxSp(): int
     {
-        return max(1, $this->intAttribute('max_sp', 24) + ($this->effectiveIntelligence() * 6) + $this->equippedBonusType('max_sp'));
+        return max(
+            1,
+            $this->intAttribute('max_sp', 24)
+            + ($this->effectiveIntelligence() * 6)
+            + $this->equippedBonusType('max_sp')
+            + $this->skillGroupPassiveBonus('max_sp'),
+        );
     }
 
     public function effectiveCurrentSp(): int
@@ -418,17 +436,41 @@ class GameCharacter extends Model
 
     public function effectiveMagicAttack(): int
     {
-        return max(0, $this->intAttribute('magic_attack') + ($this->effectiveIntelligence() * 2) + $this->equippedBonusType('magic_attack'));
+        return max(
+            0,
+            $this->intAttribute('magic_attack')
+            + ($this->effectiveIntelligence() * 2)
+            + $this->equippedBonusType('magic_attack')
+            + $this->skillGroupPassiveBonus('magic_attack'),
+        );
     }
 
     public function criticalChancePercent(): int
     {
-        return min(35, max(0, $this->intAttribute('crit_chance') + intdiv($this->effectiveDexterity(), 3) + $this->equippedBonusType('crit_chance')));
+        return min(
+            35,
+            max(
+                0,
+                $this->intAttribute('crit_chance')
+                + intdiv($this->effectiveDexterity(), 3)
+                + $this->equippedBonusType('crit_chance')
+                + $this->skillGroupPassiveBonus('crit_chance'),
+            ),
+        );
     }
 
     public function evadeChancePercent(): int
     {
-        return min(40, max(0, $this->intAttribute('evade_chance') + intdiv($this->effectiveDexterity(), 2) + $this->equippedBonusType('evade_chance')));
+        return min(
+            40,
+            max(
+                0,
+                $this->intAttribute('evade_chance')
+                + intdiv($this->effectiveDexterity(), 2)
+                + $this->equippedBonusType('evade_chance')
+                + $this->skillGroupPassiveBonus('evade_chance'),
+            ),
+        );
     }
 
     public function monsterDamagePercentBonus(): int
@@ -458,12 +500,12 @@ class GameCharacter extends Model
 
     public function averageDamagePercentBonus(): int
     {
-        return max(0, $this->equippedBonusType('average_damage'));
+        return max(0, $this->equippedBonusType('average_damage') + $this->skillGroupPassiveBonus('average_damage'));
     }
 
     public function skillDamagePercentBonus(): int
     {
-        return max(0, $this->equippedBonusType('skill_damage'));
+        return max(0, $this->equippedBonusType('skill_damage') + $this->skillGroupPassiveBonus('skill_damage'));
     }
 
     public function damageMultiplierForEnemyCategory(?string $category): float
@@ -490,6 +532,21 @@ class GameCharacter extends Model
             : $this->equipment()->with('characterItem.item', 'characterItem.bonuses')->get();
 
         return $equipment->keyBy('slot');
+    }
+
+    public function equippedWeaponItem(): ?Item
+    {
+        $this->loadMissing('equipment.characterItem.item');
+
+        $weapon = $this->equipment->firstWhere('slot', 'weapon');
+        $item = $weapon?->characterItem?->item;
+
+        return $item instanceof Item ? $item : null;
+    }
+
+    public function equippedWeaponType(): ?string
+    {
+        return $this->equippedWeaponItem()?->weaponType();
     }
 
     /**
@@ -545,6 +602,11 @@ class GameCharacter extends Model
         return (int) $equipment->sum(
             static fn (CharacterEquipment $equipment): int => (int) $equipment->characterItem?->bonusValue($bonusType),
         );
+    }
+
+    private function skillGroupPassiveBonus(string $key): int
+    {
+        return (int) ($this->skillGroupPassiveBonuses()[$key] ?? 0);
     }
 
     private function skillBonus(string $effectType): int

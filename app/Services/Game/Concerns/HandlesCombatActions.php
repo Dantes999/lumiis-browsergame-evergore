@@ -10,6 +10,7 @@ use App\Models\GameCharacter;
 use App\Models\LocationArea;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
+use App\Support\Game\WeaponCombatProfileCatalog;
 use Illuminate\Support\Carbon;
 
 /**
@@ -522,13 +523,29 @@ trait HandlesCombatActions
         $effectiveMagicAttack = $character->effectiveMagicAttack();
         $criticalChance = $character->criticalChancePercent();
         $evadeChance = $character->evadeChancePercent();
+        $weaponType = $character->equippedWeaponType();
+        $skillGroupCombatProfile = MetinClassCatalog::skillGroupCombatProfile(
+            $character->chosenRace(),
+            $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
+        );
         $playerSp = $character->effectiveCurrentSp();
         $combatSkills = $this->normalizeCombatSkillPool($this->buildCombatSkills($character));
         $temporaryGuard = 0;
+        $temporaryGuardRounds = 0;
         $temporaryCritBonus = 0;
+        $temporaryCritBonusRounds = 0;
         $temporaryEvadeBonus = 0;
+        $temporaryEvadeBonusRounds = 0;
         $temporaryAttackBonus = 0;
         $temporaryAttackBonusRounds = 0;
+        $temporaryLifestealPercent = 0;
+        $temporaryLifestealPercentRounds = 0;
+        $temporaryReflectPercent = 0;
+        $temporaryReflectPercentRounds = 0;
+        $temporaryDamageToSpPercent = 0;
+        $temporaryDamageToSpPercentRounds = 0;
+        $temporaryIncomingDamagePercent = 0;
+        $temporaryIncomingDamagePercentRounds = 0;
         $enemies = [];
 
         for ($index = 1; $index <= $packSize; $index++) {
@@ -540,6 +557,11 @@ trait HandlesCombatActions
                 'poison_damage' => 0,
                 'burn_rounds' => 0,
                 'burn_damage' => 0,
+                'attack_down_percent' => 0,
+                'attack_down_rounds' => 0,
+                'hit_penalty_percent' => 0,
+                'hit_penalty_rounds' => 0,
+                'stagger_rounds' => 0,
             ];
         }
 
@@ -558,20 +580,80 @@ trait HandlesCombatActions
 
             foreach ($enemies as $enemyIndex => $enemy) {
                 if ($enemy['health'] > 0) {
-                    $selectedSkill = $this->chooseAutoCombatSkill($combatSkills, $playerSp, $round, $temporaryAttackBonusRounds);
+                    $activeSelfBuffRounds = max(
+                        $temporaryAttackBonusRounds,
+                        $temporaryGuardRounds,
+                        $temporaryCritBonusRounds,
+                        $temporaryEvadeBonusRounds,
+                        $temporaryLifestealPercentRounds,
+                        $temporaryReflectPercentRounds,
+                        $temporaryDamageToSpPercentRounds,
+                        $temporaryIncomingDamagePercentRounds,
+                    );
+                    $selectedSkill = $this->chooseAutoCombatSkill($combatSkills, $playerSp, $round, $activeSelfBuffRounds);
                     $skillSpCost = (int) ($selectedSkill['sp_cost'] ?? 0);
                     $playerSp = max(0, $playerSp - $skillSpCost);
 
                     if ($selectedSkill !== null && (bool) ($selectedSkill['self_buff_only'] ?? false)) {
-                        $temporaryAttackBonus = max($temporaryAttackBonus, (int) ($selectedSkill['attack_buff'] ?? 0));
-                        $temporaryAttackBonusRounds = max(
-                            $temporaryAttackBonusRounds,
-                            max(0, (int) ($selectedSkill['attack_buff_rounds'] ?? 0)) + 1,
+                        $buffRounds = max(
+                            1,
+                            (int) (($selectedSkill['buff_rounds'] ?? 0) ?: ($selectedSkill['attack_buff_rounds'] ?? 0)),
                         );
-                        $playerAttackMessage = __(':player surrounds the weapon with :skill. Attack rises for the next :rounds rounds.', [
+                        $effectDuration = $buffRounds + 1;
+                        $this->applyTemporaryEffect(
+                            $temporaryAttackBonus,
+                            $temporaryAttackBonusRounds,
+                            (int) ($selectedSkill['attack_buff'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryGuard,
+                            $temporaryGuardRounds,
+                            (int) ($selectedSkill['guard'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryCritBonus,
+                            $temporaryCritBonusRounds,
+                            (int) ($selectedSkill['crit_bonus'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryEvadeBonus,
+                            $temporaryEvadeBonusRounds,
+                            (int) ($selectedSkill['evade_bonus'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryLifestealPercent,
+                            $temporaryLifestealPercentRounds,
+                            (int) ($selectedSkill['lifesteal_percent'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryReflectPercent,
+                            $temporaryReflectPercentRounds,
+                            (int) ($selectedSkill['reflect_percent'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryDamageToSpPercent,
+                            $temporaryDamageToSpPercentRounds,
+                            (int) ($selectedSkill['damage_to_sp_percent'] ?? 0),
+                            $effectDuration,
+                        );
+                        $this->applyTemporaryEffect(
+                            $temporaryIncomingDamagePercent,
+                            $temporaryIncomingDamagePercentRounds,
+                            max(0, -((int) ($selectedSkill['incoming_damage_percent'] ?? 0))),
+                            $effectDuration,
+                        );
+
+                        $playerAttackMessage = __(':player invokes :skill. :effects for the next :rounds rounds.', [
                             'player' => $character->name,
                             'skill' => $selectedSkill['name'],
-                            'rounds' => (int) ($selectedSkill['attack_buff_rounds'] ?? 0),
+                            'effects' => $this->describeSelfBuffEffects($selectedSkill),
+                            'rounds' => $buffRounds,
                         ]);
                         $battleLog[] = $playerAttackMessage;
                         $battleSteps[] = [
@@ -593,11 +675,10 @@ trait HandlesCombatActions
                     $attackBaseStat = $selectedSkill !== null && (bool) ($selectedSkill['uses_magic_attack'] ?? false)
                         ? $effectiveMagicAttack
                         : $effectiveAttack;
-                    $attackBaseStat += $temporaryAttackBonusRounds > 0 ? $temporaryAttackBonus : 0;
-                    $playerAttack = random_int(
-                        max(1, $attackBaseStat - 2 + intdiv($effectiveSpeed, 4)),
-                        max(2, $attackBaseStat + 4 + intdiv($effectiveSpeed, 2)),
-                    );
+                    $attackBaseStat += $this->activeTemporaryEffect($temporaryAttackBonus, $temporaryAttackBonusRounds);
+                    $attackBounds = WeaponCombatProfileCatalog::attackRollBounds($weaponType, $attackBaseStat, $effectiveSpeed);
+                    $attackBounds = $this->applySkillGroupAttackBounds($attackBounds, $skillGroupCombatProfile);
+                    $playerAttack = random_int($attackBounds['minimum'], $attackBounds['maximum']);
                     $playerAttack = (int) floor(
                         ($playerAttack + (int) ($selectedSkill['damage_bonus'] ?? 0))
                         * (float) ($selectedSkill['damage_multiplier'] ?? 1.0),
@@ -606,13 +687,23 @@ trait HandlesCombatActions
                         $character,
                         $playerAttack,
                         $selectedSkill !== null,
+                        WeaponCombatProfileCatalog::damagePercentBonus($weaponType, $selectedSkill !== null, $round)
+                            + $this->skillGroupDamagePercentBonus($skillGroupCombatProfile, $selectedSkill !== null, $round),
                     );
                     $playerDamage = $this->applyCategoryDamageBonus(
                         $character,
                         max(1, $playerAttack - (int) $monster->defense),
                         (string) $monster->race,
                     );
-                    $criticalHitChance = min(100, $criticalChance + (int) ($selectedSkill['crit_bonus'] ?? 0) + $temporaryCritBonus);
+                    $criticalHitChance = min(
+                        100,
+                        $criticalChance
+                        + WeaponCombatProfileCatalog::critChanceBonus($weaponType)
+                        + (int) ($skillGroupCombatProfile['crit_chance_bonus'] ?? 0)
+                        + $this->skillGroupOpeningCritBonus($skillGroupCombatProfile, $round)
+                        + (int) ($selectedSkill['crit_bonus'] ?? 0)
+                        + $this->activeTemporaryEffect($temporaryCritBonus, $temporaryCritBonusRounds),
+                    );
                     $criticalHit = $criticalHitChance > 0 && random_int(1, 100) <= $criticalHitChance;
 
                     if ($criticalHit) {
@@ -620,9 +711,16 @@ trait HandlesCombatActions
                     }
 
                     $enemies[$enemyIndex]['health'] = max(0, $enemy['health'] - $playerDamage);
-                    $temporaryGuard = max($temporaryGuard, (int) ($selectedSkill['guard'] ?? 0));
-                    $temporaryCritBonus = max($temporaryCritBonus, (int) ($selectedSkill['crit_bonus'] ?? 0));
-                    $temporaryEvadeBonus = max($temporaryEvadeBonus, (int) ($selectedSkill['evade_bonus'] ?? 0));
+                    $this->applyTemporaryEffect(
+                        $temporaryGuard,
+                        $temporaryGuardRounds,
+                        (int) ($selectedSkill['guard'] ?? 0)
+                            + WeaponCombatProfileCatalog::guardBonus($weaponType)
+                            + (int) ($skillGroupCombatProfile['guard_bonus'] ?? 0),
+                        1,
+                    );
+                    $this->applyTemporaryEffect($temporaryCritBonus, $temporaryCritBonusRounds, (int) ($selectedSkill['crit_bonus'] ?? 0), 1);
+                    $this->applyTemporaryEffect($temporaryEvadeBonus, $temporaryEvadeBonusRounds, (int) ($selectedSkill['evade_bonus'] ?? 0), 1);
                     $playerAttackMessage = $selectedSkill !== null
                         ? __(':player uses :skill on :enemy for :damage damage.', [
                             'player' => $character->name,
@@ -684,6 +782,38 @@ trait HandlesCombatActions
                                 'damage' => -$actualHeal,
                                 'remaining_health' => $playerHealth,
                                 'message' => $healMessage,
+                            ];
+                        }
+                    }
+
+                    $lifestealPercent = max(
+                        0,
+                        (int) ($skillGroupCombatProfile['lifesteal_percent'] ?? 0)
+                            + $this->activeTemporaryEffect($temporaryLifestealPercent, $temporaryLifestealPercentRounds),
+                    );
+
+                    if ($lifestealPercent > 0 && $playerDamage > 0 && $playerHealth > 0) {
+                        $lifestealHeal = $this->lifestealHealAmount($playerDamage, $lifestealPercent);
+                        $healedTo = min($character->effectiveMaxHealth(), $playerHealth + $lifestealHeal);
+                        $actualHeal = max(0, $healedTo - $playerHealth);
+                        $playerHealth = $healedTo;
+
+                        if ($actualHeal > 0) {
+                            $lifestealMessage = __(':player steals :amount HP through :skill.', [
+                                'player' => $character->name,
+                                'amount' => $actualHeal,
+                                'skill' => $selectedSkill['name'] ?? __('the attack'),
+                            ]);
+                            $battleLog[] = $lifestealMessage;
+                            $battleSteps[] = [
+                                'round' => $round,
+                                'actor' => 'player',
+                                'actor_label' => $character->name,
+                                'target_type' => 'player',
+                                'target_label' => $character->name,
+                                'damage' => -$actualHeal,
+                                'remaining_health' => $playerHealth,
+                                'message' => $lifestealMessage,
                             ];
                         }
                     }
@@ -766,21 +896,54 @@ trait HandlesCombatActions
 
             $aliveEnemyCount = max(1, collect($enemies)->where('health', '>', 0)->count());
 
-            foreach ($enemies as $enemy) {
+            foreach ($enemies as $enemyIndex => $enemy) {
                 if ($enemy['health'] <= 0) {
                     continue;
                 }
 
+                if ((int) ($enemy['stagger_rounds'] ?? 0) > 0) {
+                    $enemies[$enemyIndex]['stagger_rounds'] = max(0, (int) $enemy['stagger_rounds'] - 1);
+                    $staggerMessage = __(':enemy is staggered and loses the turn.', [
+                        'enemy' => $enemy['label'],
+                    ]);
+                    $battleLog[] = $staggerMessage;
+                    $battleSteps[] = [
+                        'round' => $round,
+                        'actor' => 'system',
+                        'actor_label' => __('Status'),
+                        'target_type' => 'enemy',
+                        'target_id' => $enemy['id'],
+                        'target_label' => $enemy['label'],
+                        'damage' => 0,
+                        'remaining_health' => $enemies[$enemyIndex]['health'],
+                        'message' => $staggerMessage,
+                    ];
+                    $this->decayEnemyEffect($enemies[$enemyIndex], 'attack_down_percent', 'attack_down_rounds');
+                    $this->decayEnemyEffect($enemies[$enemyIndex], 'hit_penalty_percent', 'hit_penalty_rounds');
+
+                    continue;
+                }
+
                 $enemyAttack = random_int((int) $monster->minimum_attack, (int) $monster->maximum_attack);
-                $guardReduction = $temporaryGuard > 0
-                    ? max(1, intdiv($temporaryGuard, $aliveEnemyCount))
+                $enemyAttack = $this->applyOutgoingEnemyDamageReduction(
+                    $enemyAttack,
+                    $this->activeEnemyEffect($enemy, 'attack_down_percent', 'attack_down_rounds'),
+                );
+                $activeGuard = $this->activeTemporaryEffect($temporaryGuard, $temporaryGuardRounds);
+                $guardReduction = $activeGuard > 0
+                    ? max(1, intdiv($activeGuard, $aliveEnemyCount))
                     : 0;
                 $packAggressionBonus = $this->resolvePackAggressionBonus(
                     $aliveEnemyCount,
                     (int) $monster->level,
                     (string) $monster->race,
                 );
-                $effectiveEvadeChance = min(95, $evadeChance + $temporaryEvadeBonus);
+                $effectiveEvadeChance = min(
+                    95,
+                    $evadeChance
+                        + $this->activeTemporaryEffect($temporaryEvadeBonus, $temporaryEvadeBonusRounds)
+                        + $this->activeEnemyEffect($enemy, 'hit_penalty_percent', 'hit_penalty_rounds'),
+                );
                 $dodged = $effectiveEvadeChance > 0
                     && random_int(1, 100) <= $effectiveEvadeChance;
                 $enemyDamage = $dodged
@@ -793,6 +956,31 @@ trait HandlesCombatActions
                         - $this->enemyDamageReduction($effectiveDefense)
                         - $guardReduction,
                     );
+                $enemyDamage = $dodged
+                    ? 0
+                    : $this->applyIncomingDamagePercentModifier(
+                        $enemyDamage,
+                        (int) ($skillGroupCombatProfile['incoming_damage_percent'] ?? 0)
+                            - $this->activeTemporaryEffect(
+                                $temporaryIncomingDamagePercent,
+                                $temporaryIncomingDamagePercentRounds,
+                            ),
+                    );
+                $spAbsorbed = 0;
+
+                if (! $dodged) {
+                    $enemyDamage = $this->absorbDamageIntoSp(
+                        $enemyDamage,
+                        $playerSp,
+                        (int) ($skillGroupCombatProfile['damage_to_sp_percent'] ?? 0)
+                            + $this->activeTemporaryEffect(
+                                $temporaryDamageToSpPercent,
+                                $temporaryDamageToSpPercentRounds,
+                            ),
+                        $spAbsorbed,
+                    );
+                }
+
                 $playerHealth -= $enemyDamage;
                 $enemyAttackMessage = $dodged
                     ? __(':player dodges :enemy.', [
@@ -804,6 +992,10 @@ trait HandlesCombatActions
                         'player' => $character->name,
                         'damage' => $enemyDamage,
                     ]);
+
+                if ($spAbsorbed > 0) {
+                    $enemyAttackMessage .= ' '.__(':amount damage is absorbed by SP.', ['amount' => $spAbsorbed]);
+                }
 
                 if ($playerHealth <= 0) {
                     $enemyAttackMessage .= ' '.__(':player collapses.', ['player' => $character->name]);
@@ -820,6 +1012,47 @@ trait HandlesCombatActions
                     'remaining_health' => max(0, $playerHealth),
                     'message' => $enemyAttackMessage,
                 ];
+
+                $reflectPercent = max(
+                    0,
+                    (int) ($skillGroupCombatProfile['reflect_percent'] ?? 0)
+                        + $this->activeTemporaryEffect($temporaryReflectPercent, $temporaryReflectPercentRounds),
+                );
+
+                if (! $dodged && $enemyDamage > 0 && $reflectPercent > 0 && $enemies[$enemyIndex]['health'] > 0) {
+                    $reflectedDamage = min(
+                        $enemies[$enemyIndex]['health'],
+                        $this->reflectedDamageAmount($enemyDamage, $reflectPercent),
+                    );
+                    $enemies[$enemyIndex]['health'] = max(0, $enemies[$enemyIndex]['health'] - $reflectedDamage);
+
+                    if ($reflectedDamage > 0) {
+                        $reflectMessage = __(':enemy is hit by reflected force for :damage damage.', [
+                            'enemy' => $enemy['label'],
+                            'damage' => $reflectedDamage,
+                        ]);
+
+                        if ($enemies[$enemyIndex]['health'] === 0) {
+                            $reflectMessage .= ' '.__(':enemy falls.', ['enemy' => $enemy['label']]);
+                        }
+
+                        $battleLog[] = $reflectMessage;
+                        $battleSteps[] = [
+                            'round' => $round,
+                            'actor' => 'system',
+                            'actor_label' => $character->name,
+                            'target_type' => 'enemy',
+                            'target_id' => $enemy['id'],
+                            'target_label' => $enemy['label'],
+                            'damage' => $reflectedDamage,
+                            'remaining_health' => $enemies[$enemyIndex]['health'],
+                            'message' => $reflectMessage,
+                        ];
+                    }
+                }
+
+                $this->decayEnemyEffect($enemies[$enemyIndex], 'attack_down_percent', 'attack_down_rounds');
+                $this->decayEnemyEffect($enemies[$enemyIndex], 'hit_penalty_percent', 'hit_penalty_rounds');
 
                 if ($playerHealth <= 0) {
                     $battleLog[] = __(':player is overwhelmed and dragged back to town.', [
@@ -839,13 +1072,23 @@ trait HandlesCombatActions
                 $round,
             );
 
-            $temporaryGuard = 0;
-            $temporaryCritBonus = 0;
-            $temporaryEvadeBonus = 0;
-            $temporaryAttackBonusRounds = max(0, $temporaryAttackBonusRounds - 1);
+            $retainedGuard = 0;
 
-            if ($temporaryAttackBonusRounds === 0) {
-                $temporaryAttackBonus = 0;
+            if ($temporaryGuardRounds <= 1 && $temporaryGuard > 0) {
+                $retainedGuard = (int) floor($temporaryGuard * (((int) ($skillGroupCombatProfile['guard_retention_percent'] ?? 0)) / 100));
+            }
+
+            $this->decayTemporaryEffect($temporaryGuard, $temporaryGuardRounds);
+            $this->decayTemporaryEffect($temporaryCritBonus, $temporaryCritBonusRounds);
+            $this->decayTemporaryEffect($temporaryEvadeBonus, $temporaryEvadeBonusRounds);
+            $this->decayTemporaryEffect($temporaryAttackBonus, $temporaryAttackBonusRounds);
+            $this->decayTemporaryEffect($temporaryLifestealPercent, $temporaryLifestealPercentRounds);
+            $this->decayTemporaryEffect($temporaryReflectPercent, $temporaryReflectPercentRounds);
+            $this->decayTemporaryEffect($temporaryDamageToSpPercent, $temporaryDamageToSpPercentRounds);
+            $this->decayTemporaryEffect($temporaryIncomingDamagePercent, $temporaryIncomingDamagePercentRounds);
+
+            if ($retainedGuard > 0) {
+                $this->applyTemporaryEffect($temporaryGuard, $temporaryGuardRounds, $retainedGuard, 1);
             }
 
             $this->tickCombatSkillCooldowns($combatSkills);
@@ -1283,6 +1526,11 @@ trait HandlesCombatActions
                         'maximum_attack' => $enemyMaxAttack,
                         'defense' => $enemyDefense,
                         'category' => (string) $monster->race,
+                        'attack_down_percent' => 0,
+                        'attack_down_rounds' => 0,
+                        'hit_penalty_percent' => 0,
+                        'hit_penalty_rounds' => 0,
+                        'stagger_rounds' => 0,
                     ])
                     ->all(),
                 'battle_log' => [__('Encounter: :pack (Lv :level) in :area.', [
@@ -1413,6 +1661,11 @@ trait HandlesCombatActions
                         'maximum_attack' => 2,
                         'defense' => 0,
                         'category' => 'Tutorial Pack',
+                        'attack_down_percent' => 0,
+                        'attack_down_rounds' => 0,
+                        'hit_penalty_percent' => 0,
+                        'hit_penalty_rounds' => 0,
+                        'stagger_rounds' => 0,
                     ])
                     ->all(),
                 'battle_log' => [__('Tutorial Encounter: :pack in :area.', [
@@ -1558,6 +1811,11 @@ trait HandlesCombatActions
                         'boss' => 'Boss',
                         default => 'Monster',
                     },
+                    'attack_down_percent' => 0,
+                    'attack_down_rounds' => 0,
+                    'hit_penalty_percent' => 0,
+                    'hit_penalty_rounds' => 0,
+                    'stagger_rounds' => 0,
                     'spawned_round' => 0,
                 ]],
                 'battle_log' => [
@@ -1706,6 +1964,11 @@ trait HandlesCombatActions
                 'maximum_attack' => $soulMaximumAttack,
                 'defense' => $soulDefense,
                 'category' => 'Freed Soul',
+                'attack_down_percent' => 0,
+                'attack_down_rounds' => 0,
+                'hit_penalty_percent' => 0,
+                'hit_penalty_rounds' => 0,
+                'stagger_rounds' => 0,
                 'spawned_round' => (int) data_get($state, 'round', 1),
             ];
             $spawnedLabels[] = $monster->name;
@@ -1784,32 +2047,72 @@ trait HandlesCombatActions
         $attackBaseStat = $playerActionType === 'skill' && (bool) ($skill['uses_magic_attack'] ?? false)
             ? (int) ($player['magic_attack'] ?? 0)
             : (int) ($player['attack'] ?? 0);
-        $attackBaseStat += (int) ($player['temporary_attack_bonus_rounds'] ?? 0) > 0
-            ? (int) ($player['temporary_attack_bonus'] ?? 0)
-            : 0;
-        $attackRoll = random_int(
-            max(1, $attackBaseStat - 2 + intdiv((int) $player['speed'], 4)),
-            max(2, $attackBaseStat + 4 + intdiv((int) $player['speed'], 2)),
+        $attackBaseStat += $this->activeBattleStateEffect(
+            $player,
+            'temporary_attack_bonus',
+            'temporary_attack_bonus_rounds',
         );
+        $weaponType = data_get($player, 'weapon_type');
+        $skillGroupCombatProfile = (array) data_get($player, 'skill_group_combat_profile', []);
+        $attackBounds = WeaponCombatProfileCatalog::attackRollBounds($weaponType, $attackBaseStat, (int) ($player['speed'] ?? 0));
+        $attackBounds = $this->applySkillGroupAttackBounds($attackBounds, $skillGroupCombatProfile);
+        $attackRoll = random_int($attackBounds['minimum'], $attackBounds['maximum']);
         $bonusDamage = (int) ($skill['damage_bonus'] ?? ($skill['bonus_damage'] ?? 0));
-        $guard = (int) ($skill['guard'] ?? 0);
+        $guard = (int) ($skill['guard'] ?? 0)
+            + WeaponCombatProfileCatalog::guardBonus($weaponType)
+            + (int) ($skillGroupCombatProfile['guard_bonus'] ?? 0);
         $evadeBonus = (int) ($skill['evade_bonus'] ?? 0);
         $critBonus = (int) ($skill['crit_bonus'] ?? 0);
         $attackBuff = (int) ($skill['attack_buff'] ?? 0);
-        $attackBuffRounds = max(0, (int) ($skill['attack_buff_rounds'] ?? 0));
+        $buffRounds = max(1, (int) (($skill['buff_rounds'] ?? 0) ?: ($skill['attack_buff_rounds'] ?? 0)));
         $player['current_sp'] = max(0, (int) ($player['current_sp'] ?? 0) - $skillSpCost);
 
         if ($playerActionType === 'skill' && (bool) ($skill['self_buff_only'] ?? false)) {
-            $player['temporary_attack_bonus'] = max((int) ($player['temporary_attack_bonus'] ?? 0), $attackBuff);
-            $player['temporary_attack_bonus_rounds'] = max(
-                (int) ($player['temporary_attack_bonus_rounds'] ?? 0),
-                $attackBuffRounds + 1,
+            $effectDuration = $buffRounds + 1;
+            $this->applyBattleStateEffect(
+                $player,
+                'temporary_attack_bonus',
+                'temporary_attack_bonus_rounds',
+                $attackBuff,
+                $effectDuration,
+            );
+            $this->applyBattleStateEffect($player, 'temporary_guard', 'temporary_guard_rounds', (int) ($skill['guard'] ?? 0), $effectDuration);
+            $this->applyBattleStateEffect($player, 'temporary_crit_bonus', 'temporary_crit_bonus_rounds', $critBonus, $effectDuration);
+            $this->applyBattleStateEffect($player, 'temporary_evade_bonus', 'temporary_evade_bonus_rounds', $evadeBonus, $effectDuration);
+            $this->applyBattleStateEffect(
+                $player,
+                'temporary_lifesteal_percent',
+                'temporary_lifesteal_percent_rounds',
+                (int) ($skill['lifesteal_percent'] ?? 0),
+                $effectDuration,
+            );
+            $this->applyBattleStateEffect(
+                $player,
+                'temporary_reflect_percent',
+                'temporary_reflect_percent_rounds',
+                (int) ($skill['reflect_percent'] ?? 0),
+                $effectDuration,
+            );
+            $this->applyBattleStateEffect(
+                $player,
+                'temporary_damage_to_sp_percent',
+                'temporary_damage_to_sp_percent_rounds',
+                (int) ($skill['damage_to_sp_percent'] ?? 0),
+                $effectDuration,
+            );
+            $this->applyBattleStateEffect(
+                $player,
+                'temporary_incoming_damage_percent',
+                'temporary_incoming_damage_percent_rounds',
+                max(0, -((int) ($skill['incoming_damage_percent'] ?? 0))),
+                $effectDuration,
             );
 
-            $buffMessage = __(':player surrounds the weapon with :skill. Attack rises for the next :rounds rounds.', [
+            $buffMessage = __(':player invokes :skill. :effects for the next :rounds rounds.', [
                 'player' => $player['name'],
                 'skill' => $skill['name'],
-                'rounds' => $attackBuffRounds,
+                'effects' => $this->describeSelfBuffEffects($skill),
+                'rounds' => $buffRounds,
             ]);
             $state['battle_log'][] = $buffMessage;
             $state['battle_steps'][] = [
@@ -1835,9 +2138,30 @@ trait HandlesCombatActions
             1,
             (int) floor(($attackRoll + $bonusDamage) * (float) ($skill['damage_multiplier'] ?? 1.0)) - (int) $targetEnemy['defense'],
         );
-        $mainDamage = $this->applyWeaponDamageBonus($character, $mainDamage, $playerActionType === 'skill');
+        $mainDamage = $this->applyWeaponDamageBonus(
+            $character,
+            $mainDamage,
+            $playerActionType === 'skill',
+            WeaponCombatProfileCatalog::damagePercentBonus(
+                $weaponType,
+                $playerActionType === 'skill',
+                (int) ($state['round'] ?? 1),
+            ) + $this->skillGroupDamagePercentBonus(
+                $skillGroupCombatProfile,
+                $playerActionType === 'skill',
+                (int) ($state['round'] ?? 1),
+            ),
+        );
         $mainDamage = $this->applyCategoryDamageBonus($character, $mainDamage, (string) ($targetEnemy['category'] ?? 'Monster'));
-        $criticalHitChance = min(100, (int) ($player['crit_chance'] ?? 0) + $critBonus + (int) ($player['temporary_crit_bonus'] ?? 0));
+        $criticalHitChance = min(
+            100,
+            (int) ($player['crit_chance'] ?? 0)
+            + WeaponCombatProfileCatalog::critChanceBonus($weaponType)
+            + (int) ($skillGroupCombatProfile['crit_chance_bonus'] ?? 0)
+            + $this->skillGroupOpeningCritBonus($skillGroupCombatProfile, (int) ($state['round'] ?? 1))
+            + $critBonus
+            + $this->activeBattleStateEffect($player, 'temporary_crit_bonus', 'temporary_crit_bonus_rounds'),
+        );
         $criticalHit = $criticalHitChance > 0 && random_int(1, 100) <= $criticalHitChance;
 
         if ($criticalHit) {
@@ -1890,15 +2214,15 @@ trait HandlesCombatActions
         );
 
         if ($guard > 0) {
-            $player['temporary_guard'] = max((int) ($player['temporary_guard'] ?? 0), $guard);
+            $this->applyBattleStateEffect($player, 'temporary_guard', 'temporary_guard_rounds', $guard, 1);
         }
 
         if ($evadeBonus > 0) {
-            $player['temporary_evade_bonus'] = max((int) ($player['temporary_evade_bonus'] ?? 0), $evadeBonus);
+            $this->applyBattleStateEffect($player, 'temporary_evade_bonus', 'temporary_evade_bonus_rounds', $evadeBonus, 1);
         }
 
         if ($critBonus > 0) {
-            $player['temporary_crit_bonus'] = max((int) ($player['temporary_crit_bonus'] ?? 0), $critBonus);
+            $this->applyBattleStateEffect($player, 'temporary_crit_bonus', 'temporary_crit_bonus_rounds', $critBonus, 1);
         }
 
         $healAmount = max(
@@ -1928,6 +2252,42 @@ trait HandlesCombatActions
                     'damage' => -$actualHeal,
                     'remaining_health' => $player['current_health'],
                     'message' => $healMessage,
+                ];
+            }
+        }
+
+        $lifestealPercent = max(
+            0,
+            (int) ($skillGroupCombatProfile['lifesteal_percent'] ?? 0)
+                + $this->activeBattleStateEffect(
+                    $player,
+                    'temporary_lifesteal_percent',
+                    'temporary_lifesteal_percent_rounds',
+                ),
+        );
+
+        if ($lifestealPercent > 0 && $mainDamage > 0) {
+            $lifestealHeal = $this->lifestealHealAmount($mainDamage, $lifestealPercent);
+            $healedTo = min((int) ($player['max_health'] ?? 0), (int) ($player['current_health'] ?? 0) + $lifestealHeal);
+            $actualHeal = max(0, $healedTo - (int) ($player['current_health'] ?? 0));
+            $player['current_health'] = $healedTo;
+
+            if ($actualHeal > 0) {
+                $lifestealMessage = __(':player steals :amount HP through :skill.', [
+                    'player' => $player['name'],
+                    'amount' => $actualHeal,
+                    'skill' => $playerActionType === 'skill' ? ($skill['name'] ?? __('the skill')) : __('the attack'),
+                ]);
+                $state['battle_log'][] = $lifestealMessage;
+                $state['battle_steps'][] = [
+                    'round' => (int) $state['round'],
+                    'actor' => 'player',
+                    'actor_label' => $player['name'],
+                    'target_type' => 'player',
+                    'target_label' => $player['name'],
+                    'damage' => -$actualHeal,
+                    'remaining_health' => $player['current_health'],
+                    'message' => $lifestealMessage,
                 ];
             }
         }
@@ -2028,17 +2388,54 @@ trait HandlesCombatActions
             return;
         }
 
-        $guard = (int) data_get($state, 'player.temporary_guard', 0);
-        $evadeBonus = (int) data_get($state, 'player.temporary_evade_bonus', 0);
+        $skillGroupCombatProfile = (array) data_get($state, 'player.skill_group_combat_profile', []);
+        $guard = $this->activeBattleStateEffect($state['player'], 'temporary_guard', 'temporary_guard_rounds');
+        $evadeBonus = $this->activeBattleStateEffect($state['player'], 'temporary_evade_bonus', 'temporary_evade_bonus_rounds');
         $guardReduction = $guard > 0 ? max(1, intdiv($guard, max(1, $aliveEnemies->count()))) : 0;
 
-        foreach ($aliveEnemies as $enemy) {
+        foreach ($state['enemies'] as $enemyIndex => $enemy) {
+            if ((int) ($enemy['current_health'] ?? 0) <= 0) {
+                continue;
+            }
+
             if (($enemy['category'] ?? null) === 'Lumiis Core') {
                 continue;
             }
 
+            if ((int) ($enemy['stagger_rounds'] ?? 0) > 0) {
+                $state['enemies'][$enemyIndex]['stagger_rounds'] = max(0, (int) $enemy['stagger_rounds'] - 1);
+                $staggerMessage = __(':enemy is staggered and loses the turn.', [
+                    'enemy' => $enemy['label'],
+                ]);
+                $state['battle_log'][] = $staggerMessage;
+                $state['battle_steps'][] = [
+                    'round' => (int) $state['round'],
+                    'actor' => 'system',
+                    'actor_label' => __('Status'),
+                    'target_type' => 'enemy',
+                    'target_id' => $enemy['id'],
+                    'target_label' => $enemy['label'],
+                    'damage' => 0,
+                    'remaining_health' => $state['enemies'][$enemyIndex]['current_health'],
+                    'message' => $staggerMessage,
+                ];
+                $this->decayEnemyEffect($state['enemies'][$enemyIndex], 'attack_down_percent', 'attack_down_rounds');
+                $this->decayEnemyEffect($state['enemies'][$enemyIndex], 'hit_penalty_percent', 'hit_penalty_rounds');
+
+                continue;
+            }
+
             $enemyAttack = random_int((int) $enemy['minimum_attack'], (int) $enemy['maximum_attack']);
-            $effectiveEvadeChance = min(95, (int) data_get($state, 'player.evade_chance', 0) + $evadeBonus);
+            $enemyAttack = $this->applyOutgoingEnemyDamageReduction(
+                $enemyAttack,
+                $this->activeEnemyEffect($enemy, 'attack_down_percent', 'attack_down_rounds'),
+            );
+            $effectiveEvadeChance = min(
+                95,
+                (int) data_get($state, 'player.evade_chance', 0)
+                    + $evadeBonus
+                    + $this->activeEnemyEffect($enemy, 'hit_penalty_percent', 'hit_penalty_rounds'),
+            );
             $dodged = $effectiveEvadeChance > 0
                 && random_int(1, 100) <= $effectiveEvadeChance;
             $enemyDamage = $dodged
@@ -2059,6 +2456,33 @@ trait HandlesCombatActions
                     - $this->enemyDamageReduction((int) data_get($state, 'player.defense', 0))
                     - $guardReduction,
                 );
+            $enemyDamage = $dodged
+                ? 0
+                : $this->applyIncomingDamagePercentModifier(
+                    $enemyDamage,
+                    (int) ($skillGroupCombatProfile['incoming_damage_percent'] ?? 0)
+                        - $this->activeBattleStateEffect(
+                            $state['player'],
+                            'temporary_incoming_damage_percent',
+                            'temporary_incoming_damage_percent_rounds',
+                        ),
+                );
+            $spAbsorbed = 0;
+
+            if (! $dodged) {
+                $enemyDamage = $this->absorbDamageIntoSp(
+                    $enemyDamage,
+                    $state['player']['current_sp'],
+                    (int) ($skillGroupCombatProfile['damage_to_sp_percent'] ?? 0)
+                        + $this->activeBattleStateEffect(
+                            $state['player'],
+                            'temporary_damage_to_sp_percent',
+                            'temporary_damage_to_sp_percent_rounds',
+                        ),
+                    $spAbsorbed,
+                );
+            }
+
             $state['player']['current_health'] = max(0, (int) $state['player']['current_health'] - $enemyDamage);
             $enemyMessage = $dodged
                 ? __(':player dodges :enemy.', [
@@ -2070,6 +2494,10 @@ trait HandlesCombatActions
                     'player' => $state['player']['name'],
                     'damage' => $enemyDamage,
                 ]);
+
+            if ($spAbsorbed > 0) {
+                $enemyMessage .= ' '.__(':amount damage is absorbed by SP.', ['amount' => $spAbsorbed]);
+            }
 
             if ((int) $state['player']['current_health'] === 0) {
                 $enemyMessage .= ' '.__(':player collapses.', ['player' => $state['player']['name']]);
@@ -2087,18 +2515,79 @@ trait HandlesCombatActions
                 'message' => $enemyMessage,
             ];
 
+            $reflectPercent = max(
+                0,
+                (int) ($skillGroupCombatProfile['reflect_percent'] ?? 0)
+                    + $this->activeBattleStateEffect(
+                        $state['player'],
+                        'temporary_reflect_percent',
+                        'temporary_reflect_percent_rounds',
+                    ),
+            );
+
+            if (! $dodged && $enemyDamage > 0 && $reflectPercent > 0 && (int) ($state['enemies'][$enemyIndex]['current_health'] ?? 0) > 0) {
+                $reflectedDamage = min(
+                    (int) $state['enemies'][$enemyIndex]['current_health'],
+                    $this->reflectedDamageAmount($enemyDamage, $reflectPercent),
+                );
+                $state['enemies'][$enemyIndex]['current_health'] = max(
+                    0,
+                    (int) $state['enemies'][$enemyIndex]['current_health'] - $reflectedDamage,
+                );
+
+                if ($reflectedDamage > 0) {
+                    $reflectMessage = __(':enemy is hit by reflected force for :damage damage.', [
+                        'enemy' => $enemy['label'],
+                        'damage' => $reflectedDamage,
+                    ]);
+
+                    if ((int) $state['enemies'][$enemyIndex]['current_health'] === 0) {
+                        $reflectMessage .= ' '.__(':enemy falls.', ['enemy' => $enemy['label']]);
+                    }
+
+                    $state['battle_log'][] = $reflectMessage;
+                    $state['battle_steps'][] = [
+                        'round' => (int) $state['round'],
+                        'actor' => 'system',
+                        'actor_label' => $state['player']['name'],
+                        'target_type' => 'enemy',
+                        'target_id' => $enemy['id'],
+                        'target_label' => $enemy['label'],
+                        'damage' => $reflectedDamage,
+                        'remaining_health' => $state['enemies'][$enemyIndex]['current_health'],
+                        'message' => $reflectMessage,
+                    ];
+                }
+            }
+
+            $this->decayEnemyEffect($state['enemies'][$enemyIndex], 'attack_down_percent', 'attack_down_rounds');
+            $this->decayEnemyEffect($state['enemies'][$enemyIndex], 'hit_penalty_percent', 'hit_penalty_rounds');
+
             if ((int) $state['player']['current_health'] === 0) {
                 break;
             }
         }
 
-        $state['player']['temporary_guard'] = 0;
-        $state['player']['temporary_crit_bonus'] = 0;
-        $state['player']['temporary_evade_bonus'] = 0;
-        $state['player']['temporary_attack_bonus_rounds'] = max(0, (int) data_get($state, 'player.temporary_attack_bonus_rounds', 0) - 1);
+        $retainedGuard = 0;
 
-        if ((int) data_get($state, 'player.temporary_attack_bonus_rounds', 0) === 0) {
-            $state['player']['temporary_attack_bonus'] = 0;
+        if ((int) data_get($state, 'player.temporary_guard_rounds', 0) <= 1) {
+            $retainedGuard = (int) floor(
+                ((int) data_get($state, 'player.temporary_guard', 0))
+                * (((int) ($skillGroupCombatProfile['guard_retention_percent'] ?? 0)) / 100),
+            );
+        }
+
+        $this->decayBattleStateEffect($state['player'], 'temporary_guard', 'temporary_guard_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_crit_bonus', 'temporary_crit_bonus_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_evade_bonus', 'temporary_evade_bonus_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_attack_bonus', 'temporary_attack_bonus_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_lifesteal_percent', 'temporary_lifesteal_percent_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_reflect_percent', 'temporary_reflect_percent_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_damage_to_sp_percent', 'temporary_damage_to_sp_percent_rounds');
+        $this->decayBattleStateEffect($state['player'], 'temporary_incoming_damage_percent', 'temporary_incoming_damage_percent_rounds');
+
+        if ($retainedGuard > 0) {
+            $this->applyBattleStateEffect($state['player'], 'temporary_guard', 'temporary_guard_rounds', $retainedGuard, 1);
         }
     }
 
@@ -2209,6 +2698,80 @@ trait HandlesCombatActions
             $message = __(':enemy is now :status.', [
                 'enemy' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
                 'status' => $status['label'],
+            ]);
+            $battleLog[] = $message;
+            $battleSteps[] = [
+                'round' => $round,
+                'actor' => 'system',
+                'actor_label' => __('Status'),
+                'target_type' => 'enemy',
+                'target_id' => $enemy['id'] ?? null,
+                'target_label' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
+                'damage' => 0,
+                'remaining_health' => (int) ($enemy[$healthKey] ?? 0),
+                'message' => $message,
+            ];
+        }
+
+        foreach ([
+            [
+                'value_key' => 'attack_down_percent',
+                'rounds_key' => 'attack_down_rounds',
+                'label' => __('weakened'),
+                'message' => __(':enemy is weakened. Attack drops by :amount% for :rounds rounds.', [
+                    'enemy' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
+                    'amount' => max(0, (int) ($skill['attack_down_percent'] ?? 0)),
+                    'rounds' => max(0, (int) ($skill['attack_down_rounds'] ?? 0)),
+                ]),
+            ],
+            [
+                'value_key' => 'hit_penalty_percent',
+                'rounds_key' => 'hit_penalty_rounds',
+                'label' => __('off-balance'),
+                'message' => __(':enemy loses aim. Hit chance drops by :amount% for :rounds rounds.', [
+                    'enemy' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
+                    'amount' => max(0, (int) ($skill['hit_penalty_percent'] ?? 0)),
+                    'rounds' => max(0, (int) ($skill['hit_penalty_rounds'] ?? 0)),
+                ]),
+            ],
+        ] as $status) {
+            $value = max(0, (int) ($skill[$status['value_key']] ?? 0));
+            $rounds = max(0, (int) ($skill[$status['rounds_key']] ?? 0));
+            $healthKey = $this->enemyHealthKey($enemy);
+
+            if ($value < 1 || $rounds < 1 || (int) ($enemy[$healthKey] ?? 0) <= 0) {
+                continue;
+            }
+
+            $enemy[$status['value_key']] = max((int) ($enemy[$status['value_key']] ?? 0), $value);
+            $enemy[$status['rounds_key']] = max((int) ($enemy[$status['rounds_key']] ?? 0), $rounds);
+
+            $battleLog[] = $status['message'];
+            $battleSteps[] = [
+                'round' => $round,
+                'actor' => 'system',
+                'actor_label' => __('Status'),
+                'target_type' => 'enemy',
+                'target_id' => $enemy['id'] ?? null,
+                'target_label' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
+                'damage' => 0,
+                'remaining_health' => (int) ($enemy[$healthKey] ?? 0),
+                'message' => $status['message'],
+            ];
+        }
+
+        $staggerChance = max(0, min(100, (int) ($skill['stagger_chance'] ?? 0)));
+        $staggerRounds = max(0, (int) ($skill['stagger_rounds'] ?? 0));
+        $healthKey = $this->enemyHealthKey($enemy);
+
+        if ($staggerChance > 0
+            && $staggerRounds > 0
+            && (int) ($enemy[$healthKey] ?? 0) > 0
+            && random_int(1, 100) <= $staggerChance) {
+            $enemy['stagger_rounds'] = max((int) ($enemy['stagger_rounds'] ?? 0), $staggerRounds);
+
+            $message = __(':enemy is staggered and may lose the next turn.', [
+                'enemy' => $enemy['label'] ?? $enemy['name'] ?? __('Enemy'),
             ]);
             $battleLog[] = $message;
             $battleSteps[] = [
@@ -2652,16 +3215,32 @@ trait HandlesCombatActions
             'attack' => $effectiveAttack,
             'defense' => $effectiveDefense,
             'speed' => $effectiveSpeed,
+            'weapon_type' => $character->equippedWeaponType(),
+            'skill_group_combat_profile' => MetinClassCatalog::skillGroupCombatProfile(
+                $character->chosenRace(),
+                $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
+            ),
             'magic_attack' => $character->effectiveMagicAttack(),
             'crit_chance' => $character->criticalChancePercent(),
             'evade_chance' => $character->evadeChancePercent(),
             'average_damage_bonus' => $character->averageDamagePercentBonus(),
             'skill_damage_bonus' => $character->skillDamagePercentBonus(),
             'temporary_guard' => 0,
+            'temporary_guard_rounds' => 0,
             'temporary_crit_bonus' => 0,
+            'temporary_crit_bonus_rounds' => 0,
             'temporary_evade_bonus' => 0,
+            'temporary_evade_bonus_rounds' => 0,
             'temporary_attack_bonus' => 0,
             'temporary_attack_bonus_rounds' => 0,
+            'temporary_lifesteal_percent' => 0,
+            'temporary_lifesteal_percent_rounds' => 0,
+            'temporary_reflect_percent' => 0,
+            'temporary_reflect_percent_rounds' => 0,
+            'temporary_damage_to_sp_percent' => 0,
+            'temporary_damage_to_sp_percent_rounds' => 0,
+            'temporary_incoming_damage_percent' => 0,
+            'temporary_incoming_damage_percent_rounds' => 0,
             'equipment' => $this->buildReplayPlayerProfile(
                 $character,
                 $character->health,
@@ -2685,8 +3264,8 @@ trait HandlesCombatActions
             : $character->learnedSkills()->with('skill')->get();
 
         return $skills
-            ->map(function (CharacterSkill $characterSkill): ?array {
-                return MetinClassCatalog::combatProfileForLearnedSkill($characterSkill);
+            ->map(function (CharacterSkill $characterSkill) use ($character): ?array {
+                return MetinClassCatalog::combatProfileForLearnedSkill($characterSkill, $character);
             })
             ->filter()
             ->values()
@@ -2832,17 +3411,235 @@ trait HandlesCombatActions
         return max(1, (int) floor($baseDamage * $character->damageMultiplierForEnemyCategory($enemyCategory)));
     }
 
-    private function applyWeaponDamageBonus(GameCharacter $character, int $baseDamage, bool $skillHit): int
+    private function applyWeaponDamageBonus(GameCharacter $character, int $baseDamage, bool $skillHit, int $extraPercent = 0): int
     {
         $percent = $skillHit
             ? $character->skillDamagePercentBonus()
             : $character->averageDamagePercentBonus();
+        $percent += $extraPercent;
 
         if ($percent <= 0) {
             return max(1, $baseDamage);
         }
 
         return max(1, (int) floor($baseDamage * (1 + ($percent / 100))));
+    }
+
+    /**
+     * @param  array{minimum: int, maximum: int}  $bounds
+     * @param  array<string, int>  $profile
+     * @return array{minimum: int, maximum: int}
+     */
+    private function applySkillGroupAttackBounds(array $bounds, array $profile): array
+    {
+        $minimum = max(1, (int) ($bounds['minimum'] ?? 1) + (int) ($profile['attack_floor_offset'] ?? 0));
+        $maximum = max(
+            $minimum,
+            (int) ($bounds['maximum'] ?? $minimum) + (int) ($profile['attack_ceiling_offset'] ?? 0),
+        );
+
+        return [
+            'minimum' => $minimum,
+            'maximum' => $maximum,
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $profile
+     */
+    private function skillGroupDamagePercentBonus(array $profile, bool $skillHit, int $round): int
+    {
+        return (int) ($profile['basic_damage_percent'] ?? 0)
+            + ($skillHit ? (int) ($profile['skill_damage_percent'] ?? 0) : 0)
+            + ($round === 1 ? (int) ($profile['opening_damage_percent'] ?? 0) : 0);
+    }
+
+    /**
+     * @param  array<string, int>  $profile
+     */
+    private function skillGroupOpeningCritBonus(array $profile, int $round): int
+    {
+        return $round === 1 ? (int) ($profile['opening_crit_bonus'] ?? 0) : 0;
+    }
+
+    private function applyIncomingDamagePercentModifier(int $baseDamage, int $percent): int
+    {
+        if ($percent === 0 || $baseDamage <= 0) {
+            return max(0, $baseDamage);
+        }
+
+        return max(1, (int) floor($baseDamage * (1 + ($percent / 100))));
+    }
+
+    private function applyOutgoingEnemyDamageReduction(int $baseDamage, int $percent): int
+    {
+        if ($percent <= 0 || $baseDamage <= 0) {
+            return max(0, $baseDamage);
+        }
+
+        return max(1, (int) floor($baseDamage * (1 - min(90, $percent) / 100)));
+    }
+
+    private function lifestealHealAmount(int $damageDealt, int $percent): int
+    {
+        if ($damageDealt <= 0 || $percent <= 0) {
+            return 0;
+        }
+
+        return max(1, (int) floor($damageDealt * ($percent / 100)));
+    }
+
+    private function reflectedDamageAmount(int $damageTaken, int $percent): int
+    {
+        if ($damageTaken <= 0 || $percent <= 0) {
+            return 0;
+        }
+
+        return max(1, (int) floor($damageTaken * ($percent / 100)));
+    }
+
+    private function absorbDamageIntoSp(int $incomingDamage, int &$currentSp, int $percent, int &$spAbsorbed = 0): int
+    {
+        $spAbsorbed = 0;
+
+        if ($incomingDamage <= 0 || $currentSp <= 0 || $percent <= 0) {
+            return max(0, $incomingDamage);
+        }
+
+        $spAbsorbed = min($currentSp, max(1, (int) floor($incomingDamage * ($percent / 100))));
+        $currentSp = max(0, $currentSp - $spAbsorbed);
+
+        return max(0, $incomingDamage - $spAbsorbed);
+    }
+
+    private function applyTemporaryEffect(int &$currentValue, int &$currentRounds, int $newValue, int $duration): void
+    {
+        if ($newValue <= 0 || $duration <= 0) {
+            return;
+        }
+
+        $currentValue = max($currentValue, $newValue);
+        $currentRounds = max($currentRounds, $duration);
+    }
+
+    private function activeTemporaryEffect(int $value, int $rounds): int
+    {
+        return $rounds > 0 ? $value : 0;
+    }
+
+    private function decayTemporaryEffect(int &$currentValue, int &$currentRounds): void
+    {
+        $currentRounds = max(0, $currentRounds - 1);
+
+        if ($currentRounds === 0) {
+            $currentValue = 0;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $player
+     */
+    private function applyBattleStateEffect(
+        array &$player,
+        string $valueKey,
+        string $roundsKey,
+        int $newValue,
+        int $duration,
+    ): void {
+        if ($newValue <= 0 || $duration <= 0) {
+            return;
+        }
+
+        $player[$valueKey] = max((int) ($player[$valueKey] ?? 0), $newValue);
+        $player[$roundsKey] = max((int) ($player[$roundsKey] ?? 0), $duration);
+    }
+
+    /**
+     * @param  array<string, mixed>  $player
+     */
+    private function activeBattleStateEffect(array $player, string $valueKey, string $roundsKey): int
+    {
+        return (int) ($player[$roundsKey] ?? 0) > 0
+            ? (int) ($player[$valueKey] ?? 0)
+            : 0;
+    }
+
+    /**
+     * @param  array<string, mixed>  $player
+     */
+    private function decayBattleStateEffect(array &$player, string $valueKey, string $roundsKey): void
+    {
+        $player[$roundsKey] = max(0, (int) ($player[$roundsKey] ?? 0) - 1);
+
+        if ((int) $player[$roundsKey] === 0) {
+            $player[$valueKey] = 0;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $enemy
+     */
+    private function activeEnemyEffect(array $enemy, string $valueKey, string $roundsKey): int
+    {
+        return (int) ($enemy[$roundsKey] ?? 0) > 0
+            ? (int) ($enemy[$valueKey] ?? 0)
+            : 0;
+    }
+
+    /**
+     * @param  array<string, mixed>  $enemy
+     */
+    private function decayEnemyEffect(array &$enemy, string $valueKey, string $roundsKey): void
+    {
+        $enemy[$roundsKey] = max(0, (int) ($enemy[$roundsKey] ?? 0) - 1);
+
+        if ((int) $enemy[$roundsKey] === 0) {
+            $enemy[$valueKey] = 0;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $skill
+     */
+    private function describeSelfBuffEffects(array $skill): string
+    {
+        $effects = [];
+
+        if ((int) ($skill['attack_buff'] ?? 0) > 0) {
+            $effects[] = __('Attack +:amount', ['amount' => (int) $skill['attack_buff']]);
+        }
+
+        if ((int) ($skill['guard'] ?? 0) > 0) {
+            $effects[] = __('Guard +:amount', ['amount' => (int) $skill['guard']]);
+        }
+
+        if ((int) ($skill['crit_bonus'] ?? 0) > 0) {
+            $effects[] = __('Crit +:amount%', ['amount' => (int) $skill['crit_bonus']]);
+        }
+
+        if ((int) ($skill['evade_bonus'] ?? 0) > 0) {
+            $effects[] = __('Evade +:amount%', ['amount' => (int) $skill['evade_bonus']]);
+        }
+
+        if ((int) ($skill['lifesteal_percent'] ?? 0) > 0) {
+            $effects[] = __('Lifesteal +:amount%', ['amount' => (int) $skill['lifesteal_percent']]);
+        }
+
+        if ((int) ($skill['reflect_percent'] ?? 0) > 0) {
+            $effects[] = __('Reflect +:amount%', ['amount' => (int) $skill['reflect_percent']]);
+        }
+
+        if ((int) ($skill['damage_to_sp_percent'] ?? 0) > 0) {
+            $effects[] = __('SP Shield :amount%', ['amount' => (int) $skill['damage_to_sp_percent']]);
+        }
+
+        if ((int) ($skill['incoming_damage_percent'] ?? 0) < 0) {
+            $effects[] = __('Incoming damage :amount%', ['amount' => (int) ($skill['incoming_damage_percent'] ?? 0)]);
+        }
+
+        return $effects === []
+            ? __('Battle effects')
+            : implode(', ', $effects);
     }
 
     /**

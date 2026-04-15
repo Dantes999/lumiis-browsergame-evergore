@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\GameActionType;
+use App\Models\GameCharacter;
 use App\Models\User;
 use App\Services\Game\ProcessGameAction;
 use Illuminate\Contracts\Console\Kernel;
@@ -46,10 +47,17 @@ try {
     }
 
     $user = User::query()->findOrFail((int) $input['user_id']);
+    $selectedCharacter = null;
+
+    if (isset($input['character_id'])) {
+        $selectedCharacter = GameCharacter::query()->find((int) $input['character_id']);
+    }
+
     $message = app(ProcessGameAction::class)->handle(
         $user,
         GameActionType::from((string) $input['action']),
         $input['payload'],
+        $selectedCharacter,
     );
 
     echo json_encode([

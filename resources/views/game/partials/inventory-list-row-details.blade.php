@@ -4,6 +4,7 @@
         : __('None');
     $detailMetaParts = collect([
         __('Type').': '.strtoupper((string) $item->item_type),
+        $item->isWeapon() && $item->weaponTypeLabel() !== null ? __('Weapon').': '.$item->weaponTypeLabel() : null,
         $item->isSkillBook() && $linkedSkill !== null ? __('Skill').': '.$linkedSkill['name'] : null,
         $item->isSkillBook() ? __('Book Rank').' '.\App\Support\Game\MetinClassCatalog::skillBookMinimumRank().'+' : null,
         $item->isEquippable() ? __('Bonuses :current/:slots', [

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Game\MetinClassCatalog;
+use App\Support\Game\WeaponTypeCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,7 @@ class Item extends Model
         'name',
         'item_type',
         'equipment_slot',
+        'weapon_type',
         'allowed_races',
         'description',
         'skill_slug',
@@ -96,6 +98,11 @@ class Item extends Model
     public function isEquippable(): bool
     {
         return $this->equipment_slot !== null;
+    }
+
+    public function isWeapon(): bool
+    {
+        return $this->equipment_slot === 'weapon';
     }
 
     public function isInventoryUpgradeItem(): bool
@@ -177,9 +184,25 @@ class Item extends Model
 
     public function canBeEquippedByRace(string $race): bool
     {
+        if ($this->isWeapon() && ! WeaponTypeCatalog::supportsRace($this->weaponType(), $race)) {
+            return false;
+        }
+
         $allowedRaces = $this->allowedRaces();
 
         return $allowedRaces === [] || in_array($race, $allowedRaces, true);
+    }
+
+    public function weaponType(): ?string
+    {
+        $weaponType = (string) ($this->getAttribute('weapon_type') ?? '');
+
+        return WeaponTypeCatalog::isKnown($weaponType) ? $weaponType : null;
+    }
+
+    public function weaponTypeLabel(): ?string
+    {
+        return WeaponTypeCatalog::label($this->weaponType());
     }
 
     /**

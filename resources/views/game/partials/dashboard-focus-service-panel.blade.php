@@ -206,8 +206,15 @@
                         {{ __('This hotspot has no shop inventory configured yet.') }}
                     </p>
                 </div>
+            @elseif ($activeAreaShopItems->isEmpty())
+                <div class="form-card">
+                    <p class="action-title">{{ __('No Matching Stock') }}</p>
+                    <p class="action-copy">
+                        {{ __('This vendor currently has no gear for your character race.') }}
+                    </p>
+                </div>
             @else
-                @foreach ($activeAreaShop->shopItems->sortBy('sort_order') as $shopItem)
+                @foreach ($activeAreaShopItems as $shopItem)
                     @php
                         $shopPurchaseMax = $shopItem->stock === null
                             ? 999

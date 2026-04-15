@@ -54,15 +54,15 @@ class ProcessGameAction
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function handle(User $user, GameActionType $action, array $payload): string
+    public function handle(User $user, GameActionType $action, array $payload, ?GameCharacter $selectedCharacter = null): string
     {
-        return $this->runWithActionLocks($user, $action, $payload, function () use ($user, $action, $payload): string {
-            return DB::transaction(function () use ($user, $action, $payload): string {
+        return $this->runWithActionLocks($user, $action, $payload, function () use ($user, $action, $payload, $selectedCharacter): string {
+            return DB::transaction(function () use ($user, $action, $payload, $selectedCharacter): string {
                 $processedAt = now();
 
                 // Always operate on the latest locked character row so cooldown, stamina and rewards
                 // cannot race against a second request from another browser tab.
-                $character = $this->loadCharacterForAction($user);
+                $character = $this->loadCharacterForAction($user, $selectedCharacter);
                 $existingLog = $this->findExistingLog($character, (string) $payload['idempotency_key']);
 
                 if ($existingLog !== null) {
@@ -186,9 +186,9 @@ class ProcessGameAction
     /**
      * Pull a fully-hydrated, row-locked character so action handlers can work against consistent state.
      */
-    private function loadCharacterForAction(User $user): GameCharacter
+    private function loadCharacterForAction(User $user, ?GameCharacter $selectedCharacter = null): GameCharacter
     {
-        $character = GameCharacter::query()
+        $query = GameCharacter::query()
             ->where('user_id', $user->id)
             ->with([
                 'location.outgoingConnections.toLocation',
@@ -200,8 +200,21 @@ class ProcessGameAction
                 'equipment.characterItem.item',
                 'learnedSkills.skill',
             ])
-            ->lockForUpdate()
-            ->firstOrFail();
+            ->lockForUpdate();
+
+        if ($selectedCharacter instanceof GameCharacter) {
+            $query->whereKey($selectedCharacter->id);
+        } else {
+            $query
+                ->orderBy('created_at')
+                ->orderBy('id');
+        }
+
+        $character = $query->first();
+
+        if (! $character instanceof GameCharacter) {
+            throw new GameActionException(__('The selected character could not be loaded.'));
+        }
 
         // Action handlers frequently access many LocationArea columns on the in-memory map data.
         // We reload the areas explicitly so combat/inventory flows never depend on partially-loaded

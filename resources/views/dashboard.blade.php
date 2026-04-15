@@ -331,6 +331,10 @@
         $shopItemValueText = function (\App\Models\Item $item) use ($shopItemValueParts): ?string {
             $parts = $shopItemValueParts($item);
 
+            if ($item->isWeapon() && $item->weaponTypeLabel() !== null) {
+                array_unshift($parts, $item->weaponTypeLabel());
+            }
+
             return $parts === [] ? null : implode(' · ', $parts);
         };
         $soulPrismStack = $character->inventoryItems
@@ -363,7 +367,10 @@
             && $inventorySellVendorArea !== null;
         $activeBattleSkills = collect(data_get($activeBattlePlayer, 'skills', []));
         $activeBattleLogLines = collect(data_get($activeBattleState, 'battle_log', []));
-        $activeBattleLogEntries = $buildBattleLogEntries($activeBattleLogLines, $activeBattleSteps);
+        $activeBattleLogEntries = collect($buildBattleLogEntries($activeBattleLogLines, $activeBattleSteps))
+            ->reverse()
+            ->values()
+            ->all();
         $activeBattleLastResolvedRound = max(1, ((int) data_get($activeBattleState, 'round', 1)) - 1);
         $activeBattleRecentEnemyDeathIds = collect(data_get($activeBattleState, 'battle_steps', []))
             ->filter(fn (array $step): bool => (int) data_get($step, 'round', 0) === $activeBattleLastResolvedRound
@@ -385,6 +392,37 @@
             ->groupBy(fn (array $step): string => (string) data_get($step, 'target_id'))
             ->map(fn ($steps): int => (int) collect($steps)->sum(fn (array $step): int => (int) data_get($step, 'damage', 0)))
             ->all();
+        $buildBattleEffectBadges = function (array $entity, string $type = 'player'): array {
+            $effects = $type === 'player'
+                ? [
+                    ['value' => (int) data_get($entity, 'temporary_attack_bonus', 0), 'rounds' => (int) data_get($entity, 'temporary_attack_bonus_rounds', 0), 'label' => __('Attack +:value', ['value' => (int) data_get($entity, 'temporary_attack_bonus', 0)]), 'tone' => 'offense'],
+                    ['value' => (int) data_get($entity, 'temporary_guard', 0), 'rounds' => (int) data_get($entity, 'temporary_guard_rounds', 0), 'label' => __('Guard +:value', ['value' => (int) data_get($entity, 'temporary_guard', 0)]), 'tone' => 'defense'],
+                    ['value' => (int) data_get($entity, 'temporary_crit_bonus', 0), 'rounds' => (int) data_get($entity, 'temporary_crit_bonus_rounds', 0), 'label' => __('Crit +:value%', ['value' => (int) data_get($entity, 'temporary_crit_bonus', 0)]), 'tone' => 'offense'],
+                    ['value' => (int) data_get($entity, 'temporary_evade_bonus', 0), 'rounds' => (int) data_get($entity, 'temporary_evade_bonus_rounds', 0), 'label' => __('Evade +:value%', ['value' => (int) data_get($entity, 'temporary_evade_bonus', 0)]), 'tone' => 'utility'],
+                    ['value' => (int) data_get($entity, 'temporary_lifesteal_percent', 0), 'rounds' => (int) data_get($entity, 'temporary_lifesteal_percent_rounds', 0), 'label' => __('Lifesteal +:value%', ['value' => (int) data_get($entity, 'temporary_lifesteal_percent', 0)]), 'tone' => 'offense'],
+                    ['value' => (int) data_get($entity, 'temporary_reflect_percent', 0), 'rounds' => (int) data_get($entity, 'temporary_reflect_percent_rounds', 0), 'label' => __('Reflect +:value%', ['value' => (int) data_get($entity, 'temporary_reflect_percent', 0)]), 'tone' => 'defense'],
+                    ['value' => (int) data_get($entity, 'temporary_damage_to_sp_percent', 0), 'rounds' => (int) data_get($entity, 'temporary_damage_to_sp_percent_rounds', 0), 'label' => __('SP Shield :value%', ['value' => (int) data_get($entity, 'temporary_damage_to_sp_percent', 0)]), 'tone' => 'defense'],
+                    ['value' => (int) data_get($entity, 'temporary_incoming_damage_percent', 0), 'rounds' => (int) data_get($entity, 'temporary_incoming_damage_percent_rounds', 0), 'label' => __('Incoming -:value%', ['value' => (int) data_get($entity, 'temporary_incoming_damage_percent', 0)]), 'tone' => 'defense'],
+                ]
+                : [
+                    ['value' => (int) data_get($entity, 'poison_rounds', 0), 'rounds' => (int) data_get($entity, 'poison_rounds', 0), 'label' => __('Poison'), 'tone' => 'damage'],
+                    ['value' => (int) data_get($entity, 'burn_rounds', 0), 'rounds' => (int) data_get($entity, 'burn_rounds', 0), 'label' => __('Burn'), 'tone' => 'damage'],
+                    ['value' => (int) data_get($entity, 'attack_down_percent', 0), 'rounds' => (int) data_get($entity, 'attack_down_rounds', 0), 'label' => __('Attack -:value%', ['value' => (int) data_get($entity, 'attack_down_percent', 0)]), 'tone' => 'control'],
+                    ['value' => (int) data_get($entity, 'hit_penalty_percent', 0), 'rounds' => (int) data_get($entity, 'hit_penalty_rounds', 0), 'label' => __('Hit -:value%', ['value' => (int) data_get($entity, 'hit_penalty_percent', 0)]), 'tone' => 'control'],
+                    ['value' => (int) data_get($entity, 'stagger_rounds', 0), 'rounds' => (int) data_get($entity, 'stagger_rounds', 0), 'label' => __('Staggered'), 'tone' => 'control'],
+                ];
+
+            return collect($effects)
+                ->filter(fn (array $effect): bool => (int) ($effect['value'] ?? 0) > 0 && (int) ($effect['rounds'] ?? 0) > 0)
+                ->map(fn (array $effect): array => [
+                    'label' => $effect['label'],
+                    'rounds' => (int) $effect['rounds'],
+                    'tone' => $effect['tone'],
+                ])
+                ->values()
+                ->all();
+        };
+        $activeBattlePlayerEffects = $buildBattleEffectBadges($activeBattlePlayer, 'player');
         $hasActiveBattle = $activeBattle !== null;
         $manualBattleResultPayload = data_get($manualBattleResultLog?->outcome, 'battle_replay');
         $latestBattleReplayPayload = in_array((string) $latestBattleLog?->action, ['battle-attack', 'battle-use-skill'], true)
@@ -394,6 +432,11 @@
             ?? $latestBattleReplayPayload;
         $autoOpenBattleReplay = is_array(data_get($battleReplayLog?->outcome, 'battle_replay'));
         $activeAreaShop = $activeArea?->shop;
+        $activeAreaShopItems = collect($activeAreaShop?->shopItems ?? [])
+            ->filter(fn ($shopItem): bool => $shopItem->item !== null
+                && (! $shopItem->item->isWeapon() || $shopItem->item->canBeEquippedByRace($character->chosenRace())))
+            ->sortBy('sort_order')
+            ->values();
         $mobileFocusWindowOpen = ! $tutorialActive && ($hasExplicitFocus ?? false) && $activeArea !== null;
         $smithableItems = $character->inventoryItems
             ->filter(fn ($inventoryItem) => $inventoryItem->canBeSmithUpgraded())
@@ -548,14 +591,61 @@
                 resting: @js($restingState),
                 activeBattleRound: {{ $hasActiveBattle ? max(1, (int) data_get($activeBattleState, 'round', 1)) : 0 }},
                 hasActiveBattle: @js($hasActiveBattle),
+                activeBattleCloseTitle: @js(__('Manual Fight Still Active')),
+                activeBattleCloseConfirmation: @js(__('Closing this panel does not abort the fight. Your manual fight stays active and can be resumed from the dashboard.')),
+                activeBattleCloseWarning: @js(__('Use Abandon Fight only if you want to end it with no rewards.')),
+                activeBattleCloseStayLabel: @js(__('Keep Fight Open')),
+                activeBattleCloseProceedLabel: @js(__('Close View')),
             })"
         class="portal-stage dashboard-portal"
         data-tutorial-step="{{ $tutorialActive ? $tutorialStep : '' }}"
-        @keydown.escape.window="closePanel()"
+        @keydown.escape.window="activeBattleCloseModalOpen ? dismissActiveBattleCloseModal() : closePanel()"
         @dashboard-panel-open.window="openPanel($event.detail?.panel ?? $event.detail)"
         @dashboard-chat-open.window="openChatTab($event.detail?.tab ?? 'global')"
+        @dashboard-active-battle-link.window="confirmNavigation($event.detail?.href ?? null)"
     >
         @include('game.partials.dashboard-server-messages', ['dashboardServerMessages' => $dashboardServerMessages])
+
+        <div
+            x-show="activeBattleCloseModalOpen"
+            x-cloak
+            class="battle-replay-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="active-battle-close-title"
+        >
+            <div class="battle-replay-backdrop" @click="dismissActiveBattleCloseModal()"></div>
+
+            <div class="battle-replay-window battle-warning-window">
+                <div class="battle-replay-header">
+                    <div>
+                        <p class="panel-kicker">{{ __('Manual Fight') }}</p>
+                        <h2 id="active-battle-close-title" class="battle-replay-title" x-text="activeBattleCloseTitle"></h2>
+                        <p class="battle-replay-subtitle">{{ __('Closing or leaving the current view will not forfeit this battle.') }}</p>
+                    </div>
+
+                    <div class="battle-replay-actions">
+                        <span class="cozy-chip">{{ __('Fight Open') }}</span>
+                        <span class="cozy-chip">{{ __('No Rewards On Abandon') }}</span>
+                    </div>
+                </div>
+
+                <div class="battle-warning-grid">
+                    <article class="battle-replay-card battle-warning-card">
+                        <p class="battle-warning-copy" x-text="activeBattleCloseConfirmation"></p>
+
+                        <div class="battle-warning-notice">
+                            <p class="battle-warning-copy battle-warning-copy-muted" x-text="activeBattleCloseWarning"></p>
+                        </div>
+
+                        <div class="battle-warning-actions">
+                            <button type="button" class="theme-button theme-button-primary" @click="dismissActiveBattleCloseModal()" x-text="activeBattleCloseStayLabel"></button>
+                            <button type="button" class="theme-button theme-button-secondary" @click="proceedActiveBattleCloseModal()" x-text="activeBattleCloseActionLabel ?? activeBattleCloseProceedLabel"></button>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
 
         <div class="metin2-container-wrapper dashboard-portal-frame">
             <div class="metin2-container dashboard-metin2-layout">
@@ -948,6 +1038,19 @@
                                 </div>
                             </div>
 
+                            @if ($activeBattlePlayerEffects !== [])
+                                <div class="battle-effect-group">
+                                    <p class="battle-effect-kicker">{{ __('Active Buffs') }}</p>
+                                    <div class="battle-effect-strip">
+                                        @foreach ($activeBattlePlayerEffects as $effect)
+                                            <span class="battle-effect-chip battle-effect-chip-{{ $effect['tone'] }}">
+                                                {{ $effect['label'] }} · {{ $effect['rounds'] }}r
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="battle-equipment-list">
                                 @foreach (data_get($activeBattlePlayer, 'equipment', []) as $equipmentLine)
                                     <span class="cozy-chip">{{ $equipmentLine }}</span>
@@ -987,6 +1090,7 @@
                                         $enemyIsAlive = (int) data_get($enemy, 'current_health', 0) > 0;
                                         $enemyMaxHealth = max(1, (int) data_get($enemy, 'max_health', 1));
                                         $enemyHealthPercent = max(0, min(100, (int) round(((int) data_get($enemy, 'current_health', 0) / $enemyMaxHealth) * 100)));
+                                        $enemyEffects = $buildBattleEffectBadges((array) $enemy, 'enemy');
                                     @endphp
 
                                     <div class="paper-note battle-enemy-card {{ ! $enemyIsAlive ? 'battle-entity-dead' : '' }} {{ in_array(data_get($enemy, 'id'), $activeBattleRecentEnemyDeathIds, true) ? 'battle-entity-death' : '' }}">
@@ -1017,6 +1121,18 @@
                                                 <span class="battle-health-fill battle-health-fill-enemy" style="width: {{ $enemyHealthPercent }}%;"></span>
                                             </div>
                                         </div>
+
+                                        @if ($enemyEffects !== [])
+                                            <div class="battle-effect-group battle-effect-group-enemy">
+                                                <div class="battle-effect-strip">
+                                                    @foreach ($enemyEffects as $effect)
+                                                        <span class="battle-effect-chip battle-effect-chip-{{ $effect['tone'] }}">
+                                                            {{ $effect['label'] }} · {{ $effect['rounds'] }}r
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
 
                                         <div class="mt-4 grid gap-2">
                                             <form method="POST" action="{{ route('game.actions.store', ['action' => 'battle-attack']) }}">
@@ -2518,7 +2634,7 @@
                                     <span class="dashboard-mobile-focus-bar-label">
                                         {{ $activeArea->isService() ? __('Town Hotspot') : __('Hunting Ground') }}
                                     </span>
-                                    <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-mobile-focus-close">
+                                    <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-mobile-focus-close" @click="confirmActiveBattleClose($event)">
                                         {{ __('Close') }}
                                     </a>
                                 </div>
@@ -2540,7 +2656,7 @@
                                         </span>
                                     @endif
                                     @if (! $tutorialActive)
-                                        <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-map-window-close">
+                                        <a href="{{ route('dashboard') }}" class="theme-button theme-button-secondary theme-button-compact dashboard-map-window-close" @click="confirmActiveBattleClose($event)">
                                             {{ __('Close') }}
                                         </a>
                                     @endif
@@ -3127,8 +3243,15 @@
                                                         {{ __('This hotspot has no shop inventory configured yet.') }}
                                                     </p>
                                                 </div>
+                                            @elseif ($activeAreaShopItems->isEmpty())
+                                                <div class="form-card">
+                                                    <p class="action-title">{{ __('No Matching Stock') }}</p>
+                                                    <p class="action-copy">
+                                                        {{ __('This vendor currently has no gear for your character race.') }}
+                                                    </p>
+                                                </div>
                                             @else
-                                                @foreach ($activeAreaShop->shopItems->sortBy('sort_order') as $shopItem)
+                                                @foreach ($activeAreaShopItems as $shopItem)
                                                     <div class="form-card">
                                                         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                                             <div>
@@ -3664,9 +3787,13 @@
                         <div class="paper-note mt-6 text-sm leading-6">
                             Click a vendor hotspot on the map to browse its own inventory. Potions, weapons and armor are now split across different town NPCs. To sell loot, keep a vendor focused and open your inventory panel.
                         </div>
+                    @elseif ($activeAreaShopItems->isEmpty())
+                        <div class="paper-note mt-6 text-sm leading-6">
+                            {{ __('This vendor currently has no stock for your character race.') }}
+                        </div>
                     @else
                         <div class="mt-6 space-y-3">
-                            @foreach ($activeAreaShop->shopItems->sortBy('sort_order') as $shopItem)
+                            @foreach ($activeAreaShopItems as $shopItem)
                                 <div class="paper-note">
                                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                         <div>

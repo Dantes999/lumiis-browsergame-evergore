@@ -1,4 +1,8 @@
 <section>
+    @php
+        $selectedCharacter = app(\App\Services\Game\ActiveCharacterResolver::class)->current($user, request());
+    @endphp
+
     <header class="utility-page-section-head">
         <div class="utility-page-section-titlebar">
             <p class="panel-kicker">{{ __('Login') }}</p>
@@ -21,7 +25,7 @@
         <div class="paper-note text-sm leading-6">
             <p class="text-[0.65rem] uppercase tracking-[0.28em] text-amber-900/70">{{ __('Character Name') }}</p>
             <p class="mt-2 font-[Cinzel] text-xl tracking-[0.08em] text-stone-900">
-                {{ $user->character?->name ?? __('No character linked') }}
+                {{ $selectedCharacter?->name ?? __('No character linked') }}
             </p>
             <p class="mt-2 text-stone-700">
                 {{ __('Character renaming should stay a separate game or admin action, not a login profile field.') }}

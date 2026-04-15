@@ -3,7 +3,9 @@
 namespace App\Support\Game;
 
 use App\Models\CharacterSkill;
+use App\Models\GameCharacter;
 use App\Models\Skill;
+use Illuminate\Support\Str;
 
 /**
  * Central source of truth for playable races, their two Metin2-like combat schools and
@@ -110,10 +112,42 @@ class MetinClassCatalog
                     'body' => [
                         'label' => __('Body'),
                         'description' => __('Aggressive melee path with burst strikes, fast area swings and self-sustain.'),
+                        'identity' => __('Offense'),
+                        'passive_bonuses' => [
+                            'attack' => 2,
+                            'speed' => 1,
+                            'crit_chance' => 2,
+                            'average_damage' => 4,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => 0,
+                            'attack_ceiling_offset' => 2,
+                            'crit_chance_bonus' => 2,
+                            'guard_bonus' => 0,
+                            'basic_damage_percent' => 6,
+                            'skill_damage_percent' => 8,
+                            'incoming_damage_percent' => 8,
+                        ],
                     ],
                     'mental' => [
                         'label' => __('Mental'),
                         'description' => __('Steadier control path with guard-heavy skills, impact strikes and battlefield resilience.'),
+                        'identity' => __('Defense'),
+                        'passive_bonuses' => [
+                            'defense' => 2,
+                            'max_health' => 18,
+                            'evade_chance' => 1,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => 1,
+                            'attack_ceiling_offset' => -1,
+                            'crit_chance_bonus' => 0,
+                            'guard_bonus' => 4,
+                            'basic_damage_percent' => 0,
+                            'skill_damage_percent' => 2,
+                            'incoming_damage_percent' => -14,
+                            'guard_retention_percent' => 50,
+                        ],
                     ],
                 ],
             ],
@@ -137,10 +171,42 @@ class MetinClassCatalog
                     'dagger' => [
                         'label' => __('Dagger'),
                         'description' => __('Close-range assassin route with poison pressure, evasive tools and fast finishers.'),
+                        'identity' => __('Assassin'),
+                        'passive_bonuses' => [
+                            'speed' => 1,
+                            'crit_chance' => 3,
+                            'evade_chance' => 2,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => 0,
+                            'attack_ceiling_offset' => 1,
+                            'crit_chance_bonus' => 2,
+                            'guard_bonus' => 0,
+                            'basic_damage_percent' => 2,
+                            'skill_damage_percent' => 4,
+                            'incoming_damage_percent' => -4,
+                        ],
                     ],
                     'archery' => [
                         'label' => __('Archery'),
                         'description' => __('Ranged damage route with volley attacks, speed tools and repeated pressure.'),
+                        'identity' => __('Ranged'),
+                        'passive_bonuses' => [
+                            'attack' => 1,
+                            'crit_chance' => 1,
+                            'skill_damage' => 4,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => -1,
+                            'attack_ceiling_offset' => 2,
+                            'crit_chance_bonus' => 1,
+                            'guard_bonus' => 0,
+                            'basic_damage_percent' => 0,
+                            'skill_damage_percent' => 6,
+                            'incoming_damage_percent' => 0,
+                            'opening_damage_percent' => 12,
+                            'opening_crit_bonus' => 4,
+                        ],
                     ],
                 ],
             ],
@@ -165,10 +231,43 @@ class MetinClassCatalog
                     'weaponary-magic' => [
                         'label' => __('Weaponary Magic'),
                         'description' => __('Blade-enhancing Sura school with close-range spells, fear tools and enchanted defense.'),
+                        'identity' => __('Hybrid'),
+                        'passive_bonuses' => [
+                            'attack' => 1,
+                            'defense' => 1,
+                            'magic_attack' => 2,
+                            'average_damage' => 2,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => 0,
+                            'attack_ceiling_offset' => 1,
+                            'crit_chance_bonus' => 1,
+                            'guard_bonus' => 1,
+                            'basic_damage_percent' => 3,
+                            'skill_damage_percent' => 4,
+                            'incoming_damage_percent' => -4,
+                            'lifesteal_percent' => 8,
+                        ],
                     ],
                     'black-magic' => [
                         'label' => __('Black Magic'),
                         'description' => __('Pure spell pressure with heavier magic hits and darker battlefield control.'),
+                        'identity' => __('Caster'),
+                        'passive_bonuses' => [
+                            'max_sp' => 10,
+                            'magic_attack' => 4,
+                            'skill_damage' => 5,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => -1,
+                            'attack_ceiling_offset' => 2,
+                            'crit_chance_bonus' => 0,
+                            'guard_bonus' => 0,
+                            'basic_damage_percent' => 0,
+                            'skill_damage_percent' => 8,
+                            'incoming_damage_percent' => 4,
+                            'damage_to_sp_percent' => 30,
+                        ],
                     ],
                 ],
             ],
@@ -193,10 +292,42 @@ class MetinClassCatalog
                     'dragon' => [
                         'label' => __('Dragon Force'),
                         'description' => __('Offensive shaman path with talismans, dragon bursts and empowering blessings.'),
+                        'identity' => __('Burst'),
+                        'passive_bonuses' => [
+                            'magic_attack' => 3,
+                            'crit_chance' => 1,
+                            'skill_damage' => 4,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => -1,
+                            'attack_ceiling_offset' => 1,
+                            'crit_chance_bonus' => 1,
+                            'guard_bonus' => 1,
+                            'basic_damage_percent' => 0,
+                            'skill_damage_percent' => 7,
+                            'incoming_damage_percent' => -2,
+                            'reflect_percent' => 12,
+                        ],
                     ],
                     'healing' => [
                         'label' => __('Healing Force'),
                         'description' => __('Supportive shaman path with faster recovery, lightning pressure and survival tools.'),
+                        'identity' => __('Support'),
+                        'passive_bonuses' => [
+                            'defense' => 1,
+                            'max_health' => 12,
+                            'max_sp' => 8,
+                            'evade_chance' => 1,
+                        ],
+                        'combat_profile' => [
+                            'attack_floor_offset' => 0,
+                            'attack_ceiling_offset' => 0,
+                            'crit_chance_bonus' => 0,
+                            'guard_bonus' => 2,
+                            'basic_damage_percent' => 0,
+                            'skill_damage_percent' => 4,
+                            'incoming_damage_percent' => -8,
+                        ],
                     ],
                 ],
             ],
@@ -253,6 +384,169 @@ class MetinClassCatalog
         $label = data_get(self::groupsForRace($race), $group.'.label');
 
         return is_string($label) ? $label : null;
+    }
+
+    public static function skillGroupIdentityLabel(string $race, ?string $group): ?string
+    {
+        if ($group === null) {
+            return null;
+        }
+
+        $label = data_get(self::groupsForRace($race), $group.'.identity');
+
+        return is_string($label) ? $label : null;
+    }
+
+    /**
+     * @return array{
+     *     attack: int,
+     *     defense: int,
+     *     speed: int,
+     *     max_health: int,
+     *     max_sp: int,
+     *     magic_attack: int,
+     *     crit_chance: int,
+     *     evade_chance: int,
+     *     average_damage: int,
+     *     skill_damage: int
+     * }
+     */
+    public static function skillGroupPassiveBonuses(string $race, ?string $group): array
+    {
+        $defaults = [
+            'attack' => 0,
+            'defense' => 0,
+            'speed' => 0,
+            'max_health' => 0,
+            'max_sp' => 0,
+            'magic_attack' => 0,
+            'crit_chance' => 0,
+            'evade_chance' => 0,
+            'average_damage' => 0,
+            'skill_damage' => 0,
+        ];
+
+        if ($group === null || ! self::hasSkillGroup($race, $group)) {
+            return $defaults;
+        }
+
+        $bonuses = (array) data_get(self::groupsForRace($race), $group.'.passive_bonuses', []);
+
+        foreach ($defaults as $key => $value) {
+            $defaults[$key] = (int) ($bonuses[$key] ?? $value);
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function skillGroupPassiveSummary(string $race, ?string $group): array
+    {
+        $labels = [
+            'attack' => __('Attack'),
+            'defense' => __('Defense'),
+            'speed' => __('Speed'),
+            'max_health' => __('HP'),
+            'max_sp' => __('SP'),
+            'magic_attack' => __('Magic Attack'),
+            'crit_chance' => __('Crit'),
+            'evade_chance' => __('Evade'),
+            'average_damage' => 'DSS',
+            'skill_damage' => 'FKS',
+        ];
+
+        return collect(self::skillGroupPassiveBonuses($race, $group))
+            ->filter(fn (int $value): bool => $value !== 0)
+            ->map(function (int $value, string $key) use ($labels): string {
+                $suffix = in_array($key, ['crit_chance', 'evade_chance', 'average_damage', 'skill_damage'], true) ? '%' : '';
+
+                return sprintf('+%d%s %s', $value, $suffix, $labels[$key] ?? Str::headline($key));
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *     attack_floor_offset: int,
+     *     attack_ceiling_offset: int,
+     *     crit_chance_bonus: int,
+     *     guard_bonus: int,
+     *     basic_damage_percent: int,
+     *     skill_damage_percent: int,
+     *     incoming_damage_percent: int,
+     *     opening_damage_percent: int,
+     *     opening_crit_bonus: int,
+     *     guard_retention_percent: int,
+     *     lifesteal_percent: int,
+     *     damage_to_sp_percent: int,
+     *     reflect_percent: int
+     * }
+     */
+    public static function skillGroupCombatProfile(string $race, ?string $group): array
+    {
+        $defaults = [
+            'attack_floor_offset' => 0,
+            'attack_ceiling_offset' => 0,
+            'crit_chance_bonus' => 0,
+            'guard_bonus' => 0,
+            'basic_damage_percent' => 0,
+            'skill_damage_percent' => 0,
+            'incoming_damage_percent' => 0,
+            'opening_damage_percent' => 0,
+            'opening_crit_bonus' => 0,
+            'guard_retention_percent' => 0,
+            'lifesteal_percent' => 0,
+            'damage_to_sp_percent' => 0,
+            'reflect_percent' => 0,
+        ];
+
+        if ($group === null || ! self::hasSkillGroup($race, $group)) {
+            return $defaults;
+        }
+
+        $profile = (array) data_get(self::groupsForRace($race), $group.'.combat_profile', []);
+
+        foreach ($defaults as $key => $value) {
+            $defaults[$key] = (int) ($profile[$key] ?? $value);
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function skillGroupCombatSummary(string $race, ?string $group): array
+    {
+        return collect(self::skillGroupCombatProfile($race, $group))
+            ->map(function (int $value, string $key): ?string {
+                if ($value === 0) {
+                    return null;
+                }
+
+                return match ($key) {
+                    'basic_damage_percent' => sprintf('%+d%% %s', $value, __('basic damage')),
+                    'skill_damage_percent' => sprintf('%+d%% %s', $value, __('skill damage')),
+                    'incoming_damage_percent' => sprintf('%+d%% %s', $value, __('incoming damage')),
+                    'opening_damage_percent' => sprintf('%+d%% %s', $value, __('opening damage')),
+                    'opening_crit_bonus' => sprintf('%+d%% %s', $value, __('opening crit')),
+                    'crit_chance_bonus' => sprintf('%+d%% %s', $value, __('crit')),
+                    'guard_bonus' => sprintf('%+d %s', $value, __('guard')),
+                    'attack_floor_offset' => sprintf('%+d %s', $value, __('attack floor')),
+                    'attack_ceiling_offset' => sprintf('%+d %s', $value, __('attack ceiling')),
+                    'guard_retention_percent' => sprintf('%d%% %s', $value, __('guard retention')),
+                    'lifesteal_percent' => sprintf('%+d%% %s', $value, __('lifesteal')),
+                    'damage_to_sp_percent' => sprintf('%d%% %s', $value, __('damage to SP')),
+                    'reflect_percent' => sprintf('%+d%% %s', $value, __('reflect')),
+                    default => null,
+                };
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
@@ -401,6 +695,17 @@ class MetinClassCatalog
                 'damage_multiplier' => 1.0,
                 'attack_buff' => 0,
                 'attack_buff_rounds' => 0,
+                'buff_rounds' => 0,
+                'lifesteal_percent' => 0,
+                'reflect_percent' => 0,
+                'damage_to_sp_percent' => 0,
+                'incoming_damage_percent' => 0,
+                'attack_down_percent' => 0,
+                'attack_down_rounds' => 0,
+                'hit_penalty_percent' => 0,
+                'hit_penalty_rounds' => 0,
+                'stagger_chance' => 0,
+                'stagger_rounds' => 0,
                 'self_buff_only' => false,
             ];
         }
@@ -433,6 +738,17 @@ class MetinClassCatalog
             'damage_multiplier' => max(0.4, (float) ($combat['damage_multiplier_base'] ?? 1) + (($rank - 1) * (float) ($combat['damage_multiplier_per_rank'] ?? 0))),
             'attack_buff' => max(0, (int) $combat['attack_buff_base'] + (($rank - 1) * (int) ($combat['attack_buff_per_rank'] ?? 0))),
             'attack_buff_rounds' => max(0, (int) ($combat['attack_buff_rounds'] ?? 0)),
+            'buff_rounds' => max(0, (int) (($combat['buff_rounds'] ?? 0) ?: ($combat['attack_buff_rounds'] ?? 0))),
+            'lifesteal_percent' => max(0, (int) $combat['lifesteal_percent_base'] + (($rank - 1) * (int) ($combat['lifesteal_percent_per_rank'] ?? 0))),
+            'reflect_percent' => max(0, (int) $combat['reflect_percent_base'] + (($rank - 1) * (int) ($combat['reflect_percent_per_rank'] ?? 0))),
+            'damage_to_sp_percent' => max(0, (int) $combat['damage_to_sp_percent_base'] + (($rank - 1) * (int) ($combat['damage_to_sp_percent_per_rank'] ?? 0))),
+            'incoming_damage_percent' => (int) $combat['incoming_damage_percent_base'] + (($rank - 1) * (int) ($combat['incoming_damage_percent_per_rank'] ?? 0)),
+            'attack_down_percent' => max(0, (int) $combat['attack_down_percent_base'] + (($rank - 1) * (int) ($combat['attack_down_percent_per_rank'] ?? 0))),
+            'attack_down_rounds' => max(0, (int) ($combat['attack_down_rounds'] ?? 0)),
+            'hit_penalty_percent' => max(0, (int) $combat['hit_penalty_percent_base'] + (($rank - 1) * (int) ($combat['hit_penalty_percent_per_rank'] ?? 0))),
+            'hit_penalty_rounds' => max(0, (int) ($combat['hit_penalty_rounds'] ?? 0)),
+            'stagger_chance' => max(0, min(100, (int) $combat['stagger_chance_base'] + (($rank - 1) * (int) ($combat['stagger_chance_per_rank'] ?? 0)))),
+            'stagger_rounds' => max(0, (int) ($combat['stagger_rounds'] ?? 0)),
             'self_buff_only' => (bool) ($combat['self_buff_only'] ?? false),
         ];
     }
@@ -443,7 +759,7 @@ class MetinClassCatalog
      *
      * @return array<string, mixed>|null
      */
-    public static function combatProfileForLearnedSkill(CharacterSkill $characterSkill): ?array
+    public static function combatProfileForLearnedSkill(CharacterSkill $characterSkill, ?GameCharacter $character = null): ?array
     {
         $skill = $characterSkill->skill;
 
@@ -458,12 +774,20 @@ class MetinClassCatalog
             $profile['heal_flat'] += 14;
             $profile['crit_bonus'] += 8;
             $profile['evade_bonus'] += 8;
+            $profile['attack_buff'] += 8;
+            $profile['lifesteal_percent'] += $profile['lifesteal_percent'] > 0 ? 4 : 0;
+            $profile['reflect_percent'] += $profile['reflect_percent'] > 0 ? 4 : 0;
+            $profile['damage_to_sp_percent'] += $profile['damage_to_sp_percent'] > 0 ? 8 : 0;
+            $profile['incoming_damage_percent'] += $profile['incoming_damage_percent'] < 0 ? -4 : 0;
+            $profile['attack_down_percent'] += $profile['attack_down_percent'] > 0 ? 4 : 0;
+            $profile['hit_penalty_percent'] += $profile['hit_penalty_percent'] > 0 ? 4 : 0;
+            $profile['stagger_chance'] += $profile['stagger_chance'] > 0 ? 12 : 0;
             $profile['poison_damage'] += $profile['poison_damage'] > 0 ? 6 : 0;
             $profile['burn_damage'] += $profile['burn_damage'] > 0 ? 6 : 0;
             $profile['damage_multiplier'] += 0.28;
             $profile['mastery_label'] = $characterSkill->stageLabel();
 
-            return $profile;
+            return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
         }
 
         if ((int) $characterSkill->grand_mastery_rank > 0) {
@@ -475,12 +799,20 @@ class MetinClassCatalog
             $profile['heal_flat'] += $grandRank * 3;
             $profile['crit_bonus'] += (int) ceil($grandRank / 2);
             $profile['evade_bonus'] += (int) ceil($grandRank / 2);
+            $profile['attack_buff'] += $grandRank;
+            $profile['lifesteal_percent'] += $profile['lifesteal_percent'] > 0 ? (int) ceil($grandRank / 2) : 0;
+            $profile['reflect_percent'] += $profile['reflect_percent'] > 0 ? (int) ceil($grandRank / 2) : 0;
+            $profile['damage_to_sp_percent'] += $profile['damage_to_sp_percent'] > 0 ? $grandRank : 0;
+            $profile['incoming_damage_percent'] += $profile['incoming_damage_percent'] < 0 ? -$grandRank : 0;
+            $profile['attack_down_percent'] += $profile['attack_down_percent'] > 0 ? (int) ceil($grandRank / 2) : 0;
+            $profile['hit_penalty_percent'] += $profile['hit_penalty_percent'] > 0 ? (int) ceil($grandRank / 2) : 0;
+            $profile['stagger_chance'] += $profile['stagger_chance'] > 0 ? $grandRank : 0;
             $profile['poison_damage'] += $profile['poison_damage'] > 0 ? $grandRank : 0;
             $profile['burn_damage'] += $profile['burn_damage'] > 0 ? $grandRank : 0;
             $profile['damage_multiplier'] += $grandRank * 0.03;
             $profile['mastery_label'] = $characterSkill->stageLabel();
 
-            return $profile;
+            return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
         }
 
         $basicRank = max(1, min(10, (int) $characterSkill->rank + min(5, (int) $characterSkill->mastery_rank)));
@@ -493,11 +825,144 @@ class MetinClassCatalog
             $profile['heal_flat'] += $masteryOverflow * 2;
             $profile['crit_bonus'] += $masteryOverflow;
             $profile['evade_bonus'] += $masteryOverflow;
+            $profile['attack_buff'] += $masteryOverflow;
+            $profile['lifesteal_percent'] += $profile['lifesteal_percent'] > 0 ? $masteryOverflow : 0;
+            $profile['reflect_percent'] += $profile['reflect_percent'] > 0 ? $masteryOverflow : 0;
+            $profile['damage_to_sp_percent'] += $profile['damage_to_sp_percent'] > 0 ? $masteryOverflow * 2 : 0;
+            $profile['incoming_damage_percent'] += $profile['incoming_damage_percent'] < 0 ? -$masteryOverflow : 0;
+            $profile['attack_down_percent'] += $profile['attack_down_percent'] > 0 ? $masteryOverflow : 0;
+            $profile['hit_penalty_percent'] += $profile['hit_penalty_percent'] > 0 ? $masteryOverflow : 0;
+            $profile['stagger_chance'] += $profile['stagger_chance'] > 0 ? $masteryOverflow * 2 : 0;
             $profile['poison_damage'] += $profile['poison_damage'] > 0 ? $masteryOverflow : 0;
             $profile['burn_damage'] += $profile['burn_damage'] > 0 ? $masteryOverflow : 0;
         }
 
         $profile['mastery_label'] = $characterSkill->stageLabel();
+
+        return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
+    }
+
+    /**
+     * Metin2 skills should feel tied to class stats, not only to the learned rank.
+     * We keep the scaling explicit per signature skill so balance stays readable.
+     *
+     * @param  array<string, mixed>  $profile
+     * @return array<string, mixed>
+     */
+    private static function applyCharacterCombatScaling(array $profile, ?GameCharacter $character): array
+    {
+        if (! $character instanceof GameCharacter) {
+            return $profile;
+        }
+
+        $strength = $character->effectiveStrength();
+        $dexterity = $character->effectiveDexterity();
+        $intelligence = $character->effectiveIntelligence();
+        $vitality = $character->effectiveVitality();
+
+        return match ((string) ($profile['slug'] ?? '')) {
+            'aura-of-the-sword' => self::applyProfileBonuses($profile, [
+                'attack_buff' => max(1, intdiv($strength, 2)),
+            ]),
+            'berserk', 'sword-spin-boost', 'ambush-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($strength + $dexterity, 3)),
+                'crit_bonus' => max(1, intdiv($dexterity, 4)),
+            ]),
+            'strong-body' => self::applyProfileBonuses($profile, [
+                'guard' => max(2, intdiv($vitality, 2)),
+                'incoming_damage_percent' => -max(1, intdiv($vitality, 4)),
+            ]),
+            'bash', 'spirit-strike-warrior', 'sword-strike' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($strength, 3)),
+            ]),
+            'stump' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($strength, 4)),
+                'stagger_chance' => max(1, intdiv($vitality, 3)),
+            ]),
+            'ambush', 'fast-attack', 'insidious-poison', 'fire-arrow', 'poison-arrow', 'storm-shot', 'fire-arrow-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($dexterity + $strength, 4)),
+                'crit_bonus' => max(1, intdiv($dexterity, 5)),
+            ]),
+            'poisonous-cloud' => self::applyProfileBonuses($profile, [
+                'poison_chance' => max(1, intdiv($dexterity, 4)),
+                'poison_damage' => max(1, intdiv($dexterity, 5)),
+            ]),
+            'feather-walk' => self::applyProfileBonuses($profile, [
+                'evade_bonus' => max(2, intdiv($dexterity, 2)),
+            ]),
+            'enchanted-blade' => self::applyProfileBonuses($profile, [
+                'attack_buff' => max(2, intdiv($intelligence, 2)),
+                'lifesteal_percent' => max(1, intdiv($intelligence, 8)),
+            ]),
+            'fear' => self::applyProfileBonuses($profile, [
+                'evade_bonus' => max(1, intdiv($dexterity + $intelligence, 5)),
+                'incoming_damage_percent' => -max(1, intdiv($intelligence, 6)),
+            ]),
+            'enchanted-armour' => self::applyProfileBonuses($profile, [
+                'guard' => max(2, intdiv($vitality + $intelligence, 4)),
+                'reflect_percent' => max(1, intdiv($intelligence, 8)),
+            ]),
+            'finger-strike', 'dragon-swirl', 'dispel', 'hell-strike', 'finger-strike-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($intelligence + $strength, 4)),
+            ]),
+            'dark-strike', 'flame-strike', 'flame-spirit', 'spirit-strike-sura', 'dark-orb', 'death-wave', 'dark-strike-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($intelligence, 3)),
+                'burn_damage' => $profile['burn_damage'] > 0 ? max(1, intdiv($intelligence, 6)) : 0,
+            ]),
+            'dark-protection' => self::applyProfileBonuses($profile, [
+                'guard' => max(1, intdiv($intelligence, 4)),
+                'damage_to_sp_percent' => max(2, intdiv($intelligence, 5)),
+            ]),
+            'flying-talisman', 'shooting-dragon', 'dragons-roar', 'meteor', 'shooting-dragon-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($intelligence, 3)),
+                'hit_penalty_percent' => $profile['hit_penalty_percent'] > 0 ? max(1, intdiv($dexterity, 5)) : 0,
+            ]),
+            'blessing' => self::applyProfileBonuses($profile, [
+                'guard' => max(2, intdiv($intelligence + $dexterity, 4)),
+                'incoming_damage_percent' => -max(1, intdiv($intelligence + $dexterity, 7)),
+            ]),
+            'reflect' => self::applyProfileBonuses($profile, [
+                'guard' => max(1, intdiv($intelligence, 5)),
+                'reflect_percent' => max(2, intdiv($intelligence + $dexterity, 6)),
+            ]),
+            'dragons-strength' => self::applyProfileBonuses($profile, [
+                'crit_bonus' => max(2, intdiv($intelligence, 2)),
+                'attack_buff' => max(1, intdiv($intelligence, 4)),
+            ]),
+            'lightning-throw', 'summon-lightning', 'lightning-claw', 'summon-lightning-boost' => self::applyProfileBonuses($profile, [
+                'damage_bonus' => max(1, intdiv($intelligence, 3)),
+            ]),
+            'cure' => self::applyProfileBonuses($profile, [
+                'heal_flat' => max(2, intdiv(($intelligence * 2) + $vitality, 3)),
+            ]),
+            'swiftness' => self::applyProfileBonuses($profile, [
+                'evade_bonus' => max(2, intdiv($dexterity + $intelligence, 4)),
+            ]),
+            'attack-up' => self::applyProfileBonuses($profile, [
+                'attack_buff' => max(2, intdiv($intelligence, 2)),
+            ]),
+            default => $profile,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     * @param  array<string, int>  $bonuses
+     * @return array<string, mixed>
+     */
+    private static function applyProfileBonuses(array $profile, array $bonuses): array
+    {
+        foreach ($bonuses as $key => $value) {
+            if (! is_numeric($value) || (int) $value === 0) {
+                continue;
+            }
+
+            $profile[$key] = (int) ($profile[$key] ?? 0) + (int) $value;
+        }
+
+        if (isset($profile['stagger_chance'])) {
+            $profile['stagger_chance'] = max(0, min(100, (int) $profile['stagger_chance']));
+        }
 
         return $profile;
     }
@@ -522,9 +987,9 @@ class MetinClassCatalog
                     damageBonus: 0,
                     damagePerRank: 0,
                     splash: 0,
-                    attackBuff: 8,
-                    attackBuffPerRank: 2,
-                    attackBuffRounds: 3,
+                    attackBuff: 10,
+                    attackBuffPerRank: 3,
+                    attackBuffRounds: 4,
                     selfBuffOnly: true,
                 ),
             ),
@@ -536,7 +1001,7 @@ class MetinClassCatalog
                 panelType: __('Critical Strike'),
                 roleLabel: __('Critical Strike'),
                 requiredLevel: 5,
-                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 6, damagePerRank: 2, splash: 58, critBonus: 6, critPerRank: 1),
+                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 8, damagePerRank: 2, splash: 58, critBonus: 8, critPerRank: 1),
             ),
             'dash' => self::skill(
                 race: 'warrior',
@@ -546,7 +1011,7 @@ class MetinClassCatalog
                 panelType: __('Evasive Strike'),
                 roleLabel: __('Evasive Strike'),
                 requiredLevel: 6,
-                combat: self::combat(sp: 4, cooldown: 1, damageBonus: 5, damagePerRank: 1, splash: 70, evadeBonus: 8, evadePerRank: 1),
+                combat: self::combat(sp: 4, cooldown: 1, damageBonus: 6, damagePerRank: 1, splash: 72, evadeBonus: 10, evadePerRank: 1),
             ),
             'sword-spin' => self::skill(
                 race: 'warrior',
@@ -556,7 +1021,7 @@ class MetinClassCatalog
                 panelType: __('Wide Cleave'),
                 roleLabel: __('Wide Cleave'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 7, damagePerRank: 2, splash: 88),
+                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 8, damagePerRank: 2, splash: 90),
             ),
             'three-way-cut' => self::skill(
                 race: 'warrior',
@@ -566,7 +1031,7 @@ class MetinClassCatalog
                 panelType: __('Cleave'),
                 roleLabel: __('Cleave'),
                 requiredLevel: 8,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 7, damagePerRank: 2, splash: 82),
+                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 8, damagePerRank: 2, splash: 84),
             ),
             'life-force' => self::skill(
                 race: 'warrior',
@@ -576,7 +1041,7 @@ class MetinClassCatalog
                 panelType: __('Drain Strike'),
                 roleLabel: __('Drain Strike'),
                 requiredLevel: 9,
-                combat: self::combat(sp: 7, cooldown: 3, damageBonus: 8, damagePerRank: 2, splash: 55, healFlat: 8, healFlatPerRank: 2),
+                combat: self::combat(sp: 7, cooldown: 3, damageBonus: 9, damagePerRank: 2, splash: 55, healFlat: 10, healFlatPerRank: 2),
             ),
             'earthquake-body' => self::skill(
                 race: 'warrior',
@@ -586,7 +1051,7 @@ class MetinClassCatalog
                 panelType: __('Heavy Cleave'),
                 roleLabel: __('Heavy Cleave'),
                 requiredLevel: 10,
-                combat: self::combat(sp: 8, cooldown: 3, damageBonus: 10, damagePerRank: 2, splash: 92),
+                combat: self::combat(sp: 8, cooldown: 3, damageBonus: 12, damagePerRank: 2, splash: 94),
             ),
             'sword-spin-boost' => self::skill(
                 race: 'warrior',
@@ -596,7 +1061,7 @@ class MetinClassCatalog
                 panelType: __('Burst Cleave'),
                 roleLabel: __('Burst Cleave'),
                 requiredLevel: 14,
-                combat: self::combat(sp: 9, cooldown: 3, damageBonus: 12, damagePerRank: 3, splash: 96, critBonus: 4, critPerRank: 1),
+                combat: self::combat(sp: 9, cooldown: 3, damageBonus: 14, damagePerRank: 3, splash: 96, critBonus: 5, critPerRank: 1),
             ),
 
             'bash' => self::skill(
@@ -607,7 +1072,17 @@ class MetinClassCatalog
                 panelType: __('Impact Strike'),
                 roleLabel: __('Impact Strike'),
                 requiredLevel: 5,
-                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 8, damagePerRank: 2, splash: 54, guard: 4, guardPerRank: 1),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 9,
+                    damagePerRank: 2,
+                    splash: 54,
+                    guard: 6,
+                    guardPerRank: 1,
+                    staggerChance: 100,
+                    staggerRounds: 1,
+                ),
             ),
             'spirit-strike-warrior' => self::skill(
                 race: 'warrior',
@@ -617,17 +1092,29 @@ class MetinClassCatalog
                 panelType: __('Heavy Strike'),
                 roleLabel: __('Heavy Strike'),
                 requiredLevel: 5,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 9, damagePerRank: 2, splash: 52),
+                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 11, damagePerRank: 2, splash: 52),
             ),
             'strong-body' => self::skill(
                 race: 'warrior',
                 skillGroup: 'mental',
                 name: 'Strong Body',
-                description: __('Brace the body and absorb more of the next enemy exchange.'),
+                description: __('Harden the body for several rounds and weather incoming blows like a true Mental Warrior.'),
                 panelType: __('Guard Skill'),
                 roleLabel: __('Guard Skill'),
                 requiredLevel: 6,
-                combat: self::combat(sp: 4, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 48, guard: 9, guardPerRank: 2),
+                combat: self::combat(
+                    sp: 4,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    guard: 16,
+                    guardPerRank: 2,
+                    incomingDamagePercent: -18,
+                    incomingDamagePercentPerRank: -1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'stump' => self::skill(
                 race: 'warrior',
@@ -637,7 +1124,18 @@ class MetinClassCatalog
                 panelType: __('Control Cleave'),
                 roleLabel: __('Control Cleave'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 7, damagePerRank: 2, splash: 78, guard: 5, guardPerRank: 1),
+                combat: self::combat(
+                    sp: 6,
+                    cooldown: 2,
+                    damageBonus: 7,
+                    damagePerRank: 2,
+                    splash: 78,
+                    guard: 7,
+                    guardPerRank: 1,
+                    staggerChance: 60,
+                    staggerChancePerRank: 2,
+                    staggerRounds: 1,
+                ),
             ),
             'sword-strike' => self::skill(
                 race: 'warrior',
@@ -647,7 +1145,7 @@ class MetinClassCatalog
                 panelType: __('Heavy Strike'),
                 roleLabel: __('Heavy Strike'),
                 requiredLevel: 8,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 10, damagePerRank: 2, splash: 50),
+                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 11, damagePerRank: 2, splash: 50),
             ),
             'sword-orb' => self::skill(
                 race: 'warrior',
@@ -657,7 +1155,7 @@ class MetinClassCatalog
                 panelType: __('Wave Strike'),
                 roleLabel: __('Wave Strike'),
                 requiredLevel: 9,
-                combat: self::combat(sp: 7, cooldown: 3, damageBonus: 8, damagePerRank: 2, splash: 90),
+                combat: self::combat(sp: 7, cooldown: 3, damageBonus: 9, damagePerRank: 2, splash: 90, guard: 3, guardPerRank: 1),
             ),
             'earthquake-mental' => self::skill(
                 race: 'warrior',
@@ -667,7 +1165,7 @@ class MetinClassCatalog
                 panelType: __('Heavy Cleave'),
                 roleLabel: __('Heavy Cleave'),
                 requiredLevel: 10,
-                combat: self::combat(sp: 8, cooldown: 3, damageBonus: 11, damagePerRank: 2, splash: 94, guard: 4, guardPerRank: 1),
+                combat: self::combat(sp: 8, cooldown: 3, damageBonus: 10, damagePerRank: 2, splash: 94, guard: 6, guardPerRank: 1),
             ),
             'spirit-strike-boost-warrior' => self::skill(
                 race: 'warrior',
@@ -677,7 +1175,7 @@ class MetinClassCatalog
                 panelType: __('Finisher'),
                 roleLabel: __('Finisher'),
                 requiredLevel: 14,
-                combat: self::combat(sp: 9, cooldown: 3, damageBonus: 13, damagePerRank: 3, splash: 56, critBonus: 5, critPerRank: 1),
+                combat: self::combat(sp: 9, cooldown: 3, damageBonus: 12, damagePerRank: 3, splash: 56, critBonus: 3, critPerRank: 1, guard: 4, guardPerRank: 1),
             ),
 
             'ambush' => self::skill(
@@ -795,11 +1293,21 @@ class MetinClassCatalog
                 race: 'ninja',
                 skillGroup: 'archery',
                 name: 'Feather Walk',
-                description: __('Stay light on your feet and slip more return attacks.'),
+                description: __('Move like the wind and stay harder to pin down for the next exchanges.'),
                 panelType: __('Evasive Volley'),
                 roleLabel: __('Evasive Volley'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 5, damagePerRank: 1, splash: 56, evadeBonus: 10, evadePerRank: 1),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    evadeBonus: 12,
+                    evadePerRank: 1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'poison-arrow' => self::skill(
                 race: 'ninja',
@@ -866,31 +1374,70 @@ class MetinClassCatalog
                 race: 'sura',
                 skillGroup: 'weaponary-magic',
                 name: 'Enchanted Blade',
-                description: __('Empower the next exchange with a stronger magical cut.'),
+                description: __('Empower the blade with dark force, raising attack and stealing life for several rounds.'),
                 panelType: __('Empowered Strike'),
                 roleLabel: __('Empowered Strike'),
                 requiredLevel: 6,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 9, damagePerRank: 2, splash: 60, usesMagic: true, critBonus: 4),
+                combat: self::combat(
+                    sp: 6,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    usesMagic: true,
+                    attackBuff: 8,
+                    attackBuffPerRank: 2,
+                    lifestealPercent: 12,
+                    lifestealPercentPerRank: 1,
+                    buffRounds: 4,
+                    selfBuffOnly: true,
+                ),
             ),
             'fear' => self::skill(
                 race: 'sura',
                 skillGroup: 'weaponary-magic',
                 name: 'Fear',
-                description: __('Pressure the enemy line and soften the next counterattack.'),
+                description: __('Shroud yourself in fear and make enemy retaliation weaker and less reliable.'),
                 panelType: __('Guard Break'),
                 roleLabel: __('Guard Break'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 5, damagePerRank: 1, splash: 66, evadeBonus: 8, evadePerRank: 1, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    evadeBonus: 10,
+                    evadePerRank: 1,
+                    usesMagic: true,
+                    incomingDamagePercent: -10,
+                    incomingDamagePercentPerRank: -1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'enchanted-armour' => self::skill(
                 race: 'sura',
                 skillGroup: 'weaponary-magic',
                 name: 'Enchanted Armour',
-                description: __('Harden your next defensive cycle with arcane armour.'),
+                description: __('Wrap yourself in arcane armour that hardens defense and reflects part of the next blows.'),
                 panelType: __('Guard Skill'),
                 roleLabel: __('Guard Skill'),
                 requiredLevel: 8,
-                combat: self::combat(sp: 5, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 44, guard: 10, guardPerRank: 2, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    guard: 12,
+                    guardPerRank: 2,
+                    usesMagic: true,
+                    reflectPercent: 10,
+                    reflectPercentPerRank: 1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'dispel' => self::skill(
                 race: 'sura',
@@ -957,11 +1504,24 @@ class MetinClassCatalog
                 race: 'sura',
                 skillGroup: 'black-magic',
                 name: 'Dark Protection',
-                description: __('Convert dark magic into a steadier defensive cycle.'),
+                description: __('Shroud yourself in dark magic and divert part of the next physical punishment into SP.'),
                 panelType: __('Ward'),
                 roleLabel: __('Ward'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 5, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 42, guard: 11, guardPerRank: 2, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    guard: 11,
+                    guardPerRank: 2,
+                    usesMagic: true,
+                    damageToSpPercent: 40,
+                    damageToSpPercentPerRank: 2,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'spirit-strike-sura' => self::skill(
                 race: 'sura',
@@ -1012,7 +1572,17 @@ class MetinClassCatalog
                 panelType: __('Magic Burst'),
                 roleLabel: __('Magic Burst'),
                 requiredLevel: 5,
-                combat: self::combat(sp: 5, cooldown: 2, damageBonus: 8, damagePerRank: 2, splash: 52, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 8,
+                    damagePerRank: 2,
+                    splash: 52,
+                    usesMagic: true,
+                    hitPenaltyPercent: 10,
+                    hitPenaltyPercentPerRank: 1,
+                    hitPenaltyRounds: 2,
+                ),
             ),
             'shooting-dragon' => self::skill(
                 race: 'shaman',
@@ -1038,31 +1608,72 @@ class MetinClassCatalog
                 race: 'shaman',
                 skillGroup: 'dragon',
                 name: 'Blessing',
-                description: __('Protective dragon blessing that steadies the next retaliation.'),
+                description: __('Call the dragon blessing and blunt incoming physical punishment for several rounds.'),
                 panelType: __('Blessed Guard'),
                 roleLabel: __('Blessed Guard'),
                 requiredLevel: 7,
-                combat: self::combat(sp: 5, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 44, guard: 10, guardPerRank: 2, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    guard: 10,
+                    guardPerRank: 2,
+                    usesMagic: true,
+                    incomingDamagePercent: -18,
+                    incomingDamagePercentPerRank: -1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'reflect' => self::skill(
                 race: 'shaman',
                 skillGroup: 'dragon',
                 name: 'Reflect',
-                description: __('Turn incoming pressure aside and buy room for the next round.'),
+                description: __('Surround yourself with a reflective ward that throws back part of the enemy\'s physical damage.'),
                 panelType: __('Ward'),
                 roleLabel: __('Ward'),
                 requiredLevel: 8,
-                combat: self::combat(sp: 5, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 40, guard: 12, guardPerRank: 2, evadeBonus: 6, evadePerRank: 1, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    guard: 8,
+                    guardPerRank: 1,
+                    evadeBonus: 6,
+                    evadePerRank: 1,
+                    usesMagic: true,
+                    reflectPercent: 18,
+                    reflectPercentPerRank: 1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'dragons-strength' => self::skill(
                 race: 'shaman',
                 skillGroup: 'dragon',
-                name: 'Dragon\'s Strength',
-                description: __('Heavier empowered strike through dragon-force focus.'),
+                name: 'Help of the Dragon',
+                description: __('Ask the dragon for aid and raise your critical pressure for the next few rounds.'),
                 panelType: __('Empowered Spell'),
                 roleLabel: __('Empowered Spell'),
                 requiredLevel: 9,
-                combat: self::combat(sp: 7, cooldown: 2, damageBonus: 10, damagePerRank: 2, splash: 60, usesMagic: true, critBonus: 4),
+                combat: self::combat(
+                    sp: 7,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    usesMagic: true,
+                    critBonus: 8,
+                    critPerRank: 1,
+                    attackBuff: 4,
+                    attackBuffPerRank: 1,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'meteor' => self::skill(
                 race: 'shaman',
@@ -1129,21 +1740,43 @@ class MetinClassCatalog
                 race: 'shaman',
                 skillGroup: 'healing',
                 name: 'Swiftness',
-                description: __('Raise your evasion tempo before the enemy turn lands.'),
+                description: __('Move and cast faster for the next few rounds, making retaliation harder to land.'),
                 panelType: __('Speed Ward'),
                 roleLabel: __('Speed Ward'),
                 requiredLevel: 8,
-                combat: self::combat(sp: 5, cooldown: 1, damageBonus: 4, damagePerRank: 1, splash: 42, evadeBonus: 12, evadePerRank: 1, usesMagic: true),
+                combat: self::combat(
+                    sp: 5,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    evadeBonus: 12,
+                    evadePerRank: 1,
+                    usesMagic: true,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'attack-up' => self::skill(
                 race: 'shaman',
                 skillGroup: 'healing',
                 name: 'Attack Up',
-                description: __('Supportive power surge expressed as a sharper damaging cast.'),
+                description: __('Channel supportive power into yourself and raise attack for the next few rounds.'),
                 panelType: __('Empowered Spell'),
                 roleLabel: __('Empowered Spell'),
                 requiredLevel: 9,
-                combat: self::combat(sp: 6, cooldown: 2, damageBonus: 9, damagePerRank: 2, splash: 62, critBonus: 4, usesMagic: true),
+                combat: self::combat(
+                    sp: 6,
+                    cooldown: 2,
+                    damageBonus: 0,
+                    damagePerRank: 0,
+                    splash: 0,
+                    usesMagic: true,
+                    attackBuff: 8,
+                    attackBuffPerRank: 2,
+                    buffRounds: 3,
+                    selfBuffOnly: true,
+                ),
             ),
             'aether-ward' => self::skill(
                 race: 'shaman',
@@ -1227,9 +1860,27 @@ class MetinClassCatalog
         bool $usesMagic = false,
         float $damageMultiplier = 1.0,
         float $damageMultiplierPerRank = 0.0,
+        int $lifestealPercent = 0,
+        int $lifestealPercentPerRank = 0,
+        int $reflectPercent = 0,
+        int $reflectPercentPerRank = 0,
+        int $damageToSpPercent = 0,
+        int $damageToSpPercentPerRank = 0,
+        int $incomingDamagePercent = 0,
+        int $incomingDamagePercentPerRank = 0,
+        int $attackDownPercent = 0,
+        int $attackDownPercentPerRank = 0,
+        int $attackDownRounds = 0,
+        int $hitPenaltyPercent = 0,
+        int $hitPenaltyPercentPerRank = 0,
+        int $hitPenaltyRounds = 0,
+        int $staggerChance = 0,
+        int $staggerChancePerRank = 0,
+        int $staggerRounds = 0,
         int $attackBuff = 0,
         int $attackBuffPerRank = 0,
         int $attackBuffRounds = 0,
+        int $buffRounds = 0,
         bool $selfBuffOnly = false,
     ): array {
         return [
@@ -1262,9 +1913,27 @@ class MetinClassCatalog
             'uses_magic_attack' => $usesMagic,
             'damage_multiplier_base' => $damageMultiplier,
             'damage_multiplier_per_rank' => $damageMultiplierPerRank,
+            'lifesteal_percent_base' => $lifestealPercent,
+            'lifesteal_percent_per_rank' => $lifestealPercentPerRank,
+            'reflect_percent_base' => $reflectPercent,
+            'reflect_percent_per_rank' => $reflectPercentPerRank,
+            'damage_to_sp_percent_base' => $damageToSpPercent,
+            'damage_to_sp_percent_per_rank' => $damageToSpPercentPerRank,
+            'incoming_damage_percent_base' => $incomingDamagePercent,
+            'incoming_damage_percent_per_rank' => $incomingDamagePercentPerRank,
+            'attack_down_percent_base' => $attackDownPercent,
+            'attack_down_percent_per_rank' => $attackDownPercentPerRank,
+            'attack_down_rounds' => $attackDownRounds,
+            'hit_penalty_percent_base' => $hitPenaltyPercent,
+            'hit_penalty_percent_per_rank' => $hitPenaltyPercentPerRank,
+            'hit_penalty_rounds' => $hitPenaltyRounds,
+            'stagger_chance_base' => $staggerChance,
+            'stagger_chance_per_rank' => $staggerChancePerRank,
+            'stagger_rounds' => $staggerRounds,
             'attack_buff_base' => $attackBuff,
             'attack_buff_per_rank' => $attackBuffPerRank,
             'attack_buff_rounds' => $attackBuffRounds,
+            'buff_rounds' => $buffRounds,
             'self_buff_only' => $selfBuffOnly,
         ];
     }

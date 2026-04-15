@@ -100,6 +100,30 @@ class RegistrationTest extends TestCase
         ]);
     }
 
+    public function test_registration_grants_the_race_specific_starter_weapon(): void
+    {
+        $this->seed(\Database\Seeders\WorldSeeder::class);
+
+        $this->post('/register', [
+            'character_name' => 'ShadowStarter',
+            'race' => 'ninja',
+            'email' => 'shadow-starter@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $character = GameCharacter::query()
+            ->where('name', 'ShadowStarter')
+            ->firstOrFail();
+        $starterWeapon = Item::query()->where('slug', 'dagger')->firstOrFail();
+
+        $this->assertDatabaseHas(CharacterItem::class, [
+            'game_character_id' => $character->id,
+            'item_id' => $starterWeapon->id,
+            'quantity' => 1,
+        ]);
+    }
+
     public function test_registration_screen_no_longer_shows_a_realm_selector(): void
     {
         $response = $this->get('/register');
