@@ -100,6 +100,105 @@ class ResolvesEncounterDataTest extends TestCase
         $this->harness->callResolveMonsterAssignment($area, 3);
     }
 
+    public function test_auto_assignment_keeps_fresh_characters_inside_their_level_band_even_with_starter_gear(): void
+    {
+        $location = $this->createLocation();
+        $area = $this->createArea($location, [
+            'slug' => 'riverbank',
+            'name' => 'Riverbank',
+            'area_kind' => 'hunting',
+        ]);
+
+        $wildDog = $this->createMonster([
+            'slug' => 'wildhund',
+            'name' => 'Wildhund',
+            'level' => 1,
+            'maximum_health' => 25,
+            'minimum_attack' => 4,
+            'maximum_attack' => 6,
+            'defense' => 0,
+        ]);
+        $alphaBluewolf = $this->createMonster([
+            'slug' => 'alpha-blauwolf',
+            'name' => 'Alpha-Blauwolf',
+            'level' => 9,
+            'maximum_health' => 72,
+            'minimum_attack' => 13,
+            'maximum_attack' => 17,
+            'defense' => 2,
+        ]);
+
+        $wildDogAssignment = $this->createAssignment($area, $wildDog, [
+            'minimum_character_level' => 1,
+            'maximum_character_level' => 1,
+            'weight' => 240,
+            'pack_size' => 3,
+        ]);
+        $alphaBluewolfAssignment = $this->createAssignment($area, $alphaBluewolf, [
+            'minimum_character_level' => 8,
+            'maximum_character_level' => 10,
+            'weight' => 75,
+            'pack_size' => 3,
+        ]);
+
+        $area->setRelation('monsterAssignments', new Collection([$wildDogAssignment, $alphaBluewolfAssignment]));
+
+        $character = $this->createCharacter($location, [
+            'race' => 'ninja',
+            'level' => 1,
+            'health' => 126,
+            'max_health' => 96,
+            'attack' => 8,
+            'defense' => 5,
+            'speed' => 7,
+            'vitality' => 3,
+            'intelligence' => 3,
+            'strength' => 4,
+            'dexterity' => 6,
+            'sp' => 42,
+            'max_sp' => 24,
+        ]);
+
+        $dagger = new Item([
+            'name' => 'Dagger',
+            'item_type' => 'equipment',
+            'equipment_slot' => 'weapon',
+            'attack_bonus' => 4,
+            'defense_bonus' => 0,
+            'health_bonus' => 0,
+            'stamina_bonus' => 0,
+            'speed_bonus' => 1,
+            'travel_speed_percent_bonus' => 0,
+        ]);
+        $cottonArmor = new Item([
+            'name' => 'Cotton Armor',
+            'item_type' => 'equipment',
+            'equipment_slot' => 'armor',
+            'attack_bonus' => 0,
+            'defense_bonus' => 2,
+            'health_bonus' => 10,
+            'stamina_bonus' => 0,
+            'speed_bonus' => 0,
+            'travel_speed_percent_bonus' => 0,
+        ]);
+
+        $weaponItem = new CharacterItem();
+        $weaponItem->setRelation('item', $dagger);
+        $weaponEquipment = new CharacterEquipment(['slot' => 'weapon']);
+        $weaponEquipment->setRelation('characterItem', $weaponItem);
+
+        $armorItem = new CharacterItem();
+        $armorItem->setRelation('item', $cottonArmor);
+        $armorEquipment = new CharacterEquipment(['slot' => 'armor']);
+        $armorEquipment->setRelation('characterItem', $armorItem);
+
+        $character->setRelation('equipment', new Collection([$weaponEquipment, $armorEquipment]));
+
+        $this->assertTrue($this->harness->callAssignmentMatchesCharacter($wildDogAssignment, $character));
+        $this->assertFalse($this->harness->callAssignmentMatchesCharacter($alphaBluewolfAssignment, $character));
+        $this->assertTrue($this->harness->callResolveMonsterAssignmentForCharacter($area, $character)->is($wildDogAssignment));
+    }
+
     public function test_resolve_monster_assignment_throws_when_area_has_no_monster_rows(): void
     {
         $location = $this->createLocation();
@@ -472,6 +571,20 @@ class ResolvesEncounterDataHarness
     public function callResolveMonsterAssignment(LocationArea $area, int $characterLevel): LocationAreaMonster
     {
         return $this->resolveMonsterAssignment($area, $characterLevel);
+    }
+
+    public function callResolveMonsterAssignmentForCharacter(
+        LocationArea $area,
+        GameCharacter $character,
+        ?string $requestedFamily = null,
+        ?string $requestedDifficulty = null,
+    ): LocationAreaMonster {
+        return $this->resolveMonsterAssignmentForCharacter($area, $character, $requestedFamily, $requestedDifficulty);
+    }
+
+    public function callAssignmentMatchesCharacter(LocationAreaMonster $assignment, GameCharacter $character): bool
+    {
+        return $this->assignmentMatchesCharacter($assignment, $character);
     }
 
     public function callResolveHuntingArea(GameCharacter $character, int $locationAreaId): LocationArea

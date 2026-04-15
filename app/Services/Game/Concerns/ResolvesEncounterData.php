@@ -165,7 +165,34 @@ trait ResolvesEncounterData
             return true;
         }
 
-        return $this->characterCombatRating($character) >= (int) floor($this->assignmentThreatScore($assignment) * 0.82);
+        $levelGap = max(0, (int) $assignment->minimum_character_level - (int) $character->level);
+
+        if ($levelGap > $this->autoHuntLevelOvershoot($character)) {
+            return false;
+        }
+
+        $requiredThreatShare = min(1, $this->autoHuntThreatShare($character) + ($levelGap * 0.02));
+
+        return $this->characterCombatRating($character) >= (int) ceil($this->assignmentThreatScore($assignment) * $requiredThreatShare);
+    }
+
+    private function autoHuntLevelOvershoot(GameCharacter $character): int
+    {
+        return match (true) {
+            $character->level < 5 => 0,
+            $character->level < 12 => 1,
+            $character->level < 25 => 2,
+            default => 3,
+        };
+    }
+
+    private function autoHuntThreatShare(GameCharacter $character): float
+    {
+        return match (true) {
+            $character->level < 5 => 0.96,
+            $character->level < 12 => 0.92,
+            default => 0.88,
+        };
     }
 
     private function characterCombatRating(GameCharacter $character): int
