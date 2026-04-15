@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('game_characters', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
             $table->dropUnique('game_characters_user_id_unique');
             $table->index('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 
@@ -23,8 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('game_characters', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
             $table->dropIndex(['user_id']);
             $table->unique('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 };
