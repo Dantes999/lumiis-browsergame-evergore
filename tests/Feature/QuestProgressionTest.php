@@ -153,7 +153,7 @@ class QuestProgressionTest extends TestCase
     public function test_two_monster_fights_complete_the_first_quest_and_unlock_lumiis_and_global_chat(): void
     {
         [$user, $character] = $this->createActiveCharacterAt('yongan', [
-            'experience' => 60,
+            'experience' => 40,
         ]);
         $area = $this->starterArea('riverbank');
 
@@ -172,6 +172,8 @@ class QuestProgressionTest extends TestCase
         $character->refresh();
         $character->update([
             'action_available_at' => null,
+            'health' => (int) $character->max_health,
+            'stamina' => (int) $character->max_stamina,
         ]);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'fight-monsters']), [

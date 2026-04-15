@@ -6,7 +6,7 @@
         __('Type').': '.strtoupper((string) $item->item_type),
         $item->isWeapon() && $item->weaponTypeLabel() !== null ? __('Weapon').': '.$item->weaponTypeLabel() : null,
         $item->isSkillBook() && $linkedSkill !== null ? __('Skill').': '.$linkedSkill['name'] : null,
-        $item->isSkillBook() ? __('Book Rank').' '.\App\Support\Game\MetinClassCatalog::skillBookMinimumRank().'+' : null,
+        $item->isSkillBook() ? __('Book Phase').' M1+' : null,
         $item->isEquippable() ? __('Bonuses :current/:slots', [
             'current' => $inventoryItem->bonusCount(),
             'slots' => $inventoryItem->bonus_slot_limit,
@@ -57,7 +57,7 @@
         @if ($isBiologistSupportItem)
             <p class="action-copy">{{ __('Use this item from the Biologist panel in town.') }}</p>
         @elseif ($isSkillSupportMaterial)
-            <p class="action-copy">{{ __('Use this item from the skill panel once a skill reaches M10.') }}</p>
+            <p class="action-copy">{{ __('Use this item from the skill panel once a skill reaches G1.') }}</p>
         @endif
 
         @if ($item->isEquippable() && $character->level < $item->required_level)

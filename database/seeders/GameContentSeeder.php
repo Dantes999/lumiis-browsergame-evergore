@@ -2797,20 +2797,19 @@ class GameContentSeeder extends Seeder
     private function skillBookLootTableForArea(array $area, string $encounterType): array
     {
         $recommendedLevel = max(1, (int) ($area['recommended_level'] ?? 1));
-        $maxSkillLevel = match ($encounterType) {
-            'boss' => min(14, $recommendedLevel + 8),
-            default => min(10, $recommendedLevel + 5),
-        };
+
+        if ($recommendedLevel < 5) {
+            return [];
+        }
+
         $chance = match ($encounterType) {
-            'boss' => 120,
-            default => 55,
+            'boss' => $recommendedLevel >= 20 ? 1800 : 1400,
+            default => $recommendedLevel >= 12 ? 900 : 650,
         };
 
-        return collect(MetinClassCatalog::seedSkillBookDefinitions())
-            ->filter(fn (array $book): bool => (int) $book['required_level'] <= $maxSkillLevel)
-            ->map(fn (array $book): array => $this->loot((string) $book['slug'], $chance))
-            ->values()
-            ->all();
+        return [
+            $this->loot(MetinClassCatalog::matchingSkillBookRewardToken(), $chance),
+        ];
     }
 
     /**
@@ -3462,6 +3461,18 @@ class GameContentSeeder extends Seeder
 
             foreach ($map['biologist_chain'] as $stage) {
                 $stageSlug = $map['prefix'].'-'.$stage['slug_suffix'];
+                $rewardItemSlug = $stage['reward_item_slug'] ?? null;
+                $rewardItemQuantity = $stage['reward_item_quantity'] ?? 1;
+
+                if (str_ends_with($stageSlug, 'biologist-research-2')) {
+                    $rewardItemSlug = MetinClassCatalog::matchingSkillBookRewardToken();
+                    $rewardItemQuantity = 1;
+                }
+
+                if (str_ends_with($stageSlug, 'biologist-research-5')) {
+                    $rewardItemSlug = MetinClassCatalog::soulStoneSlug();
+                    $rewardItemQuantity = 1;
+                }
 
                 $quests[] = [
                     'location_id' => $locationId,
@@ -3481,8 +3492,8 @@ class GameContentSeeder extends Seeder
                     'objective_submission_success_rate' => $stage['objective_submission_success_rate'],
                     'reward_experience' => $stage['reward_experience'],
                     'reward_yang' => $stage['reward_yang'],
-                    'reward_item_slug' => $stage['reward_item_slug'] ?? null,
-                    'reward_item_quantity' => $stage['reward_item_quantity'] ?? 1,
+                    'reward_item_slug' => $rewardItemSlug,
+                    'reward_item_quantity' => $rewardItemQuantity,
                     'reward_bonus_type' => $stage['reward_bonus_type'],
                     'reward_bonus_value' => $stage['reward_bonus_value'],
                     'sort_order' => $stage['sort_order'],
@@ -3794,6 +3805,18 @@ class GameContentSeeder extends Seeder
 
             foreach ($map['quest_chain'] as $quest) {
                 $questSlug = $map['prefix'].'-'.$quest['slug_suffix'];
+                $rewardItemSlug = $quest['reward_item_slug'] ?? null;
+                $rewardItemQuantity = $quest['reward_item_quantity'] ?? 1;
+
+                if (in_array($quest['slug_suffix'], ['war-chief-release', 'captain-release'], true)) {
+                    $rewardItemSlug = MetinClassCatalog::matchingSkillBookRewardToken();
+                    $rewardItemQuantity = 1;
+                }
+
+                if (in_array($quest['slug_suffix'], ['black-orc-release', 'ape-lord-release'], true)) {
+                    $rewardItemSlug = MetinClassCatalog::soulStoneSlug();
+                    $rewardItemQuantity = 1;
+                }
 
                 $quests[] = [
                     'location_id' => $locationId,
@@ -3809,8 +3832,8 @@ class GameContentSeeder extends Seeder
                     'objective_area_slug' => $quest['objective_area_slug'] ?? null,
                     'reward_experience' => $quest['reward_experience'],
                     'reward_yang' => $quest['reward_yang'],
-                    'reward_item_slug' => $quest['reward_item_slug'] ?? null,
-                    'reward_item_quantity' => $quest['reward_item_quantity'] ?? 1,
+                    'reward_item_slug' => $rewardItemSlug,
+                    'reward_item_quantity' => $rewardItemQuantity,
                     'sort_order' => $quest['sort_order'],
                     'is_active' => true,
                 ];
@@ -3820,6 +3843,18 @@ class GameContentSeeder extends Seeder
 
             foreach ($map['biologist_chain'] as $stage) {
                 $stageSlug = $map['prefix'].'-'.$stage['slug_suffix'];
+                $rewardItemSlug = $stage['reward_item_slug'] ?? null;
+                $rewardItemQuantity = $stage['reward_item_quantity'] ?? 1;
+
+                if (str_ends_with($stageSlug, 'biologist-research-2')) {
+                    $rewardItemSlug = MetinClassCatalog::matchingSkillBookRewardToken();
+                    $rewardItemQuantity = 1;
+                }
+
+                if (str_ends_with($stageSlug, 'biologist-research-3')) {
+                    $rewardItemSlug = MetinClassCatalog::soulStoneSlug();
+                    $rewardItemQuantity = 1;
+                }
 
                 $quests[] = [
                     'location_id' => $locationId,
@@ -3839,8 +3874,8 @@ class GameContentSeeder extends Seeder
                     'objective_submission_success_rate' => $stage['objective_submission_success_rate'],
                     'reward_experience' => $stage['reward_experience'],
                     'reward_yang' => $stage['reward_yang'],
-                    'reward_item_slug' => $stage['reward_item_slug'] ?? null,
-                    'reward_item_quantity' => $stage['reward_item_quantity'] ?? 1,
+                    'reward_item_slug' => $rewardItemSlug,
+                    'reward_item_quantity' => $rewardItemQuantity,
                     'reward_bonus_type' => $stage['reward_bonus_type'],
                     'reward_bonus_value' => $stage['reward_bonus_value'],
                     'sort_order' => $stage['sort_order'],

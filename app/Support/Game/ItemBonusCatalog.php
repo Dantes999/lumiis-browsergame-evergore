@@ -140,6 +140,55 @@ class ItemBonusCatalog
             'suffix' => '%',
             'slots' => ['boots', 'mount'],
         ],
+        'resist_physical' => [
+            'label' => 'Res Physical',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand', 'boots'],
+        ],
+        'resist_bow' => [
+            'label' => 'Res Bow',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
+        'resist_bell' => [
+            'label' => 'Res Bell',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
+        'resist_fan' => [
+            'label' => 'Res Fan',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
+        'resist_weaponary_magic' => [
+            'label' => 'Res Weaponary',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
+        'resist_black_magic' => [
+            'label' => 'Res Black Magic',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
+        'resist_dragon_force' => [
+            'label' => 'Res Dragon',
+            'min' => 2,
+            'max' => 8,
+            'suffix' => '%',
+            'slots' => ['armor', 'offhand'],
+        ],
     ];
 
     /**

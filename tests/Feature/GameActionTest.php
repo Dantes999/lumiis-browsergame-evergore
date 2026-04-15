@@ -276,10 +276,10 @@ class GameActionTest extends TestCase
             ->count());
     }
 
-    public function test_dashboard_skill_panel_shows_the_soul_stone_action_for_m10_skills(): void
+    public function test_dashboard_skill_panel_shows_the_soul_stone_action_for_g1_skills(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 14,
+            'level' => 18,
             'race' => 'warrior',
             'skill_group' => 'body',
         ]);
@@ -289,8 +289,9 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
+            'rank' => 16,
             'mastery_rank' => 10,
+            'grand_mastery_rank' => 1,
         ]);
 
         app(CharacterInventoryService::class)->grant($character, \App\Support\Game\MetinClassCatalog::soulStoneSlug(), 2);
@@ -1035,6 +1036,102 @@ class GameActionTest extends TestCase
         $this->assertSame($character->effectiveMaxHealth(), (int) $character->health);
         $this->assertSame($character->effectiveMaxStamina(), (int) $character->stamina);
         $this->assertStringContainsString('Level 2 reached.', (string) data_get(GameActionLog::query()->latest('id')->firstOrFail()->outcome, 'message'));
+    }
+
+    public function test_reaching_level_five_grants_four_banked_skill_points_and_four_status_points(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'experience' => 0,
+        ]);
+
+        $quest = Quest::query()->where('slug', 'yongan-first-sweep')->firstOrFail();
+        $character->experience = max(0, \App\Support\Game\ExperienceCurve::requiredForLevel(5) - (int) $quest->reward_experience);
+        $character->save();
+
+        $characterQuest = CharacterQuest::query()->create([
+            'game_character_id' => $character->id,
+            'quest_id' => $quest->id,
+            'status' => CharacterQuestStatus::ReadyToClaim,
+            'progress' => (int) $quest->objective_target,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'character_quest_id' => $characterQuest->id,
+        ]);
+
+        $character->refresh();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(5, (int) $character->level);
+        $this->assertSame(4, (int) $character->unspent_skill_points);
+        $this->assertSame(4, (int) $character->unspent_status_points);
+    }
+
+    public function test_claiming_a_biologist_reward_can_grant_the_matching_skill_book_for_the_selected_school(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'level' => 10,
+            'race' => 'warrior',
+            'skill_group' => 'body',
+        ]);
+
+        $quest = Quest::query()->where('slug', 'yongan-biologist-research-2')->firstOrFail();
+
+        $characterQuest = CharacterQuest::query()->create([
+            'game_character_id' => $character->id,
+            'quest_id' => $quest->id,
+            'status' => CharacterQuestStatus::ReadyToClaim,
+            'progress' => (int) $quest->objective_target,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'character_quest_id' => $characterQuest->id,
+        ]);
+
+        $response->assertSessionHas('status');
+
+        $this->assertDatabaseHas('character_items', [
+            'game_character_id' => $character->id,
+            'item_id' => Item::query()->where('slug', 'skill-book-aura-of-the-sword')->value('id'),
+        ]);
+    }
+
+    public function test_claiming_a_story_boss_reward_can_grant_a_soul_stone(): void
+    {
+        [$user, $character] = $this->createCharacterAt('seungryong-valley', [
+            'level' => 35,
+            'race' => 'warrior',
+            'skill_group' => 'body',
+        ]);
+
+        $quest = Quest::query()->where('slug', 'seungryong-black-orc-release')->firstOrFail();
+
+        $characterQuest = CharacterQuest::query()->create([
+            'game_character_id' => $character->id,
+            'quest_id' => $quest->id,
+            'status' => CharacterQuestStatus::ReadyToClaim,
+            'progress' => (int) $quest->objective_target,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'claim-quest']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'character_quest_id' => $characterQuest->id,
+        ]);
+
+        $response->assertSessionHas('status');
+
+        $this->assertDatabaseHas('character_items', [
+            'game_character_id' => $character->id,
+            'item_id' => Item::query()->where('slug', \App\Support\Game\MetinClassCatalog::soulStoneSlug())->value('id'),
+        ]);
     }
 
     public function test_auto_pack_fight_uses_a_health_potion_when_health_drops_too_low(): void
@@ -2161,6 +2258,7 @@ class GameActionTest extends TestCase
         $dashboard
             ->assertOk()
             ->assertSee('x-show="isFinished" x-cloak class="paper-note battle-stage-summary"', false)
+            ->assertSee('battle-matchup-summary', false)
             ->assertSee('x-show="isFinished" x-cloak class="paper-note mt-4 battle-stage-loot"', false);
     }
 
@@ -3092,10 +3190,10 @@ class GameActionTest extends TestCase
         $this->assertSame(0, GameActionLog::query()->count());
     }
 
-    public function test_skill_book_upgrades_a_matching_skill_after_rank_five(): void
+    public function test_skill_book_upgrades_a_matching_skill_after_m1(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 10,
+            'level' => 20,
             'race' => 'warrior',
             'skill_group' => 'body',
             'unspent_skill_points' => 0,
@@ -3107,8 +3205,8 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
-            'mastery_rank' => 0,
+            'rank' => 16,
+            'mastery_rank' => 1,
         ]);
 
         $inventoryItem = CharacterItem::query()->create([
@@ -3127,17 +3225,17 @@ class GameActionTest extends TestCase
             'id' => $inventoryItem->id,
         ]);
         $learnedSkill = CharacterSkill::query()->firstOrFail();
-        $this->assertSame(5, (int) $learnedSkill->rank);
-        $this->assertSame(1, (int) $learnedSkill->mastery_rank);
+        $this->assertSame(16, (int) $learnedSkill->rank);
+        $this->assertSame(2, (int) $learnedSkill->mastery_rank);
         $this->assertNotNull($learnedSkill->book_available_at);
     }
 
-    public function test_skill_book_uses_multiple_successful_reads_for_later_mastery_stages(): void
+    public function test_skill_book_advances_one_mastery_stage_per_successful_read(): void
     {
         $this->freezeTime();
 
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 10,
+            'level' => 20,
             'race' => 'warrior',
             'skill_group' => 'body',
             'unspent_skill_points' => 0,
@@ -3149,7 +3247,7 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
+            'rank' => 16,
             'mastery_rank' => 1,
             'mastery_progress' => 0,
         ]);
@@ -3157,33 +3255,20 @@ class GameActionTest extends TestCase
         $inventoryItem = CharacterItem::query()->create([
             'game_character_id' => $character->id,
             'item_id' => $book->id,
-            'quantity' => 2,
+            'quantity' => 1,
         ]);
 
-        $firstResponse = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'use-item']), [
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'use-item']), [
             'idempotency_key' => (string) Str::uuid(),
             'character_item_id' => $inventoryItem->id,
         ]);
 
-        $firstResponse->assertSessionHas('status');
-        $firstResponse->assertSessionHas('status', __('You study :skill successfully. Book progress: :current/:target.', [
+        $response->assertSessionHas('status');
+        $response->assertSessionHas('status', __('You study :skill successfully. It reaches :rank.', [
             'skill' => $skill->name,
-            'current' => 1,
-            'target' => 2,
+            'rank' => 'M2',
         ]));
 
-        $afterFirstRead = CharacterSkill::query()->firstOrFail();
-        $this->assertSame(1, (int) $afterFirstRead->mastery_rank);
-        $this->assertSame(1, (int) $afterFirstRead->mastery_progress);
-
-        $this->travel(\App\Support\Game\MetinClassCatalog::skillBookCooldownMinutes() + 1)->minutes();
-
-        $secondResponse = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'use-item']), [
-            'idempotency_key' => (string) Str::uuid(),
-            'character_item_id' => $inventoryItem->fresh()->id,
-        ]);
-
-        $secondResponse->assertSessionHas('status');
         $learnedSkill = CharacterSkill::query()->firstOrFail();
         $this->assertSame(2, (int) $learnedSkill->mastery_rank);
         $this->assertSame(0, (int) $learnedSkill->mastery_progress);
@@ -3204,7 +3289,7 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 4,
+            'rank' => 16,
             'mastery_rank' => 0,
         ]);
 
@@ -3224,7 +3309,8 @@ class GameActionTest extends TestCase
             'id' => $inventoryItem->id,
             'quantity' => 1,
         ]);
-        $this->assertSame(4, (int) CharacterSkill::query()->firstOrFail()->rank);
+        $this->assertSame(16, (int) CharacterSkill::query()->firstOrFail()->rank);
+        $this->assertSame(0, (int) CharacterSkill::query()->firstOrFail()->mastery_rank);
     }
 
     public function test_skill_book_rejects_when_it_belongs_to_another_race_or_school(): void
@@ -3242,8 +3328,8 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
-            'mastery_rank' => 0,
+            'rank' => 16,
+            'mastery_rank' => 1,
         ]);
 
         $inventoryItem = CharacterItem::query()->create([
@@ -3262,7 +3348,7 @@ class GameActionTest extends TestCase
             'id' => $inventoryItem->id,
             'quantity' => 1,
         ]);
-        $this->assertSame(5, (int) CharacterSkill::query()->firstOrFail()->rank);
+        $this->assertSame(16, (int) CharacterSkill::query()->firstOrFail()->rank);
     }
 
     public function test_skill_book_sets_a_reading_cooldown_before_the_next_attempt(): void
@@ -3282,8 +3368,8 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
-            'mastery_rank' => 0,
+            'rank' => 16,
+            'mastery_rank' => 1,
         ]);
 
         $inventoryItem = CharacterItem::query()->create([
@@ -3308,38 +3394,61 @@ class GameActionTest extends TestCase
         ]));
     }
 
-    public function test_soul_stone_advances_a_skill_from_m10_to_g1(): void
+    public function test_skill_book_advances_a_skill_from_m10_to_g1(): void
     {
+        $this->freezeTime();
+
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 14,
+            'level' => 20,
             'race' => 'warrior',
             'skill_group' => 'body',
             'unspent_skill_points' => 0,
         ]);
 
         $skill = Skill::query()->where('slug', 'aura-of-the-sword')->firstOrFail();
+        $book = Item::query()->where('slug', 'skill-book-aura-of-the-sword')->firstOrFail();
 
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
+            'rank' => 16,
             'mastery_rank' => 10,
             'grand_mastery_rank' => 0,
         ]);
 
-        app(CharacterInventoryService::class)->grant($character, \App\Support\Game\MetinClassCatalog::soulStoneSlug(), 1);
-
-        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'advance-skill-mastery']), [
-            'idempotency_key' => (string) Str::uuid(),
-            'skill_id' => $skill->id,
+        $inventoryItem = CharacterItem::query()->create([
+            'game_character_id' => $character->id,
+            'item_id' => $book->id,
+            'quantity' => 30,
         ]);
 
-        $response->assertSessionHas('status');
         $learnedSkill = CharacterSkill::query()->firstOrFail();
+
+        for ($attempt = 0; $attempt < 30 && (int) $learnedSkill->grand_mastery_rank === 0; $attempt++) {
+            $activeBookStack = CharacterItem::query()
+                ->where('game_character_id', $character->id)
+                ->where('item_id', $book->id)
+                ->firstOrFail();
+
+            $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'use-item']), [
+                'idempotency_key' => (string) Str::uuid(),
+                'character_item_id' => $activeBookStack->id,
+            ]);
+
+            $response->assertSessionHas('status');
+            $learnedSkill = CharacterSkill::query()->firstOrFail();
+
+            if ((int) $learnedSkill->grand_mastery_rank > 0) {
+                break;
+            }
+
+            $this->travel(\App\Support\Game\MetinClassCatalog::skillBookCooldownMinutes() + 1)->minutes();
+        }
+
         $this->assertSame(1, (int) $learnedSkill->grand_mastery_rank);
         $this->assertNull($learnedSkill->perfect_mastered_at);
         $this->assertSame('G1', $learnedSkill->stageLabel());
-        $this->assertSame(0, app(CharacterInventoryService::class)->quantityForSlug($character->fresh(), \App\Support\Game\MetinClassCatalog::soulStoneSlug()));
+        $this->assertLessThan(30, app(CharacterInventoryService::class)->quantityForSlug($character->fresh(), 'skill-book-aura-of-the-sword'));
     }
 
     public function test_soul_stone_can_perfect_a_skill_after_g10(): void
@@ -3356,7 +3465,7 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
+            'rank' => 16,
             'mastery_rank' => 10,
             'grand_mastery_rank' => 10,
         ]);
@@ -3388,8 +3497,8 @@ class GameActionTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
-            'mastery_rank' => 8,
+            'rank' => 16,
+            'mastery_rank' => 10,
             'grand_mastery_rank' => 0,
         ]);
 
@@ -3445,7 +3554,7 @@ class GameActionTest extends TestCase
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
             'level' => 5,
-            'unspent_skill_points' => 1,
+            'unspent_skill_points' => 4,
             'race' => 'warrior',
         ]);
 
@@ -3468,11 +3577,44 @@ class GameActionTest extends TestCase
         $character->refresh()->load('learnedSkills.skill');
 
         $response->assertSessionHas('status');
-        $this->assertSame(0, (int) $character->unspent_skill_points);
+        $this->assertSame(3, (int) $character->unspent_skill_points);
         $this->assertSame(1, $character->learnedSkills->firstWhere('skill_id', $skill->id)?->rank);
     }
 
-    public function test_skill_learning_blocks_when_skill_is_already_at_max_rank(): void
+    public function test_learning_skill_at_rank_sixteen_converts_the_next_point_into_m1(): void
+    {
+        [$user, $character] = $this->createCharacterAt('yongan', [
+            'level' => 20,
+            'unspent_skill_points' => 1,
+            'race' => 'warrior',
+            'skill_group' => 'body',
+        ]);
+
+        $skill = Skill::query()->where('slug', 'aura-of-the-sword')->firstOrFail();
+
+        CharacterSkill::query()->create([
+            'game_character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'rank' => 16,
+            'mastery_rank' => 0,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'learn-skill']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'skill_id' => $skill->id,
+        ]);
+
+        $character->refresh();
+        $learnedSkill = CharacterSkill::query()->firstOrFail();
+
+        $response->assertSessionHas('status');
+        $this->assertSame(0, (int) $character->unspent_skill_points);
+        $this->assertSame(16, (int) $learnedSkill->rank);
+        $this->assertSame(1, (int) $learnedSkill->mastery_rank);
+        $this->assertSame('M1', $learnedSkill->stageLabel());
+    }
+
+    public function test_skill_learning_blocks_when_skill_is_already_perfect_mastered(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
             'level' => 20,
@@ -3487,6 +3629,9 @@ class GameActionTest extends TestCase
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
             'rank' => $skill->max_rank,
+            'mastery_rank' => 10,
+            'grand_mastery_rank' => 10,
+            'perfect_mastered_at' => now(),
         ]);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'learn-skill']), [

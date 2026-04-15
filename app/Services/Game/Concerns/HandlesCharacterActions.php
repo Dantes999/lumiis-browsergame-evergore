@@ -281,6 +281,7 @@ trait HandlesCharacterActions
     private function learnSkill(GameCharacter $character, array $payload): array
     {
         [$skill, $learnedSkill] = $this->resolveOwnedProgressionSkill($character, $payload);
+        $normalRankCap = MetinClassCatalog::normalSkillRankCap();
 
         if ($character->level < $skill->required_level) {
             throw new GameActionException(__('You need level :level to learn that skill.', [
@@ -292,36 +293,55 @@ trait HandlesCharacterActions
             throw new GameActionException(__('You do not have any unspent skill points.'));
         }
 
-        if ($learnedSkill !== null && $learnedSkill->rank >= $skill->max_rank) {
-            throw new GameActionException(__('That skill is already at its maximum rank.'));
+        if ($learnedSkill !== null && $learnedSkill->hasReachedPerfectMastery()) {
+            throw new GameActionException(__('That skill already reached perfect mastery.'));
         }
 
         if ($learnedSkill !== null && $learnedSkill->needsSkillBookProgression()) {
-            throw new GameActionException(__('From rank :rank onward, :skill requires the matching skill book.', [
-                'rank' => MetinClassCatalog::skillBookMinimumRank() + 1,
+            throw new GameActionException(__('After reaching M1, :skill advances only with the matching skill book.', [
                 'skill' => $skill->name,
             ]));
         }
+
+        if ($learnedSkill !== null && $learnedSkill->needsSoulStoneProgression()) {
+            throw new GameActionException(__('After reaching G1, :skill advances only with Soul Stones.', [
+                'skill' => $skill->name,
+            ]));
+        }
+
+        $enteredMastery = false;
 
         if ($learnedSkill === null) {
             $character->learnedSkills()->create([
                 'skill_id' => $skill->id,
                 'rank' => 1,
             ]);
-        } else {
+        } elseif ((int) $learnedSkill->rank < $normalRankCap) {
             $learnedSkill->increment('rank');
+        } else {
+            $learnedSkill->mastery_rank = max(1, (int) $learnedSkill->mastery_rank);
+            $learnedSkill->mastery_progress = 0;
+            $learnedSkill->save();
+            $enteredMastery = true;
         }
 
         $character->unspent_skill_points -= 1;
         $this->reloadDerivedRelations($character);
 
-        $rank = optional($character->learnedSkills->firstWhere('skill_id', $skill->id))->rank ?? 1;
+        /** @var CharacterSkill|null $updatedSkill */
+        $updatedSkill = $character->learnedSkills->firstWhere('skill_id', $skill->id);
+        $rank = (int) ($updatedSkill?->rank ?? 1);
 
         return [
-            'message' => __('You deepen :skill to rank :rank.', [
-                'skill' => $skill->name,
-                'rank' => $rank,
-            ]),
+            'message' => $enteredMastery
+                ? __('You deepen :skill until it awakens as :stage.', [
+                    'skill' => $skill->name,
+                    'stage' => $updatedSkill?->stageLabel() ?? 'M1',
+                ])
+                : __('You deepen :skill to rank :rank.', [
+                    'skill' => $skill->name,
+                    'rank' => $rank,
+                ]),
             'cooldown_seconds' => 0,
             'rewards' => [
                 'skill_points' => -1,
@@ -331,7 +351,7 @@ trait HandlesCharacterActions
     }
 
     /**
-     * After the book phase finishes, Soul Stones push the skill through the G-stage and finally to P.
+     * After the G stage begins, Soul Stones push the skill through the remaining G ranks and finally to P.
      *
      * This is intentionally triggered from the skill panel instead of the bag because the stone is
      * generic and must know which learned skill it should target.
@@ -343,14 +363,14 @@ trait HandlesCharacterActions
     {
         [$skill, $learnedSkill] = $this->resolveOwnedProgressionSkill($character, $payload, true);
 
-        if (! $learnedSkill->hasFinishedMasteryBooks()) {
-            throw new GameActionException(__('Bring :skill to M10 with skill books before using Soul Stones.', [
-                'skill' => $skill->name,
-            ]));
-        }
-
         if ($learnedSkill->hasReachedPerfectMastery()) {
             throw new GameActionException(__('That skill already reached perfect mastery.'));
+        }
+
+        if (! $learnedSkill->needsSoulStoneProgression()) {
+            throw new GameActionException(__('Bring :skill into the G stage with skill books before using Soul Stones.', [
+                'skill' => $skill->name,
+            ]));
         }
 
         $soulStoneStack = $this->inventoryService->stackBySlug($character, self::SOUL_STONE_ITEM_SLUG);

@@ -16,9 +16,11 @@ use Illuminate\Support\Str;
  */
 class MetinClassCatalog
 {
-    private const SKILL_BOOK_MINIMUM_RANK = 5;
+    private const NORMAL_SKILL_RANK_CAP = 16;
 
     private const SOUL_STONE_SLUG = 'soul-stone';
+
+    private const MATCHING_SKILL_BOOK_REWARD_TOKEN = 'matching-skill-book';
 
     public static function defaultRace(): string
     {
@@ -27,12 +29,22 @@ class MetinClassCatalog
 
     public static function skillBookMinimumRank(): int
     {
-        return self::SKILL_BOOK_MINIMUM_RANK;
+        return self::NORMAL_SKILL_RANK_CAP;
+    }
+
+    public static function normalSkillRankCap(): int
+    {
+        return self::NORMAL_SKILL_RANK_CAP;
+    }
+
+    public static function earnsSkillPointAtLevel(int $level): bool
+    {
+        return $level >= 2;
     }
 
     public static function requiresSkillBookForNextRank(int $currentRank): bool
     {
-        return $currentRank >= self::skillBookMinimumRank();
+        return $currentRank >= self::normalSkillRankCap();
     }
 
     public static function skillBookCooldownMinutes(): int
@@ -43,10 +55,16 @@ class MetinClassCatalog
     public static function skillBookSuccessChance(int $currentMasteryRank): int
     {
         return match (true) {
-            $currentMasteryRank <= 2 => 100,
-            $currentMasteryRank <= 5 => 85,
-            $currentMasteryRank <= 8 => 70,
-            default => 60,
+            $currentMasteryRank <= 1 => 100,
+            $currentMasteryRank === 2 => 95,
+            $currentMasteryRank === 3 => 90,
+            $currentMasteryRank === 4 => 85,
+            $currentMasteryRank === 5 => 80,
+            $currentMasteryRank === 6 => 70,
+            $currentMasteryRank === 7 => 60,
+            $currentMasteryRank === 8 => 50,
+            $currentMasteryRank === 9 => 35,
+            default => 25,
         };
     }
 
@@ -58,12 +76,17 @@ class MetinClassCatalog
      */
     public static function skillBookSuccessesRequired(int $currentMasteryRank): int
     {
-        return max(1, min(10, $currentMasteryRank + 1));
+        return 1;
     }
 
     public static function soulStoneSlug(): string
     {
         return self::SOUL_STONE_SLUG;
+    }
+
+    public static function matchingSkillBookRewardToken(): string
+    {
+        return self::MATCHING_SKILL_BOOK_REWARD_TOKEN;
     }
 
     /**
@@ -84,6 +107,62 @@ class MetinClassCatalog
     public static function skillBookSlug(string $skillSlug): string
     {
         return 'skill-book-'.$skillSlug;
+    }
+
+    public static function preferredSkillBookSlugForCharacter(GameCharacter $character): ?string
+    {
+        $character->loadMissing('learnedSkills.skill');
+
+        $skills = $character->learnedSkills
+            ->filter(fn (CharacterSkill $characterSkill): bool => $characterSkill->skill !== null)
+            ->filter(function (CharacterSkill $characterSkill) use ($character): bool {
+                if ($characterSkill->skill === null) {
+                    return false;
+                }
+
+                if ($character->hasChosenSkillGroup()) {
+                    return $characterSkill->skill->skill_group === $character->skill_group;
+                }
+
+                return $characterSkill->skill->race === $character->chosenRace();
+            })
+            ->values();
+
+        $bookPhaseSkill = $skills
+            ->filter(fn (CharacterSkill $characterSkill): bool => ! $characterSkill->hasReachedPerfectMastery() && $characterSkill->needsSkillBookProgression())
+            ->sortByDesc(fn (CharacterSkill $characterSkill): int => ((int) $characterSkill->grand_mastery_rank * 100) + (int) $characterSkill->mastery_rank)
+            ->first();
+
+        if ($bookPhaseSkill?->skill !== null) {
+            return self::skillBookSlug($bookPhaseSkill->skill->slug);
+        }
+
+        $learnedFallback = $skills
+            ->filter(fn (CharacterSkill $characterSkill): bool => ! $characterSkill->hasReachedPerfectMastery())
+            ->sortBy([
+                fn (CharacterSkill $characterSkill): int => (int) $characterSkill->rank,
+                fn (CharacterSkill $characterSkill): int => (int) ($characterSkill->skill?->required_level ?? 999),
+            ])
+            ->first();
+
+        if ($learnedFallback?->skill !== null) {
+            return self::skillBookSlug($learnedFallback->skill->slug);
+        }
+
+        $fallbackSkillSlug = collect(self::skillDefinitions())
+            ->filter(fn (array $definition): bool => $definition['race'] === $character->chosenRace())
+            ->filter(function (array $definition) use ($character): bool {
+                if (! $character->hasChosenSkillGroup()) {
+                    return true;
+                }
+
+                return $definition['skill_group'] === $character->skill_group;
+            })
+            ->filter(fn (array $definition): bool => (int) $definition['required_level'] <= $character->level)
+            ->keys()
+            ->first();
+
+        return is_string($fallbackSkillSlug) ? self::skillBookSlug($fallbackSkillSlug) : null;
     }
 
     /**
@@ -591,7 +670,7 @@ class MetinClassCatalog
                     'name' => $definition['name'].' Book',
                     'item_type' => 'skill-book',
                     'equipment_slot' => null,
-                    'description' => __('Study this manual to deepen :skill once it reaches rank :rank or higher.', [
+                    'description' => __('Study this manual to deepen :skill once it enters mastery after rank :rank.', [
                         'skill' => $definition['name'],
                         'rank' => self::skillBookMinimumRank(),
                     ]),
@@ -631,7 +710,7 @@ class MetinClassCatalog
             'name' => 'Soul Stone',
             'item_type' => 'material',
             'equipment_slot' => null,
-            'description' => __('A condensed stone of will. Once a skill reaches M10, this stone can push it through the G stages and finally into P.'),
+            'description' => __('A condensed stone of will. Once a skill reaches G1, this stone can push it through the remaining G stages and finally into P.'),
             'price' => 0,
             'sell_price' => 90,
             'required_level' => 10,
@@ -675,6 +754,8 @@ class MetinClassCatalog
                 'rank' => $rank,
                 'role_label' => __('Combat Skill'),
                 'effect_type' => $skill->effect_type,
+                'damage_type' => 'physical',
+                'damage_type_label' => DamageTypeCatalog::label('physical'),
                 'sp_cost' => 4 + $rank,
                 'cooldown_rounds' => 0,
                 'cooldown_remaining' => 0,
@@ -711,6 +792,12 @@ class MetinClassCatalog
         }
 
         $combat = $definition['combat'];
+        $damageType = DamageTypeCatalog::skillDamageType(
+            $skill->race,
+            $skill->skill_group,
+            null,
+            (bool) ($combat['uses_magic_attack'] ?? false),
+        );
 
         return [
             'slug' => $skill->slug,
@@ -718,6 +805,8 @@ class MetinClassCatalog
             'rank' => $rank,
             'role_label' => $definition['role_label'],
             'effect_type' => $definition['panel_type'],
+            'damage_type' => $damageType,
+            'damage_type_label' => DamageTypeCatalog::label($damageType),
             'sp_cost' => max(1, (int) $combat['sp_cost_base'] + (($rank - 1) * (int) ($combat['sp_cost_per_rank'] ?? 0))),
             'cooldown_rounds' => max(0, (int) ($combat['cooldown_rounds'] ?? 0)),
             'cooldown_remaining' => 0,
@@ -767,8 +856,10 @@ class MetinClassCatalog
             return null;
         }
 
+        $normalRankCap = self::normalSkillRankCap();
+
         if ($characterSkill->hasReachedPerfectMastery()) {
-            $profile = self::combatProfile($skill, 10);
+            $profile = self::combatProfile($skill, $normalRankCap);
             $profile['damage_bonus'] += 18;
             $profile['guard'] += 10;
             $profile['heal_flat'] += 14;
@@ -791,7 +882,7 @@ class MetinClassCatalog
         }
 
         if ((int) $characterSkill->grand_mastery_rank > 0) {
-            $profile = self::combatProfile($skill, 10);
+            $profile = self::combatProfile($skill, $normalRankCap);
             $grandRank = (int) $characterSkill->grand_mastery_rank;
 
             $profile['damage_bonus'] += $grandRank * 3;
@@ -815,28 +906,32 @@ class MetinClassCatalog
             return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
         }
 
-        $basicRank = max(1, min(10, (int) $characterSkill->rank + min(5, (int) $characterSkill->mastery_rank)));
-        $profile = self::combatProfile($skill, $basicRank);
-        $masteryOverflow = max(0, (int) $characterSkill->mastery_rank - 5);
+        if ((int) $characterSkill->mastery_rank > 0) {
+            $profile = self::combatProfile($skill, $normalRankCap);
+            $masteryRank = (int) $characterSkill->mastery_rank;
 
-        if ($masteryOverflow > 0) {
-            $profile['damage_bonus'] += $masteryOverflow * 2;
-            $profile['guard'] += $masteryOverflow;
-            $profile['heal_flat'] += $masteryOverflow * 2;
-            $profile['crit_bonus'] += $masteryOverflow;
-            $profile['evade_bonus'] += $masteryOverflow;
-            $profile['attack_buff'] += $masteryOverflow;
-            $profile['lifesteal_percent'] += $profile['lifesteal_percent'] > 0 ? $masteryOverflow : 0;
-            $profile['reflect_percent'] += $profile['reflect_percent'] > 0 ? $masteryOverflow : 0;
-            $profile['damage_to_sp_percent'] += $profile['damage_to_sp_percent'] > 0 ? $masteryOverflow * 2 : 0;
-            $profile['incoming_damage_percent'] += $profile['incoming_damage_percent'] < 0 ? -$masteryOverflow : 0;
-            $profile['attack_down_percent'] += $profile['attack_down_percent'] > 0 ? $masteryOverflow : 0;
-            $profile['hit_penalty_percent'] += $profile['hit_penalty_percent'] > 0 ? $masteryOverflow : 0;
-            $profile['stagger_chance'] += $profile['stagger_chance'] > 0 ? $masteryOverflow * 2 : 0;
-            $profile['poison_damage'] += $profile['poison_damage'] > 0 ? $masteryOverflow : 0;
-            $profile['burn_damage'] += $profile['burn_damage'] > 0 ? $masteryOverflow : 0;
+            $profile['damage_bonus'] += $masteryRank * 2;
+            $profile['guard'] += $masteryRank;
+            $profile['heal_flat'] += $masteryRank * 2;
+            $profile['crit_bonus'] += (int) ceil($masteryRank / 2);
+            $profile['evade_bonus'] += (int) ceil($masteryRank / 2);
+            $profile['attack_buff'] += $masteryRank;
+            $profile['lifesteal_percent'] += $profile['lifesteal_percent'] > 0 ? $masteryRank : 0;
+            $profile['reflect_percent'] += $profile['reflect_percent'] > 0 ? $masteryRank : 0;
+            $profile['damage_to_sp_percent'] += $profile['damage_to_sp_percent'] > 0 ? $masteryRank * 2 : 0;
+            $profile['incoming_damage_percent'] += $profile['incoming_damage_percent'] < 0 ? -$masteryRank : 0;
+            $profile['attack_down_percent'] += $profile['attack_down_percent'] > 0 ? $masteryRank : 0;
+            $profile['hit_penalty_percent'] += $profile['hit_penalty_percent'] > 0 ? $masteryRank : 0;
+            $profile['stagger_chance'] += $profile['stagger_chance'] > 0 ? $masteryRank * 2 : 0;
+            $profile['poison_damage'] += $profile['poison_damage'] > 0 ? $masteryRank : 0;
+            $profile['burn_damage'] += $profile['burn_damage'] > 0 ? $masteryRank : 0;
+            $profile['damage_multiplier'] += $masteryRank * 0.02;
+            $profile['mastery_label'] = $characterSkill->stageLabel();
+
+            return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
         }
 
+        $profile = self::combatProfile($skill, max(1, min($normalRankCap, (int) $characterSkill->rank)));
         $profile['mastery_label'] = $characterSkill->stageLabel();
 
         return self::applyCharacterCombatScaling($profile, $character ?? $characterSkill->character);
@@ -854,6 +949,16 @@ class MetinClassCatalog
         if (! $character instanceof GameCharacter) {
             return $profile;
         }
+
+        $damageType = DamageTypeCatalog::skillDamageType(
+            $character->chosenRace(),
+            $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
+            $character->equippedWeaponType(),
+            (bool) ($profile['uses_magic_attack'] ?? false),
+        );
+
+        $profile['damage_type'] = $damageType;
+        $profile['damage_type_label'] = DamageTypeCatalog::label($damageType);
 
         $strength = $character->effectiveStrength();
         $dexterity = $character->effectiveDexterity();
@@ -1823,7 +1928,7 @@ class MetinClassCatalog
             'panel_type' => $panelType,
             'role_label' => $roleLabel,
             'required_level' => $requiredLevel,
-            'max_rank' => 10,
+            'max_rank' => self::normalSkillRankCap(),
             'combat' => $combat,
         ];
     }

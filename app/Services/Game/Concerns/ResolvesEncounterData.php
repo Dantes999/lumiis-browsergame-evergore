@@ -9,6 +9,8 @@ use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\LocationArea;
 use App\Models\LocationAreaMonster;
+use App\Support\Game\DamageTypeCatalog;
+use App\Support\Game\MetinClassCatalog;
 use Illuminate\Support\Collection;
 
 /**
@@ -347,7 +349,7 @@ trait ResolvesEncounterData
      *
      * @return list<array{slug: string, label: string, quantity: int}>
      */
-    private function rollLoot(array $lootTable, int $bonusPercent = 0): array
+    private function rollLoot(array $lootTable, int $bonusPercent = 0, ?GameCharacter $character = null): array
     {
         if ($lootTable === []) {
             return [];
@@ -370,7 +372,7 @@ trait ResolvesEncounterData
         foreach ($lootTable as $entry) {
             $slug = (string) data_get($entry, 'slug', '');
 
-            if ($slug === '' || ! $items->has($slug)) {
+            if ($slug === '') {
                 continue;
             }
 
@@ -385,15 +387,49 @@ trait ResolvesEncounterData
             $maximum = max($minimum, (int) data_get($entry, 'max', $minimum));
             $quantity = $maximum > $minimum ? random_int($minimum, $maximum) : $minimum;
             $item = $items->get($slug);
+            $resolvedDrop = $item instanceof Item
+                ? ['slug' => $slug, 'label' => $item->name]
+                : $this->resolveDynamicLootItem($slug, $character);
+
+            if ($resolvedDrop === null) {
+                continue;
+            }
 
             $drops[] = [
-                'slug' => $slug,
-                'label' => $item->name,
+                'slug' => $resolvedDrop['slug'],
+                'label' => $resolvedDrop['label'],
                 'quantity' => $quantity,
             ];
         }
 
         return $drops;
+    }
+
+    /**
+     * @return array{slug: string, label: string}|null
+     */
+    private function resolveDynamicLootItem(string $slug, ?GameCharacter $character): ?array
+    {
+        if ($slug !== MetinClassCatalog::matchingSkillBookRewardToken() || ! $character instanceof GameCharacter) {
+            return null;
+        }
+
+        $resolvedSlug = MetinClassCatalog::preferredSkillBookSlugForCharacter($character);
+
+        if ($resolvedSlug === null) {
+            return null;
+        }
+
+        $item = Item::query()->where('slug', $resolvedSlug)->first();
+
+        if (! $item instanceof Item) {
+            return null;
+        }
+
+        return [
+            'slug' => $item->slug,
+            'label' => $item->name,
+        ];
     }
 
     /**
@@ -497,6 +533,18 @@ trait ResolvesEncounterData
         $combatSkills = $this->buildCombatSkills($character);
         $enemyHealth = $enemyHealthMax;
         $playerHealth = $playerStartingHealth;
+        $enemyDamageType = DamageTypeCatalog::enemyDamageType(null, $encounterType, match ($encounterType) {
+            'lumiis' => 'Lumiis Core',
+            'boss' => 'Boss',
+            default => 'Monster',
+        });
+        $enemyResistanceBadges = DamageTypeCatalog::resistanceBadges(
+            DamageTypeCatalog::enemyResistanceProfile($encounterType, match ($encounterType) {
+                'lumiis' => 'Lumiis Core',
+                'boss' => 'Boss',
+                default => 'Monster',
+            }),
+        );
         $battleLog = [
             __('Encounter: :encounter in :area.', [
                 'encounter' => $encounterName,
@@ -637,6 +685,9 @@ trait ResolvesEncounterData
                         'boss' => 'Boss',
                         default => 'Monster',
                     },
+                    'damage_type' => $enemyDamageType,
+                    'damage_type_label' => DamageTypeCatalog::label($enemyDamageType),
+                    'resistance_badges' => $enemyResistanceBadges,
                 ]],
                 'steps' => $battleSteps,
                 'summary' => [
@@ -690,6 +741,9 @@ trait ResolvesEncounterData
             'magic_attack' => (int) $character->effectiveMagicAttack(),
             'crit_chance' => (int) $character->criticalChancePercent(),
             'evade_chance' => (int) $character->evadeChancePercent(),
+            'primary_damage_type' => DamageTypeCatalog::primaryCharacterDamageType($character),
+            'primary_damage_type_label' => DamageTypeCatalog::label(DamageTypeCatalog::primaryCharacterDamageType($character)),
+            'resistance_badges' => DamageTypeCatalog::resistanceBadges($character->combatResistanceProfile()),
             'equipment' => $equipment,
         ];
     }

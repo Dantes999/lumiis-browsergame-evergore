@@ -282,7 +282,7 @@ class GameActionBranchCoverageTest extends TestCase
     public function test_learning_skill_with_points_stops_once_book_progression_begins(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
-            'level' => 10,
+            'level' => 20,
             'unspent_skill_points' => 1,
             'race' => 'warrior',
             'skill_group' => 'body',
@@ -293,8 +293,8 @@ class GameActionBranchCoverageTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
-            'mastery_rank' => 0,
+            'rank' => 16,
+            'mastery_rank' => 1,
         ]);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'learn-skill']), [
@@ -306,7 +306,7 @@ class GameActionBranchCoverageTest extends TestCase
 
         $response->assertSessionHas('error');
         $this->assertSame(1, (int) $character->unspent_skill_points);
-        $this->assertSame(5, (int) CharacterSkill::query()->firstOrFail()->rank);
+        $this->assertSame(16, (int) CharacterSkill::query()->firstOrFail()->rank);
     }
 
     public function test_learning_skill_requires_choosing_a_combat_school_first(): void
@@ -344,9 +344,9 @@ class GameActionBranchCoverageTest extends TestCase
         CharacterSkill::query()->create([
             'game_character_id' => $user->character->id,
             'skill_id' => $skill->id,
-            'rank' => 5,
+            'rank' => 16,
             'mastery_rank' => 10,
-            'grand_mastery_rank' => 0,
+            'grand_mastery_rank' => 1,
         ]);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'advance-skill-mastery']), [
@@ -355,7 +355,7 @@ class GameActionBranchCoverageTest extends TestCase
         ]);
 
         $response->assertSessionHas('error');
-        $this->assertSame(0, (int) CharacterSkill::query()->firstOrFail()->grand_mastery_rank);
+        $this->assertSame(1, (int) CharacterSkill::query()->firstOrFail()->grand_mastery_rank);
     }
 
     public function test_skill_group_choice_can_only_happen_once(): void

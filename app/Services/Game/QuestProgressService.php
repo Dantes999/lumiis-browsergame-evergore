@@ -10,6 +10,7 @@ use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\Quest;
 use Illuminate\Support\Carbon;
+use App\Support\Game\MetinClassCatalog;
 use Illuminate\Support\Str;
 
 /**
@@ -153,6 +154,12 @@ class QuestProgressService
             throw new GameActionException(__('This quest is not ready to be claimed yet.'));
         }
 
+        $rewardItem = $this->resolveQuestRewardItem($character, $quest, false);
+
+        if ($quest->reward_item_slug !== null && $rewardItem === null) {
+            throw new GameActionException(__('Choose a combat school before claiming a matching skill book reward.'));
+        }
+
         $characterQuest->status = CharacterQuestStatus::Completed;
         $characterQuest->save();
 
@@ -165,9 +172,9 @@ class QuestProgressService
             'quests_completed' => 1,
         ];
 
-        if ($quest->reward_item_slug !== null) {
-            $this->inventoryService->grant($character, $quest->reward_item_slug, (int) $quest->reward_item_quantity);
-            $rewardSummary['items_found'] = (int) $quest->reward_item_quantity;
+        if ($rewardItem !== null) {
+            $this->inventoryService->grant($character, $rewardItem['slug'], (int) $rewardItem['quantity']);
+            $rewardSummary['items_found'] = (int) $rewardItem['quantity'];
         }
 
         if ($quest->reward_bonus_type !== null && $quest->reward_bonus_value > 0) {
@@ -177,7 +184,7 @@ class QuestProgressService
         $this->applyRewardBonus($character, $quest);
 
         return [
-            'message' => $this->completionMessage($quest),
+            'message' => $this->completionMessage($character, $quest),
             'rewards' => array_filter($rewardSummary, static fn (int $value): bool => $value > 0),
         ];
     }
@@ -219,9 +226,7 @@ class QuestProgressService
                 'character_quest_id' => $characterQuest?->id,
                 'reward_experience' => (int) $quest->reward_experience,
                 'reward_yang' => (int) $quest->reward_yang,
-                'reward_item_label' => $quest->reward_item_slug === null
-                    ? null
-                    : (Item::query()->where('slug', $quest->reward_item_slug)->value('name') ?? $quest->reward_item_slug),
+                'reward_item_label' => $this->rewardItemLabelForQuest($character, $quest),
                 'reward_item_quantity' => (int) $quest->reward_item_quantity,
                 'reward_bonus_description' => Quest::rewardBonusDescription($quest->reward_bonus_type, (int) $quest->reward_bonus_value),
                 'completed_at_label' => $characterQuest?->completed_at?->format('d.m.Y H:i'),
@@ -524,7 +529,7 @@ class QuestProgressService
         return (int) ($progress?->{$column} ?? 0);
     }
 
-    private function completionMessage(Quest $quest): string
+    private function completionMessage(GameCharacter $character, Quest $quest): string
     {
         $message = __('Quest complete: :title. +:experience EXP, +:yang Yang', [
             'title' => $quest->translated('title'),
@@ -532,10 +537,8 @@ class QuestProgressService
             'yang' => $quest->reward_yang,
         ]);
 
-        if ($quest->reward_item_slug !== null) {
-            $item = Item::query()->where('slug', $quest->reward_item_slug)->first();
-            $itemLabel = $item?->name ?? $quest->reward_item_slug;
-            $message .= ', '.$itemLabel.($quest->reward_item_quantity > 1 ? ' x'.$quest->reward_item_quantity : '');
+        if ($rewardItem = $this->resolveQuestRewardItem($character, $quest)) {
+            $message .= ', '.$rewardItem['label'].($rewardItem['quantity'] > 1 ? ' x'.$rewardItem['quantity'] : '');
         }
 
         if ($bonusDescription = Quest::rewardBonusDescription($quest->reward_bonus_type, (int) $quest->reward_bonus_value)) {
@@ -605,9 +608,7 @@ class QuestProgressService
         $cooldownSeconds = $characterQuest?->next_submission_at?->isFuture()
             ? $moment->diffInSeconds($characterQuest->next_submission_at)
             : 0;
-        $rewardItemLabel = $quest->reward_item_slug === null
-            ? null
-            : (Item::query()->where('slug', $quest->reward_item_slug)->value('name') ?? $quest->reward_item_slug);
+        $rewardItemLabel = $this->rewardItemLabelForQuest($character, $quest);
         $baseSuccessRate = min(100, max(0, (int) ($quest->objective_submission_success_rate ?? 100)));
         $pendingBonusPercent = (int) ($characterQuest?->submission_bonus_percent ?? 0);
         $effectiveSuccessRate = $characterQuest?->effectiveSubmissionSuccessRate($baseSuccessRate) ?? $baseSuccessRate;
@@ -671,6 +672,53 @@ class QuestProgressService
             'ready_to_submit' => $canSubmit,
             'can_claim' => $characterQuest?->status === CharacterQuestStatus::ReadyToClaim,
             'lock_reason' => $lockReason,
+        ];
+    }
+
+    private function rewardItemLabelForQuest(GameCharacter $character, Quest $quest): ?string
+    {
+        $rewardItem = $this->resolveQuestRewardItem($character, $quest);
+
+        return $rewardItem['label'] ?? null;
+    }
+
+    /**
+     * @return array{slug: string, label: string, quantity: int}|null
+     */
+    private function resolveQuestRewardItem(GameCharacter $character, Quest $quest, bool $allowGenericMatch = true): ?array
+    {
+        if ($quest->reward_item_slug === null) {
+            return null;
+        }
+
+        if ($quest->reward_item_slug === MetinClassCatalog::matchingSkillBookRewardToken()) {
+            $resolvedSlug = MetinClassCatalog::preferredSkillBookSlugForCharacter($character);
+
+            if ($resolvedSlug === null) {
+                return $allowGenericMatch
+                    ? [
+                        'slug' => MetinClassCatalog::matchingSkillBookRewardToken(),
+                        'label' => __('Matching Skill Book'),
+                        'quantity' => max(1, (int) $quest->reward_item_quantity),
+                    ]
+                    : null;
+            }
+
+            $item = Item::query()->where('slug', $resolvedSlug)->first();
+
+            return [
+                'slug' => $resolvedSlug,
+                'label' => $item?->name ?? __('Matching Skill Book'),
+                'quantity' => max(1, (int) $quest->reward_item_quantity),
+            ];
+        }
+
+        $item = Item::query()->where('slug', $quest->reward_item_slug)->first();
+
+        return [
+            'slug' => $quest->reward_item_slug,
+            'label' => $item?->name ?? $quest->reward_item_slug,
+            'quantity' => max(1, (int) $quest->reward_item_quantity),
         ];
     }
 }

@@ -380,9 +380,8 @@ trait HandlesInventoryActions
     /**
      * Skill books handle the later half of skill progression.
      *
-     * Ranks 1-5 still use skill points. After that, books push the skill through the M stages.
-     * Each later stage needs repeated successful readings, which feels much closer to Metin2 than
-     * the old "one book equals one rank" placeholder.
+      * Skill points raise a skill through rank 16 and the last point opens M1.
+      * After that, each successful book read advances one mastery stage until the G1 breakthrough.
      *
      * @return array{message: string, cooldown_seconds: int, rewards: array<string, int>, target_location_id: int}
      */
@@ -428,13 +427,13 @@ trait HandlesInventoryActions
         }
 
         if ($learnedSkill->needsSoulStoneProgression()) {
-            throw new GameActionException(__('The book phase for :skill is complete. Use Soul Stones for the G stage now.', [
+            throw new GameActionException(__('The book phase for :skill is complete. Use Soul Stones from G1 onward.', [
                 'skill' => $skill->name,
             ]));
         }
 
         if (! $learnedSkill->needsSkillBookProgression()) {
-            throw new GameActionException(__('Use skill points until :skill reaches rank :rank before this book can help.', [
+            throw new GameActionException(__('Use skill points until :skill reaches M1 after rank :rank before this book can help.', [
                 'skill' => $skill->name,
                 'rank' => MetinClassCatalog::skillBookMinimumRank(),
             ]));
@@ -461,7 +460,12 @@ trait HandlesInventoryActions
             );
 
             if ((int) $learnedSkill->mastery_progress >= $learnedSkill->requiredBookSuccessesForNextMastery()) {
-                $learnedSkill->mastery_rank = min(10, (int) $learnedSkill->mastery_rank + 1);
+                if ((int) $learnedSkill->mastery_rank >= 10) {
+                    $learnedSkill->grand_mastery_rank = max(1, (int) $learnedSkill->grand_mastery_rank);
+                } else {
+                    $learnedSkill->mastery_rank = min(10, (int) $learnedSkill->mastery_rank + 1);
+                }
+
                 $learnedSkill->mastery_progress = 0;
             }
         }
@@ -482,10 +486,9 @@ trait HandlesInventoryActions
                     'skill' => $skill->name,
                     'rank' => $updatedSkill?->stageLabel() ?? 'M1',
                 ]),
-                default => __('You study :skill successfully. Book progress: :current/:target.', [
+                default => __('You study :skill successfully. It reaches :rank.', [
                     'skill' => $skill->name,
-                    'current' => (int) ($updatedSkill?->mastery_progress ?? 0),
-                    'target' => (int) ($updatedSkill?->requiredBookSuccessesForNextMastery() ?? 1),
+                    'rank' => $updatedSkill?->stageLabel() ?? 'G1',
                 ]),
             },
             'cooldown_seconds' => 0,

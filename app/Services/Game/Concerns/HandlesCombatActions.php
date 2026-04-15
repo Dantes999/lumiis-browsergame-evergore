@@ -8,6 +8,7 @@ use App\Models\CharacterSkill;
 use App\Models\GameBattle;
 use App\Models\GameCharacter;
 use App\Models\LocationArea;
+use App\Support\Game\DamageTypeCatalog;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
 use App\Support\Game\WeaponCombatProfileCatalog;
@@ -403,7 +404,24 @@ trait HandlesCombatActions
             default => 3,
         };
         $damageReduction = intdiv($effectiveDefense, $encounterType === 'boss' ? 4 : 3);
+        $encounterCategory = match ($encounterType) {
+            'lumiis' => 'Lumiis Core',
+            'boss' => 'Boss',
+            default => 'Monster',
+        };
+        $encounterDamageType = DamageTypeCatalog::enemyDamageType(null, $encounterType, $encounterCategory);
+        $encounterResistanceProfile = DamageTypeCatalog::enemyResistanceProfile($encounterType, $encounterCategory);
+        $matchupTempoPercent = DamageTypeCatalog::resistancePercent(
+            $encounterResistanceProfile,
+            DamageTypeCatalog::primaryCharacterDamageType($character),
+        );
         $damageTaken = max($minimumDamage, $rawDamage - $damageReduction);
+        $damageTaken = max(1, (int) floor($damageTaken * (1 + ($matchupTempoPercent / 100))));
+        $damageTaken = DamageTypeCatalog::damageAfterResistance(
+            $damageTaken,
+            $encounterDamageType,
+            $character->combatResistanceProfile(),
+        );
         $damageTaken = min(max(0, $character->health - 1), $damageTaken);
 
         $character->stamina -= $staminaCost;
@@ -431,7 +449,7 @@ trait HandlesCombatActions
 
         $progress->save();
 
-        $lootDrops = $this->rollLoot($area->lootTable($encounterType), $character->lootRatePercentBonus());
+        $lootDrops = $this->rollLoot($area->lootTable($encounterType), $character->lootRatePercentBonus(), $character);
         $itemNames = [];
 
         foreach ($lootDrops as $drop) {
@@ -524,6 +542,7 @@ trait HandlesCombatActions
         $criticalChance = $character->criticalChancePercent();
         $evadeChance = $character->evadeChancePercent();
         $weaponType = $character->equippedWeaponType();
+        $playerResistanceProfile = $character->combatResistanceProfile();
         $skillGroupCombatProfile = MetinClassCatalog::skillGroupCombatProfile(
             $character->chosenRace(),
             $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
@@ -553,6 +572,9 @@ trait HandlesCombatActions
                 'id' => 'enemy-'.$index,
                 'label' => $monster->name.' #'.$index,
                 'health' => (int) $monster->maximum_health,
+                'damage_type' => DamageTypeCatalog::enemyDamageType((string) $monster->damage_type, 'monster', (string) $monster->race, $monster->manualFamilyKey()),
+                'resistances' => DamageTypeCatalog::enemyResistanceProfile('monster', (string) $monster->race, $monster->manualFamilyKey(), (string) $monster->damage_type),
+                'family' => $monster->manualFamilyKey(),
                 'poison_rounds' => 0,
                 'poison_damage' => 0,
                 'burn_rounds' => 0,
@@ -710,6 +732,21 @@ trait HandlesCombatActions
                         $playerDamage = max($playerDamage + 1, (int) floor($playerDamage * 1.5));
                     }
 
+                    $damageType = $this->resolvePlayerActionDamageType([
+                        'race' => $character->chosenRace(),
+                        'skill_group' => $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
+                        'weapon_type' => $weaponType,
+                    ], $selectedSkill);
+                    $enemyResistancePercent = DamageTypeCatalog::resistancePercent(
+                        $this->resolveEnemyResistanceProfile($enemies[$enemyIndex]),
+                        $damageType,
+                    );
+                    $playerDamage = DamageTypeCatalog::damageAfterResistance(
+                        $playerDamage,
+                        $damageType,
+                        $this->resolveEnemyResistanceProfile($enemies[$enemyIndex]),
+                    );
+
                     $enemies[$enemyIndex]['health'] = max(0, $enemy['health'] - $playerDamage);
                     $this->applyTemporaryEffect(
                         $temporaryGuard,
@@ -737,6 +774,8 @@ trait HandlesCombatActions
                     if ($criticalHit) {
                         $playerAttackMessage .= ' '.__('Critical hit!');
                     }
+
+                    $playerAttackMessage .= $this->damageTypeImpactSuffix($enemyResistancePercent, $damageType);
 
                     if ($enemies[$enemyIndex]['health'] === 0) {
                         $playerAttackMessage .= ' '.__(':enemy falls.', ['enemy' => $enemy['label']]);
@@ -840,6 +879,11 @@ trait HandlesCombatActions
                         $splashDamage = max(
                             1,
                             (int) floor($playerDamage * ($splashPercent / 100)) - max(0, intdiv((int) $monster->defense, 2)),
+                        );
+                        $splashDamage = DamageTypeCatalog::damageAfterResistance(
+                            $splashDamage,
+                            $damageType,
+                            $this->resolveEnemyResistanceProfile($enemies[$splashIndex]),
                         );
                         $enemies[$splashIndex]['health'] = max(0, $splashEnemy['health'] - $splashDamage);
                         $splashMessage = __(':enemy suffers :damage splash damage.', [
@@ -966,6 +1010,11 @@ trait HandlesCombatActions
                                 $temporaryIncomingDamagePercentRounds,
                             ),
                     );
+                $enemyDamageType = $this->resolveEnemyDamageType($enemy);
+                $playerResistancePercent = DamageTypeCatalog::resistancePercent($playerResistanceProfile, $enemyDamageType);
+                $enemyDamage = $dodged
+                    ? 0
+                    : DamageTypeCatalog::damageAfterResistance($enemyDamage, $enemyDamageType, $playerResistanceProfile);
                 $spAbsorbed = 0;
 
                 if (! $dodged) {
@@ -995,6 +1044,10 @@ trait HandlesCombatActions
 
                 if ($spAbsorbed > 0) {
                     $enemyAttackMessage .= ' '.__(':amount damage is absorbed by SP.', ['amount' => $spAbsorbed]);
+                }
+
+                if (! $dodged) {
+                    $enemyAttackMessage .= $this->damageTypeImpactSuffix($playerResistancePercent, $enemyDamageType);
                 }
 
                 if ($playerHealth <= 0) {
@@ -1128,6 +1181,9 @@ trait HandlesCombatActions
                 'max_health' => (int) $monster->maximum_health,
                 'attack' => (int) $monster->minimum_attack.'-'.(int) $monster->maximum_attack,
                 'category' => (string) $monster->race,
+                'damage_type' => (string) ($enemy['damage_type'] ?? 'physical'),
+                'damage_type_label' => DamageTypeCatalog::label((string) ($enemy['damage_type'] ?? 'physical')),
+                'resistance_badges' => DamageTypeCatalog::resistanceBadges((array) ($enemy['resistances'] ?? [])),
             ],
             $enemies,
         );
@@ -1184,7 +1240,7 @@ trait HandlesCombatActions
         $character->experience += $experienceGain;
         $character->yang += $yangGain;
 
-        $lootDrops = $this->rollLoot($area->lootTable('monster'), $character->lootRatePercentBonus());
+        $lootDrops = $this->rollLoot($area->lootTable('monster'), $character->lootRatePercentBonus(), $character);
         $itemNames = [];
 
         foreach ($lootDrops as $drop) {
@@ -1489,6 +1545,7 @@ trait HandlesCombatActions
         $lootDrops = $this->rollLoot(
             $area->lootTable('monster'),
             $character->lootRatePercentBonus() + (int) $difficultyProfile['loot_rate_bonus_percent'],
+            $character,
         );
         $lootNames = [];
 
@@ -1526,6 +1583,10 @@ trait HandlesCombatActions
                         'maximum_attack' => $enemyMaxAttack,
                         'defense' => $enemyDefense,
                         'category' => (string) $monster->race,
+                        'damage_type' => DamageTypeCatalog::enemyDamageType((string) $monster->damage_type, 'monster', (string) $monster->race, $monster->manualFamilyKey()),
+                        'resistances' => DamageTypeCatalog::enemyResistanceProfile('monster', (string) $monster->race, $monster->manualFamilyKey(), (string) $monster->damage_type),
+                        'family' => $monster->manualFamilyKey(),
+                        'encounter_type' => 'monster',
                         'attack_down_percent' => 0,
                         'attack_down_rounds' => 0,
                         'hit_penalty_percent' => 0,
@@ -1738,7 +1799,7 @@ trait HandlesCombatActions
         $effectiveDefense = $character->effectiveDefense();
         $effectiveSpeed = $character->effectiveSpeed();
         $encounterName = $area->encounterName($encounterType) ?? $area->name;
-        $lootDrops = $this->rollLoot($area->lootTable($encounterType), $character->lootRatePercentBonus());
+        $lootDrops = $this->rollLoot($area->lootTable($encounterType), $character->lootRatePercentBonus(), $character);
         $encounterColumnPrefix = $this->encounterColumnPrefix($encounterType);
         $lootNames = [];
 
@@ -1811,6 +1872,17 @@ trait HandlesCombatActions
                         'boss' => 'Boss',
                         default => 'Monster',
                     },
+                    'damage_type' => DamageTypeCatalog::enemyDamageType(null, $encounterType, match ($encounterType) {
+                        'lumiis' => 'Lumiis Core',
+                        'boss' => 'Boss',
+                        default => 'Monster',
+                    }),
+                    'resistances' => DamageTypeCatalog::enemyResistanceProfile($encounterType, match ($encounterType) {
+                        'lumiis' => 'Lumiis Core',
+                        'boss' => 'Boss',
+                        default => 'Monster',
+                    }),
+                    'encounter_type' => $encounterType,
                     'attack_down_percent' => 0,
                     'attack_down_rounds' => 0,
                     'hit_penalty_percent' => 0,
@@ -1964,6 +2036,10 @@ trait HandlesCombatActions
                 'maximum_attack' => $soulMaximumAttack,
                 'defense' => $soulDefense,
                 'category' => 'Freed Soul',
+                'damage_type' => DamageTypeCatalog::enemyDamageType((string) $monster->damage_type, 'lumiis', 'Freed Soul', $monster->manualFamilyKey()),
+                'resistances' => DamageTypeCatalog::enemyResistanceProfile('lumiis', 'Freed Soul', $monster->manualFamilyKey(), (string) $monster->damage_type),
+                'family' => $monster->manualFamilyKey(),
+                'encounter_type' => 'lumiis',
                 'attack_down_percent' => 0,
                 'attack_down_rounds' => 0,
                 'hit_penalty_percent' => 0,
@@ -2168,6 +2244,17 @@ trait HandlesCombatActions
             $mainDamage = max($mainDamage + 1, (int) floor($mainDamage * 1.5));
         }
 
+        $damageType = $this->resolvePlayerActionDamageType($player, $skill);
+        $enemyResistancePercent = DamageTypeCatalog::resistancePercent(
+            $this->resolveEnemyResistanceProfile($enemies[$targetIndex]),
+            $damageType,
+        );
+        $mainDamage = DamageTypeCatalog::damageAfterResistance(
+            $mainDamage,
+            $damageType,
+            $this->resolveEnemyResistanceProfile($enemies[$targetIndex]),
+        );
+
         $enemies[$targetIndex]['current_health'] = max(0, (int) $targetEnemy['current_health'] - $mainDamage);
         $targetIsLumiisCore = ($targetEnemy['category'] ?? null) === 'Lumiis Core';
 
@@ -2187,6 +2274,8 @@ trait HandlesCombatActions
         if ($criticalHit) {
             $mainMessage .= ' '.__('Critical hit!');
         }
+
+        $mainMessage .= $this->damageTypeImpactSuffix($enemyResistancePercent, $damageType);
 
         if ($enemies[$targetIndex]['current_health'] === 0) {
             $mainMessage .= ' '.__(':enemy falls.', ['enemy' => $targetEnemy['label']]);
@@ -2318,6 +2407,11 @@ trait HandlesCombatActions
                 1,
                 (int) floor($mainDamage * ($splashPercent / 100)) - max(0, intdiv((int) $enemy['defense'], 2)),
             );
+            $splashDamage = DamageTypeCatalog::damageAfterResistance(
+                $splashDamage,
+                $damageType,
+                $this->resolveEnemyResistanceProfile($enemies[$enemyIndex]),
+            );
             $enemies[$enemyIndex]['current_health'] = max(0, (int) $enemy['current_health'] - $splashDamage);
             $splashMessage = __(':enemy suffers :damage splash damage.', [
                 'enemy' => $enemy['label'],
@@ -2389,6 +2483,9 @@ trait HandlesCombatActions
         }
 
         $skillGroupCombatProfile = (array) data_get($state, 'player.skill_group_combat_profile', []);
+        $playerResistanceProfile = is_array(data_get($state, 'player.resistances'))
+            ? (array) data_get($state, 'player.resistances')
+            : [];
         $guard = $this->activeBattleStateEffect($state['player'], 'temporary_guard', 'temporary_guard_rounds');
         $evadeBonus = $this->activeBattleStateEffect($state['player'], 'temporary_evade_bonus', 'temporary_evade_bonus_rounds');
         $guardReduction = $guard > 0 ? max(1, intdiv($guard, max(1, $aliveEnemies->count()))) : 0;
@@ -2467,6 +2564,11 @@ trait HandlesCombatActions
                             'temporary_incoming_damage_percent_rounds',
                         ),
                 );
+            $enemyDamageType = $this->resolveEnemyDamageType($enemy);
+            $playerResistancePercent = DamageTypeCatalog::resistancePercent($playerResistanceProfile, $enemyDamageType);
+            $enemyDamage = $dodged
+                ? 0
+                : DamageTypeCatalog::damageAfterResistance($enemyDamage, $enemyDamageType, $playerResistanceProfile);
             $spAbsorbed = 0;
 
             if (! $dodged) {
@@ -2497,6 +2599,10 @@ trait HandlesCombatActions
 
             if ($spAbsorbed > 0) {
                 $enemyMessage .= ' '.__(':amount damage is absorbed by SP.', ['amount' => $spAbsorbed]);
+            }
+
+            if (! $dodged) {
+                $enemyMessage .= $this->damageTypeImpactSuffix($playerResistancePercent, $enemyDamageType);
             }
 
             if ((int) $state['player']['current_health'] === 0) {
@@ -2644,6 +2750,71 @@ trait HandlesCombatActions
         }
 
         return $base;
+    }
+
+    /**
+     * @param  array<string, mixed>  $player
+     * @param  array<string, mixed>|null  $skill
+     */
+    private function resolvePlayerActionDamageType(array $player, ?array $skill = null): string
+    {
+        $resolvedSkill = is_array($skill) ? $skill : [];
+        $explicitType = (string) ($resolvedSkill['damage_type'] ?? '');
+
+        if ($explicitType !== '') {
+            return DamageTypeCatalog::normalize($explicitType);
+        }
+
+        return DamageTypeCatalog::skillDamageType(
+            data_get($player, 'race'),
+            data_get($player, 'skill_group'),
+            data_get($player, 'weapon_type'),
+            (bool) ($resolvedSkill['uses_magic_attack'] ?? false),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $enemy
+     */
+    private function resolveEnemyDamageType(array $enemy): string
+    {
+        return DamageTypeCatalog::enemyDamageType(
+            is_string($enemy['damage_type'] ?? null) ? (string) $enemy['damage_type'] : null,
+            is_string($enemy['encounter_type'] ?? null) ? (string) $enemy['encounter_type'] : null,
+            (string) ($enemy['category'] ?? 'Monster'),
+            is_string($enemy['family'] ?? null) ? (string) $enemy['family'] : null,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $enemy
+     * @return array<string, int>
+     */
+    private function resolveEnemyResistanceProfile(array $enemy): array
+    {
+        $resistances = $enemy['resistances'] ?? null;
+
+        if (is_array($resistances)) {
+            return $resistances;
+        }
+
+        return DamageTypeCatalog::enemyResistanceProfile(
+            is_string($enemy['encounter_type'] ?? null) ? (string) $enemy['encounter_type'] : null,
+            (string) ($enemy['category'] ?? 'Monster'),
+            is_string($enemy['family'] ?? null) ? (string) $enemy['family'] : null,
+            is_string($enemy['damage_type'] ?? null) ? (string) $enemy['damage_type'] : null,
+        );
+    }
+
+    private function damageTypeImpactSuffix(int $resistancePercent, string $damageType): string
+    {
+        if ($resistancePercent === 0) {
+            return '';
+        }
+
+        return $resistancePercent > 0
+            ? ' '.__(':type resistance dulls the impact.', ['type' => DamageTypeCatalog::label($damageType)])
+            : ' '.__(':type weakness is exposed.', ['type' => DamageTypeCatalog::label($damageType)]);
     }
 
     /**
@@ -3164,6 +3335,13 @@ trait HandlesCombatActions
                 'magic_attack' => (int) data_get($state, 'player.magic_attack', 0),
                 'crit_chance' => (int) data_get($state, 'player.crit_chance', 0),
                 'evade_chance' => (int) data_get($state, 'player.evade_chance', 0),
+                'primary_damage_type' => (string) data_get($state, 'player.primary_damage_type', 'physical'),
+                'primary_damage_type_label' => (string) data_get(
+                    $state,
+                    'player.primary_damage_type_label',
+                    DamageTypeCatalog::label((string) data_get($state, 'player.primary_damage_type', 'physical')),
+                ),
+                'resistance_badges' => collect(data_get($state, 'player.resistance_badges', []))->values()->all(),
                 'equipment' => data_get($state, 'player.equipment', []),
             ],
             'enemies' => collect($state['enemies'] ?? [])
@@ -3176,6 +3354,9 @@ trait HandlesCombatActions
                     'max_health' => (int) $enemy['max_health'],
                     'attack' => (int) $enemy['minimum_attack'].'-'.(int) $enemy['maximum_attack'],
                     'category' => $enemy['category'],
+                    'damage_type' => (string) ($enemy['damage_type'] ?? 'physical'),
+                    'damage_type_label' => DamageTypeCatalog::label((string) ($enemy['damage_type'] ?? 'physical')),
+                    'resistance_badges' => DamageTypeCatalog::resistanceBadges((array) ($enemy['resistances'] ?? [])),
                     'spawned' => (int) data_get($enemy, 'spawned_round', 0) === 0,
                 ])
                 ->values()
@@ -3206,6 +3387,8 @@ trait HandlesCombatActions
     ): array {
         return [
             'name' => $character->name,
+            'race' => $character->chosenRace(),
+            'skill_group' => $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,
             'current_health' => $character->health,
             'starting_health' => $character->health,
             'max_health' => $character->effectiveMaxHealth(),
@@ -3216,6 +3399,10 @@ trait HandlesCombatActions
             'defense' => $effectiveDefense,
             'speed' => $effectiveSpeed,
             'weapon_type' => $character->equippedWeaponType(),
+            'primary_damage_type' => DamageTypeCatalog::primaryCharacterDamageType($character),
+            'primary_damage_type_label' => DamageTypeCatalog::label(DamageTypeCatalog::primaryCharacterDamageType($character)),
+            'resistances' => $character->combatResistanceProfile(),
+            'resistance_badges' => DamageTypeCatalog::resistanceBadges($character->combatResistanceProfile()),
             'skill_group_combat_profile' => MetinClassCatalog::skillGroupCombatProfile(
                 $character->chosenRace(),
                 $character->hasChosenSkillGroup() ? (string) $character->skill_group : null,

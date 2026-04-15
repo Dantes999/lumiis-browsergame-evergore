@@ -4,6 +4,7 @@ namespace App\Services\Game\Concerns;
 
 use App\Models\GameCharacter;
 use App\Support\Game\ExperienceCurve;
+use App\Support\Game\MetinClassCatalog;
 use Illuminate\Support\Carbon;
 
 /**
@@ -34,7 +35,7 @@ trait ManagesCharacterState
 
             $character->unspent_status_points += 1;
 
-            if ($character->level >= 5) {
+            if (MetinClassCatalog::earnsSkillPointAtLevel($character->level)) {
                 $character->unspent_skill_points += 1;
             }
 

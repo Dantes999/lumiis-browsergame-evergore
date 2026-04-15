@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\Quest;
+use App\Support\Game\MetinClassCatalog;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -82,7 +83,19 @@ class UpdateQuestRequest extends FormRequest
             ],
             'reward_experience' => ['required', 'integer', 'min:0'],
             'reward_yang' => ['required', 'integer', 'min:0'],
-            'reward_item_slug' => ['nullable', 'string', Rule::exists('items', 'slug')],
+            'reward_item_slug' => [
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value === null || $value === '' || $value === MetinClassCatalog::matchingSkillBookRewardToken()) {
+                        return;
+                    }
+
+                    if (! \App\Models\Item::query()->where('slug', $value)->exists()) {
+                        $fail(__('The selected reward item is invalid.'));
+                    }
+                },
+            ],
             'reward_item_quantity' => ['required', 'integer', 'min:1', 'max:999'],
             'reward_bonus_type' => ['nullable', 'string', Rule::in(array_keys(Quest::rewardBonusOptions()))],
             'reward_bonus_value' => ['nullable', 'integer', 'min:0', 'max:999'],

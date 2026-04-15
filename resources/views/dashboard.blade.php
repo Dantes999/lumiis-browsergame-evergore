@@ -1038,6 +1038,18 @@
                                 </div>
                             </div>
 
+                            <div class="battle-matchup-group">
+                                <p class="battle-matchup-kicker">{{ __('Matchups') }}</p>
+                                <div class="battle-matchup-strip">
+                                    <span class="battle-matchup-chip battle-matchup-chip-primary">
+                                        {{ __('Type: :type', ['type' => data_get($activeBattlePlayer, 'primary_damage_type_label', __('Physical'))]) }}
+                                    </span>
+                                    @foreach ((array) data_get($activeBattlePlayer, 'resistance_badges', []) as $badge)
+                                        <span class="battle-matchup-chip">{{ $badge }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+
                             @if ($activeBattlePlayerEffects !== [])
                                 <div class="battle-effect-group">
                                     <p class="battle-effect-kicker">{{ __('Active Buffs') }}</p>
@@ -1110,6 +1122,15 @@
                                             <span class="cozy-chip">
                                                 {{ $enemyIsAlive ? data_get($enemy, 'minimum_attack') . '-' . data_get($enemy, 'maximum_attack') : __('Fallen') }}
                                             </span>
+                                        </div>
+
+                                        <div class="battle-matchup-strip battle-matchup-strip-enemy mt-3">
+                                            <span class="battle-matchup-chip battle-matchup-chip-primary">
+                                                {{ __('Type: :type', ['type' => data_get($enemy, 'damage_type_label', __('Physical'))]) }}
+                                            </span>
+                                            @foreach ((array) data_get($enemy, 'resistance_badges', []) as $badge)
+                                                <span class="battle-matchup-chip {{ str_starts_with((string) $badge, 'Weak') ? 'battle-matchup-chip-weak' : '' }}">{{ $badge }}</span>
+                                            @endforeach
                                         </div>
 
                                         <div class="battle-health-block mt-4">
@@ -1293,6 +1314,16 @@
                                     </div>
                                 </div>
 
+                                <div class="battle-matchup-group">
+                                    <p class="battle-matchup-kicker">{{ __('Matchups') }}</p>
+                                    <div class="battle-matchup-strip">
+                                        <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Type:') }} ${result.player.primary_damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                        <template x-for="badge in (result.player.resistance_badges ?? [])" :key="badge">
+                                            <span class="battle-matchup-chip" x-text="badge"></span>
+                                        </template>
+                                    </div>
+                                </div>
+
                                 <div class="battle-equipment-list">
                                     <template x-for="equipmentLine in result.player.equipment" :key="equipmentLine">
                                         <span class="cozy-chip" x-text="equipmentLine"></span>
@@ -1330,6 +1361,25 @@
                                             <span class="scene-stat-value" x-text="result.summary.health_lost"></span>
                                         </div>
                                     </div>
+
+                                    <div class="battle-matchup-group battle-matchup-summary">
+                                        <p class="battle-matchup-kicker">{{ __('Matchups') }}</p>
+                                        <div class="battle-matchup-strip">
+                                            <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('You') }} · {{ __('Type:') }} ${result.player.primary_damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                            <template x-for="badge in (result.player.resistance_badges ?? [])" :key="`result-player-${badge}`">
+                                                <span class="battle-matchup-chip" x-text="badge"></span>
+                                            </template>
+                                        </div>
+
+                                        <template x-if="(result.enemies ?? []).length > 0">
+                                            <div class="battle-matchup-strip mt-3">
+                                                <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Enemy') }} · {{ __('Type:') }} ${result.enemies[0].damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                                <template x-for="badge in (result.enemies[0].resistance_badges ?? [])" :key="`result-enemy-${badge}`">
+                                                    <span class="battle-matchup-chip" :class="badge.startsWith('Weak') ? 'battle-matchup-chip-weak' : ''" x-text="badge"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
 
                                 <div class="paper-note mt-4">
@@ -1359,6 +1409,13 @@
                                                     </p>
                                                 </div>
                                                 <span class="cozy-chip" x-text="enemyAttackLabel(enemy)"></span>
+                                            </div>
+
+                                            <div class="battle-matchup-strip battle-matchup-strip-enemy mt-3">
+                                                <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Type:') }} ${enemy.damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                                <template x-for="badge in (enemy.resistance_badges ?? [])" :key="`${enemy.id}-${badge}`">
+                                                    <span class="battle-matchup-chip" :class="badge.startsWith('Weak') ? 'battle-matchup-chip-weak' : ''" x-text="badge"></span>
+                                                </template>
                                             </div>
 
                                             <div class="battle-health-block mt-4">
@@ -1475,6 +1532,16 @@
                                     </div>
                                 </div>
 
+                                <div class="battle-matchup-group">
+                                    <p class="battle-matchup-kicker">{{ __('Matchups') }}</p>
+                                    <div class="battle-matchup-strip">
+                                        <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Type:') }} ${replay.player.primary_damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                        <template x-for="badge in (replay.player.resistance_badges ?? [])" :key="badge">
+                                            <span class="battle-matchup-chip" x-text="badge"></span>
+                                        </template>
+                                    </div>
+                                </div>
+
                                 <div class="battle-equipment-list">
                                     <template x-for="equipmentLine in replay.player.equipment" :key="equipmentLine">
                                         <span class="cozy-chip" x-text="equipmentLine"></span>
@@ -1519,6 +1586,25 @@
                                             <span class="scene-stat-value" x-text="replay.summary.health_lost"></span>
                                         </div>
                                     </div>
+
+                                    <div class="battle-matchup-group battle-matchup-summary">
+                                        <p class="battle-matchup-kicker">{{ __('Matchups') }}</p>
+                                        <div class="battle-matchup-strip">
+                                            <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('You') }} · {{ __('Type:') }} ${replay.player.primary_damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                            <template x-for="badge in (replay.player.resistance_badges ?? [])" :key="`replay-player-${badge}`">
+                                                <span class="battle-matchup-chip" x-text="badge"></span>
+                                            </template>
+                                        </div>
+
+                                        <template x-if="(replay.enemies ?? []).length > 0">
+                                            <div class="battle-matchup-strip mt-3">
+                                                <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Enemy') }} · {{ __('Type:') }} ${replay.enemies[0].damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                                <template x-for="badge in (replay.enemies[0].resistance_badges ?? [])" :key="`replay-enemy-${badge}`">
+                                                    <span class="battle-matchup-chip" :class="badge.startsWith('Weak') ? 'battle-matchup-chip-weak' : ''" x-text="badge"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
 
                                 <div class="battle-step-log" x-ref="log">
@@ -1554,6 +1640,13 @@
                                                     </p>
                                                 </div>
                                                 <span class="cozy-chip" x-text="enemyAttackLabel(enemy)"></span>
+                                            </div>
+
+                                            <div class="battle-matchup-strip battle-matchup-strip-enemy mt-3">
+                                                <span class="battle-matchup-chip battle-matchup-chip-primary" x-text="`{{ __('Type:') }} ${enemy.damage_type_label ?? '{{ __('Physical') }}'}`"></span>
+                                                <template x-for="badge in (enemy.resistance_badges ?? [])" :key="`${enemy.id}-${badge}`">
+                                                    <span class="battle-matchup-chip" :class="badge.startsWith('Weak') ? 'battle-matchup-chip-weak' : ''" x-text="badge"></span>
+                                                </template>
                                             </div>
 
                                             <div class="battle-health-block mt-4">
@@ -2329,7 +2422,7 @@
 
                                                 <p class="inventory-detail-meta">
                                                     @if ($item->isSkillBook() && $linkedSkill !== null) {{ __('Skill') }} {{ $linkedSkill['name'] }} · @endif
-                                                    @if ($item->isSkillBook()) {{ __('Book Rank') }} {{ \App\Support\Game\MetinClassCatalog::skillBookMinimumRank() }}+ · @endif
+                                                    @if ($item->isSkillBook()) {{ __('Book Phase') }} M1+ · @endif
                                                     @if ($item->heal_amount) +{{ $item->heal_amount }} HP · @endif
                                                     @if ($item->sp_restore) +{{ $item->sp_restore }} SP · @endif
                                                     @if ($inventoryItem->effectiveBonus('attack_bonus')) +{{ $inventoryItem->effectiveBonus('attack_bonus') }} ATK · @endif
@@ -2401,7 +2494,7 @@
                                                 </div>
                                             @elseif ($isSkillSupportMaterial)
                                                 <div class="inventory-detail-note">
-                                                    {{ __('Use this item from the skill panel once a skill reaches M10.') }}
+                                                    {{ __('Use this item from the skill panel once a skill reaches G1.') }}
                                                 </div>
                                             @endif
 

@@ -247,7 +247,7 @@ class SyncProofUsersCommand extends Command
 
             $character->unspent_status_points += 1;
 
-            if ($character->level >= 5) {
+            if (MetinClassCatalog::earnsSkillPointAtLevel($character->level)) {
                 $character->unspent_skill_points += 1;
             }
         }

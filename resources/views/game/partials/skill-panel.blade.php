@@ -16,7 +16,7 @@
 
     @if (! $character->skillsUnlocked())
         <div class="paper-note mt-6 text-sm leading-6">
-            {{ __('Skills unlock at level 5. At that point you choose one of the two combat schools of your race.') }}
+            {{ __('Skills unlock at level 5. At that point you choose one of the two combat schools of your race and can spend the skill points banked from earlier levels.') }}
         </div>
     @elseif (! $character->hasChosenSkillGroup())
         <div class="paper-note mt-6">
@@ -96,7 +96,7 @@
                 @php
                     $learnedSkill = $learnedSkills->get($skill->id);
                     $rank = $learnedSkill?->rank ?? 0;
-                    $isMaxed = $rank >= $skill->max_rank;
+                    $isMaxed = $learnedSkill?->hasReachedPerfectMastery() ?? false;
                     $requiresBook = $learnedSkill?->needsSkillBookProgression() ?? false;
                     $requiresSoulStone = $learnedSkill?->needsSoulStoneProgression() ?? false;
                     $stageLabel = $learnedSkill?->stageLabel();
@@ -122,16 +122,17 @@
                         </div>
                         <p class="mt-2 text-sm leading-6 text-stone-700">{{ $skill->description }}</p>
                         <p class="mt-3 text-xs uppercase tracking-[0.24em] text-stone-600">
-                            {{ __('Level :level · :role · :sp SP · :cooldown round CD', [
+                            {{ __('Level :level · :role · :type · :sp SP · :cooldown round CD', [
                                 'level' => $skill->required_level,
                                 'role' => $previewProfile['role_label'],
+                                'type' => $previewProfile['damage_type_label'] ?? __('Physical'),
                                 'sp' => $previewProfile['sp_cost'],
                                 'cooldown' => $previewProfile['cooldown_rounds'],
                             ]) }}
                         </p>
                         @if ($requiresBook)
                             <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">
-                                {{ __('Ranks above :rank require the matching skill book.', ['rank' => \App\Support\Game\MetinClassCatalog::skillBookMinimumRank()]) }}
+                                {{ __('After rank :rank and the M1 breakthrough, the matching skill book drives each mastery step.', ['rank' => \App\Support\Game\MetinClassCatalog::skillBookMinimumRank()]) }}
                             </p>
                             <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">
                                 {{ __('Book Progress :current/:target · Success :chance% · Cooldown :cooldown min', [
@@ -160,7 +161,7 @@
                             <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">
                                 {{ $perfectMastery
                                     ? __('Perfect mastery reached.')
-                                    : __('Once a skill finishes M10, Soul Stones drive it through G and into P.') }}
+                                    : __('Once a skill reaches G1, Soul Stones drive it through the remaining G stages and into P.') }}
                             </p>
                         @elseif ($perfectMastery)
                             <p class="mt-2 text-xs uppercase tracking-[0.24em] text-stone-700">

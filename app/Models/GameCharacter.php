@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GameCharacterState;
+use App\Support\Game\DamageTypeCatalog;
 use App\Support\Game\ExperienceCurve;
 use App\Support\Game\ItemBonusCatalog;
 use App\Support\Game\MetinClassCatalog;
@@ -506,6 +507,35 @@ class GameCharacter extends Model
     public function skillDamagePercentBonus(): int
     {
         return max(0, $this->equippedBonusType('skill_damage') + $this->skillGroupPassiveBonus('skill_damage'));
+    }
+
+    public function combatResistancePercent(string $damageType): int
+    {
+        $bonusType = DamageTypeCatalog::itemResistanceBonusType($damageType);
+
+        if ($bonusType === null) {
+            return 0;
+        }
+
+        return max(0, $this->equippedBonusType($bonusType) + $this->skillGroupPassiveBonus($bonusType));
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function combatResistanceProfile(): array
+    {
+        $profile = [];
+
+        foreach (DamageTypeCatalog::types() as $damageType) {
+            $value = $this->combatResistancePercent($damageType);
+
+            if ($value > 0) {
+                $profile[$damageType] = $value;
+            }
+        }
+
+        return $profile;
     }
 
     public function damageMultiplierForEnemyCategory(?string $category): float

@@ -91,7 +91,7 @@ class CharacterSkill extends Model
 
     public function requiredBookSuccessesForNextMastery(): int
     {
-        if ($this->hasFinishedMasteryBooks()) {
+        if (! $this->needsSkillBookProgression()) {
             return 0;
         }
 
@@ -105,20 +105,20 @@ class CharacterSkill extends Model
 
     public function needsSkillBookProgression(): bool
     {
-        return (int) $this->rank >= MetinClassCatalog::skillBookMinimumRank()
-            && ! $this->hasFinishedMasteryBooks()
+        return (int) $this->mastery_rank > 0
+            && (int) $this->grand_mastery_rank === 0
             && ! $this->hasReachedPerfectMastery()
-            && (int) $this->grand_mastery_rank === 0;
+            && ! $this->hasFinishedMasteryBooks();
     }
 
     public function needsSoulStoneProgression(): bool
     {
-        return $this->hasFinishedMasteryBooks() && ! $this->hasReachedPerfectMastery();
+        return (int) $this->grand_mastery_rank > 0 && ! $this->hasReachedPerfectMastery();
     }
 
     public function hasFinishedMasteryBooks(): bool
     {
-        return (int) $this->mastery_rank >= 10;
+        return (int) $this->grand_mastery_rank > 0;
     }
 
     public function hasFinishedGrandMastery(): bool

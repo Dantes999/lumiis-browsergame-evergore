@@ -124,6 +124,19 @@ class MetinClassCatalogTest extends TestCase
         $this->assertSame(-23, (int) ($profile['incoming_damage_percent'] ?? 0));
     }
 
+    public function test_skill_progression_constants_follow_the_metin2_like_flow(): void
+    {
+        $this->assertSame(16, MetinClassCatalog::normalSkillRankCap());
+        $this->assertTrue(MetinClassCatalog::earnsSkillPointAtLevel(2));
+        $this->assertFalse(MetinClassCatalog::earnsSkillPointAtLevel(1));
+        $this->assertSame(100, MetinClassCatalog::skillBookSuccessChance(1));
+        $this->assertSame(95, MetinClassCatalog::skillBookSuccessChance(2));
+        $this->assertSame(80, MetinClassCatalog::skillBookSuccessChance(5));
+        $this->assertSame(25, MetinClassCatalog::skillBookSuccessChance(10));
+        $this->assertSame(1, MetinClassCatalog::skillBookSuccessesRequired(1));
+        $this->assertSame(1, MetinClassCatalog::skillBookSuccessesRequired(10));
+    }
+
     private function makeCharacter(array $attributes): GameCharacter
     {
         $character = new GameCharacter($attributes);

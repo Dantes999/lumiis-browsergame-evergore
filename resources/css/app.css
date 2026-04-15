@@ -6799,6 +6799,58 @@
         letter-spacing: 0.08em;
     }
 
+    .battle-matchup-group {
+        margin-top: 1rem;
+    }
+
+    .battle-matchup-kicker {
+        margin: 0 0 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(191, 219, 254, 0.72);
+    }
+
+    .battle-matchup-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .battle-matchup-strip-enemy {
+        justify-content: flex-start;
+    }
+
+    .battle-matchup-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        min-height: 2rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid rgba(125, 211, 252, 0.2);
+        background: rgba(15, 23, 42, 0.7);
+        color: rgba(226, 232, 240, 0.92);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1;
+    }
+
+    .battle-matchup-chip-primary {
+        border-color: rgba(250, 204, 21, 0.35);
+        background: linear-gradient(135deg, rgba(120, 53, 15, 0.88), rgba(15, 23, 42, 0.9));
+        color: rgba(254, 249, 195, 0.96);
+    }
+
+    .battle-matchup-chip-weak {
+        border-color: rgba(251, 146, 60, 0.35);
+        background: linear-gradient(135deg, rgba(127, 29, 29, 0.82), rgba(67, 20, 7, 0.88));
+        color: rgba(254, 215, 170, 0.98);
+    }
+
     .battle-damage-pop {
         position: absolute;
         top: -0.45rem;
