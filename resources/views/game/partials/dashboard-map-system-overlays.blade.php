@@ -94,6 +94,7 @@
                     <div
                         class="stat-card"
                         x-data="staminaPreview({
+                            resourceKey: 'stamina',
                             current: {{ (int) $displayStamina }},
                             maximum: {{ (int) $character->effectiveMaxStamina() }},
                             nextTickSeconds: {{ $nextStaminaTickSeconds === null ? 'null' : (int) $nextStaminaTickSeconds }},

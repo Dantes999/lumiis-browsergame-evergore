@@ -104,7 +104,59 @@
     </p>
 </div>
 
-<div class="mt-5 grid gap-3 lg:grid-cols-2">
+@php
+    $manualEncounterPreviewCharacter = [
+        'effectiveAttack' => $character->effectiveAttack(),
+        'effectiveDefense' => $character->effectiveDefense(),
+        'effectiveSpeed' => $character->effectiveSpeed(),
+        'effectiveMagicAttack' => $character->effectiveMagicAttack(),
+        'maxHealth' => $character->effectiveMaxHealth(),
+        'maxSp' => $character->effectiveMaxSp(),
+        'combatRating' => app(\App\Services\Game\ManualEncounterPreviewService::class)->publicCharacterCombatRating($character),
+        'averageDamageBonus' => $character->averageDamagePercentBonus(),
+        'criticalChance' => $character->criticalChancePercent(),
+        'skillDamageBonus' => $character->skillDamagePercentBonus(),
+        'evadeChance' => $character->evadeChancePercent(),
+        'skillCount' => $character->learnedSkills->count(),
+    ];
+    $manualEncounterPreviewOptions = collect($activeAreaMonsterFamilies)
+        ->mapWithKeys(function (array $family): array {
+            return collect($family['options'] ?? [])
+                ->mapWithKeys(fn (array $option, string $difficulty): array => [
+                    $family['key'].'.'.$difficulty => (array) ($option['live_preview'] ?? []),
+                ])
+                ->all();
+        })
+        ->merge(
+            collect($encounterActionPreviews ?? [])->mapWithKeys(fn (array $option, string $key): array => [
+                $key => (array) ($option['live_preview'] ?? []),
+            ])
+        )
+        ->all();
+    $monsterAutoPreview = (array) ($encounterActionPreviews['monster_auto'] ?? []);
+    $lumiisAutoPreview = (array) ($encounterActionPreviews['lumiis_auto'] ?? []);
+    $lumiisManualPreview = (array) ($encounterActionPreviews['lumiis_manual'] ?? []);
+@endphp
+
+<div
+    class="mt-5 grid gap-3 lg:grid-cols-2"
+    x-data="manualEncounterPreview({
+        character: @js($manualEncounterPreviewCharacter),
+        initialResources: @js([
+            'health' => (int) $displayHealth,
+            'sp' => (int) $displaySp,
+            'stamina' => (int) $displayStamina,
+        ]),
+        options: @js($manualEncounterPreviewOptions),
+        labels: {
+            estimatedSuccess: @js(__('Est. success')),
+            safe: @js(__('Safe')),
+            fair: @js(__('Fair')),
+            risky: @js(__('Risky')),
+            dangerous: @js(__('Dangerous')),
+        },
+    })"
+>
     <div class="form-card">
         @php
             $monsterFightStaminaMissing = $staminaMissingFor($monsterFightStaminaCost);
@@ -133,7 +185,22 @@
                 x-bind:disabled="isActionLocked() || @js($monsterFightStaminaMissing > 0 || $monsterFightLocked)"
                 @disabled($monsterFightStaminaMissing > 0 || $monsterFightLocked)
             >
-                {{ __('Auto Fight') }}
+                <span class="block">{{ __('Auto Fight') }}</span>
+                @if ($monsterAutoPreview !== [])
+                    <span
+                        class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                        x-bind:class="successToneClassByKey('monster_auto')"
+                        x-text="successRateLabelByKey('monster_auto')"
+                    >
+                        {{ __('Est. success') }} {{ data_get($monsterAutoPreview, 'success_rate_percent', 0) }}% · {{ data_get($monsterAutoPreview, 'risk_label') }}
+                    </span>
+                    <span
+                        class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                        x-text="encounterSummaryByKey('monster_auto')"
+                    >
+                        {{ data_get($monsterAutoPreview, 'encounter_summary') }}
+                    </span>
+                @endif
             </button>
         </form>
 
@@ -155,6 +222,14 @@
                                 @php
                                     $difficultyStaminaCost = $monsterFightStaminaCost + ($difficultyKey === 'hard' ? 2 : ($difficultyKey === 'medium' ? 1 : 0));
                                     $difficultyStaminaMissing = $staminaMissingFor($difficultyStaminaCost);
+                                    $difficultyPreview = data_get($family, "options.$difficultyKey");
+                                    $successRate = (int) data_get($difficultyPreview, 'success_rate_percent', 0);
+                                    $successToneClass = match (true) {
+                                        $successRate >= 85 => 'text-emerald-50',
+                                        $successRate >= 65 => 'text-sky-50',
+                                        $successRate >= 45 => 'text-amber-50',
+                                        default => 'text-rose-50',
+                                    };
                                 @endphp
 
                                 <form method="POST" action="{{ route('game.actions.store', ['action' => 'start-manual-fight']) }}">
@@ -172,7 +247,22 @@
                                         x-bind:disabled="isActionLocked() || @js($difficultyStaminaMissing > 0 || $monsterFightLocked)"
                                         @disabled($difficultyStaminaMissing > 0 || $monsterFightLocked)
                                     >
-                                        {{ $difficultyLabel }}
+                                        <span class="block">{{ $difficultyLabel }}</span>
+                                        @if ($difficultyPreview)
+                                            <span
+                                                class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] {{ $successToneClass }}"
+                                                x-bind:class="successToneClass('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                                x-text="successRateLabel('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                            >
+                                                {{ __('Est. success') }} {{ $successRate }}% · {{ data_get($difficultyPreview, 'risk_label') }}
+                                            </span>
+                                            <span
+                                                class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                                                x-text="encounterSummary('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                            >
+                                                {{ data_get($difficultyPreview, 'encounter_summary') }}
+                                            </span>
+                                        @endif
                                     </button>
                                 </form>
                             @endforeach
@@ -225,7 +315,22 @@
                     x-bind:disabled="isActionLocked() || @js($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)"
                     @disabled($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)
                 >
-                    {{ __('Auto Lumiis') }}
+                    <span class="block">{{ __('Auto Lumiis') }}</span>
+                    @if ($lumiisAutoPreview !== [])
+                        <span
+                            class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                            x-bind:class="successToneClassByKey('lumiis_auto')"
+                            x-text="successRateLabelByKey('lumiis_auto')"
+                        >
+                            {{ __('Est. success') }} {{ data_get($lumiisAutoPreview, 'success_rate_percent', 0) }}% · {{ data_get($lumiisAutoPreview, 'risk_label') }}
+                        </span>
+                        <span
+                            class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                            x-text="encounterSummaryByKey('lumiis_auto')"
+                        >
+                            {{ data_get($lumiisAutoPreview, 'encounter_summary') }}
+                        </span>
+                    @endif
                 </button>
             </form>
 
@@ -242,7 +347,22 @@
                     x-bind:disabled="isActionLocked() || @js($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)"
                     @disabled($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)
                 >
-                    {{ __('Manual Lumiis') }}
+                    <span class="block">{{ __('Manual Lumiis') }}</span>
+                    @if ($lumiisManualPreview !== [])
+                        <span
+                            class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                            x-bind:class="successToneClassByKey('lumiis_manual')"
+                            x-text="successRateLabelByKey('lumiis_manual')"
+                        >
+                            {{ __('Est. success') }} {{ data_get($lumiisManualPreview, 'success_rate_percent', 0) }}% · {{ data_get($lumiisManualPreview, 'risk_label') }}
+                        </span>
+                        <span
+                            class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                            x-text="encounterSummaryByKey('lumiis_manual')"
+                        >
+                            {{ data_get($lumiisManualPreview, 'encounter_summary') }}
+                        </span>
+                    @endif
                 </button>
             </form>
 

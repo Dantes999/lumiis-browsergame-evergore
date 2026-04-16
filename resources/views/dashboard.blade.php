@@ -144,24 +144,9 @@
             ->filter()
             ->unique()
             ->values();
-        $activeAreaMonsterFamilies = $activeAreaMonsterAssignments
-            ->filter(fn ($assignment) => $assignment->monster !== null)
-            ->groupBy(fn ($assignment) => $assignment->monster->manualFamilyKey())
-            ->map(function ($assignments, $familyKey): array {
-                return [
-                    'key' => $familyKey,
-                    'label' => \App\Models\Monster::manualFamilyLabelFor((string) $familyKey),
-                    'examples' => $assignments
-                        ->map(fn ($assignment) => $assignment->monster?->name)
-                        ->filter()
-                        ->unique()
-                        ->take(3)
-                        ->values()
-                        ->all(),
-                ];
-            })
-            ->sortBy('label')
-            ->values();
+        $activeAreaMonsterFamilies = ($manualEncounterFamilies ?? collect()) instanceof \Illuminate\Support\Collection
+            ? $manualEncounterFamilies
+            : collect();
         $monsterDifficultyLabels = [
             'easy' => __('Easy'),
             'medium' => __('Medium'),

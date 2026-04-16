@@ -23,6 +23,7 @@ use App\Models\Skill;
 use App\Models\SmithRefineRate;
 use App\Models\User;
 use App\Services\Game\CharacterInventoryService;
+use App\Services\Game\ManualEncounterPreviewService;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -121,6 +122,9 @@ class GameActionTest extends TestCase
             ->where('slug', 'riverbank')
             ->firstOrFail();
 
+        $character = $user->fresh()->character()->with(['location.areas.monsterAssignments.monster', 'learnedSkills.skill', 'equipment.characterItem.item'])->firstOrFail();
+        $previews = app(ManualEncounterPreviewService::class)->buildActionPreviews($character, $area);
+
         $response = $this->actingAs($user)->get(route('dashboard', [
             'focus' => 'riverbank',
         ]));
@@ -132,7 +136,12 @@ class GameActionTest extends TestCase
             ->assertSee('General Store')
             ->assertSee('Riverbank')
             ->assertSee(__('Fight Monsters'))
+            ->assertSee(__('Est. success'))
+                ->assertSee(data_get($previews, 'monster_auto.encounter_summary'))
+                ->assertSee(data_get($previews, 'monster_auto.risk_label'))
             ->assertSee(__('Search Lumiis'))
+                ->assertSee(data_get($previews, 'lumiis_auto.encounter_summary'))
+                ->assertSee(data_get($previews, 'lumiis_manual.risk_label'))
             ->assertSee((string) $area->lumiis_cooldown_seconds);
     }
 

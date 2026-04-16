@@ -10,6 +10,7 @@ use App\Models\LocationArea;
 use App\Models\Skill;
 use App\Services\Game\ActiveCharacterResolver;
 use App\Services\Game\CharacterInventoryService;
+use App\Services\Game\ManualEncounterPreviewService;
 use App\Services\Game\QuestProgressService;
 use App\Services\Game\RestStateService;
 use App\Support\Game\FeatureUnlocks;
@@ -31,6 +32,7 @@ class GameDashboardController extends Controller
         Request $request,
         ActiveCharacterResolver $activeCharacterResolver,
         CharacterInventoryService $inventoryService,
+        ManualEncounterPreviewService $manualEncounterPreviewService,
         QuestProgressService $questProgressService,
         RestStateService $restStateService,
     ): View|RedirectResponse
@@ -174,6 +176,9 @@ class GameDashboardController extends Controller
             $activeArea = $locationAreas->firstWhere('id', $activeBattle->location_area_id) ?? $activeArea;
         }
 
+        $manualEncounterFamilies = $manualEncounterPreviewService->buildForArea($character, $activeArea);
+        $encounterActionPreviews = $manualEncounterPreviewService->buildActionPreviews($character, $activeArea);
+
         // Replay overlays are driven by flashed action log ids from the redirect after an action.
         $activeAreaProgress = $activeArea === null
             ? null
@@ -210,6 +215,8 @@ class GameDashboardController extends Controller
             'tutorial' => $tutorial,
             'restingState' => $restingState,
             'activeArea' => $activeArea,
+            'manualEncounterFamilies' => $manualEncounterFamilies,
+            'encounterActionPreviews' => $encounterActionPreviews,
             'activeAreaProgress' => $activeAreaProgress,
             'hasExplicitFocus' => $hasExplicitFocus,
             'staminaPreview' => $staminaPreview,

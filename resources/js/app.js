@@ -266,6 +266,20 @@ function escapeRegExp(value) {
     return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function broadcastResourceUpdate(resourceKey, current, maximum) {
+    if (typeof resourceKey !== 'string' || resourceKey === '') {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('lumiis:resource-update', {
+        detail: {
+            resourceKey,
+            current,
+            maximum,
+        },
+    }));
+}
+
 function highlightBattleName(html, name, className) {
     if (!name) {
         return html;
@@ -407,7 +421,8 @@ Alpine.data('actionLock', ({ secondsRemaining = 0, title = 'Lumiis', syncDocumen
 
 Alpine.data(
     'resourceGauge',
-    ({ current = 0, maximum = 0, nextTickSeconds = null, intervalSeconds = 60, pointsPerTick = 1, labels = {} } = {}) => ({
+    ({ resourceKey = null, current = 0, maximum = 0, nextTickSeconds = null, intervalSeconds = 60, pointsPerTick = 1, labels = {} } = {}) => ({
+        resourceKey,
         current,
         maximum,
         nextTickSeconds,
@@ -422,6 +437,8 @@ Alpine.data(
         isRefilling: false,
 
         init() {
+            this.broadcastUpdate();
+
             if (this.nextTickSeconds === null || this.current >= this.maximum) {
                 return;
             }
@@ -449,6 +466,7 @@ Alpine.data(
 
                 if (nextValue !== this.current) {
                     this.current = nextValue;
+                    this.broadcastUpdate();
                     this.pulseRefill();
                 }
 
@@ -517,6 +535,10 @@ Alpine.data(
 
             window.clearInterval(this.intervalId);
             this.intervalId = null;
+        },
+
+        broadcastUpdate() {
+            broadcastResourceUpdate(this.resourceKey, this.current, this.maximum);
         },
     }),
 );
@@ -1065,7 +1087,8 @@ Alpine.data(
 
 Alpine.data(
     'staminaPreview',
-    ({ current = 0, maximum = 0, nextTickSeconds = null, intervalSeconds = 600, labels = {} } = {}) => ({
+    ({ resourceKey = null, current = 0, maximum = 0, nextTickSeconds = null, intervalSeconds = 600, labels = {} } = {}) => ({
+        resourceKey,
         current,
         maximum,
         nextTickSeconds,
@@ -1079,6 +1102,8 @@ Alpine.data(
         intervalId: null,
 
         init() {
+            this.broadcastUpdate();
+
             if (this.nextTickSeconds === null || this.current >= this.maximum) {
                 return;
             }
@@ -1102,6 +1127,7 @@ Alpine.data(
                 }
 
                 this.current += 1;
+                this.broadcastUpdate();
 
                 if (this.current >= this.maximum) {
                     this.current = this.maximum;
@@ -1138,6 +1164,197 @@ Alpine.data(
 
             window.clearInterval(this.intervalId);
             this.intervalId = null;
+        },
+
+        broadcastUpdate() {
+            broadcastResourceUpdate(this.resourceKey, this.current, this.maximum);
+        },
+    }),
+);
+
+Alpine.data(
+    'manualEncounterPreview',
+    ({ character = {}, initialResources = {}, options = {}, labels = {} } = {}) => ({
+        character,
+        resources: {
+            health: Number(initialResources.health ?? 0),
+            sp: Number(initialResources.sp ?? 0),
+            stamina: Number(initialResources.stamina ?? 0),
+        },
+        options,
+        labels: {
+            estimatedSuccess: labels.estimatedSuccess ?? 'Est. success',
+        },
+        resourceUpdateHandler: null,
+
+        init() {
+            this.resourceUpdateHandler = (event) => {
+                const resourceKey = event?.detail?.resourceKey;
+
+                if (!['health', 'sp', 'stamina'].includes(resourceKey)) {
+                    return;
+                }
+
+                this.resources[resourceKey] = Number(event.detail.current ?? this.resources[resourceKey] ?? 0);
+            };
+
+            window.addEventListener('lumiis:resource-update', this.resourceUpdateHandler);
+        },
+
+        destroy() {
+            if (this.resourceUpdateHandler !== null) {
+                window.removeEventListener('lumiis:resource-update', this.resourceUpdateHandler);
+            }
+        },
+
+        previewKey(familyKey, difficultyKey) {
+            return `${familyKey}.${difficultyKey}`;
+        },
+
+        previewOption(familyKey, difficultyKey) {
+            return this.options[this.previewKey(familyKey, difficultyKey)] ?? null;
+        },
+
+        previewOptionByKey(previewKey) {
+            return this.options[previewKey] ?? null;
+        },
+
+        calculateSuccessRate(familyKey, difficultyKey) {
+            return this.calculateSuccessRateByKey(this.previewKey(familyKey, difficultyKey));
+        },
+
+        calculateSuccessRateByKey(previewKey) {
+            const preview = this.previewOptionByKey(previewKey);
+
+            if (!preview) {
+                return 0;
+            }
+
+            const currentHealth = Math.max(1, Number(this.resources.health ?? 0));
+
+            if (currentHealth <= 12) {
+                return 5;
+            }
+
+            const currentSp = Math.max(0, Number(this.resources.sp ?? 0));
+            const packSize = Math.max(1, Number(preview.pack_size ?? 1));
+            const pressureEnemyCount = Math.max(1, Number(preview.pressure_enemy_count ?? packSize));
+            const maxHealth = Math.max(1, Number(this.character.maxHealth ?? 1));
+            const effectiveAttack = Math.max(1, Number(this.character.effectiveAttack ?? 1));
+            const effectiveDefense = Math.max(0, Number(this.character.effectiveDefense ?? 0));
+            const effectiveSpeed = Math.max(1, Number(this.character.effectiveSpeed ?? 1));
+            const effectiveMagicAttack = Math.max(0, Number(this.character.effectiveMagicAttack ?? 0));
+            const averageDamageBonus = Number(this.character.averageDamageBonus ?? 0);
+            const criticalChance = Number(this.character.criticalChance ?? 0);
+            const skillDamageBonus = Number(this.character.skillDamageBonus ?? 0);
+            const evadeChance = Number(this.character.evadeChance ?? 0);
+            const skillCount = Math.max(0, Number(this.character.skillCount ?? 0));
+            const healthRatio = Math.min(1, currentHealth / maxHealth);
+
+            const enemyMinAttack = Math.max(1, Number(preview.enemy_min_attack ?? 1));
+            const enemyMaxAttack = Math.max(enemyMinAttack + 1, Number(preview.enemy_max_attack ?? (enemyMinAttack + 1)));
+            const enemyDefense = Math.max(0, Number(preview.enemy_defense ?? 0));
+            const enemyAverageAttack = Math.floor((enemyMinAttack + enemyMaxAttack) / 2);
+            const enemyTotalHealth = Math.max(1, Number(preview.total_enemy_health ?? 1));
+            const monsterLevel = Math.max(1, Number(preview.monster_level ?? 1));
+            const threatScore = Math.max(1, Number(preview.threat_score ?? 1));
+            const controlBonus = Number(preview.control_bonus ?? 0);
+
+            const playerBaseDamage = Math.max(
+                1,
+                Math.round(
+                    (effectiveAttack + Math.trunc(effectiveMagicAttack / 4) + Math.max(0, Math.trunc(currentSp / 20)))
+                    * (1 + Math.min(0.32, effectiveSpeed / 100))
+                    * (1 + (averageDamageBonus / 100))
+                    * (1 + (criticalChance / 280))
+                    * (1 + (skillDamageBonus / 260))
+                ) - enemyDefense,
+            );
+            const playerRoundsToWin = enemyTotalHealth / Math.max(1, playerBaseDamage);
+
+            const enemyDamageReduction = Math.max(0, Math.trunc(effectiveDefense / 4));
+            const enemyMinimumDamage = Math.max(1 + Math.trunc(Math.max(1, monsterLevel) / 10) + (pressureEnemyCount > 1 ? 1 : 0), 1);
+            const enemyHitDamage = Math.max(enemyMinimumDamage, Math.ceil(enemyAverageAttack - enemyDamageReduction));
+            const enemyHitChance = Math.max(0.58, 1 - ((evadeChance / 100) * 0.65));
+            const enemyRoundDamage = Math.max(1, Math.ceil(enemyHitDamage * pressureEnemyCount * enemyHitChance));
+            const survivalRounds = currentHealth / enemyRoundDamage;
+
+            const combatRating = Math.max(1, Number(this.character.combatRating ?? 1));
+            const ratingRatio = combatRating / Math.max(1, threatScore);
+            const roundAdvantage = survivalRounds - playerRoundsToWin;
+            const ratingContribution = Math.max(-24, Math.min(28, (ratingRatio - 1) * 34));
+            const roundContribution = Math.max(-34, Math.min(28, roundAdvantage * 5.5));
+
+            let chance = 50
+                + ratingContribution
+                + roundContribution
+                + ((healthRatio - 0.72) * 34)
+                + Math.min(8, skillCount * 2)
+                + Math.min(5, Math.trunc(currentSp / 18));
+
+            chance += controlBonus;
+
+            if (pressureEnemyCount >= 3 && healthRatio < 0.55) {
+                chance -= 6;
+            }
+
+            return Math.max(5, Math.min(98, Math.round(chance)));
+        },
+
+        riskLabelForRate(successRate) {
+            if (successRate >= 85) {
+                return this.labels.safe;
+            }
+
+            if (successRate >= 65) {
+                return this.labels.fair;
+            }
+
+            if (successRate >= 45) {
+                return this.labels.risky;
+            }
+
+            return this.labels.dangerous;
+        },
+
+        successRateLabel(familyKey, difficultyKey) {
+            return this.successRateLabelByKey(this.previewKey(familyKey, difficultyKey));
+        },
+
+        successRateLabelByKey(previewKey) {
+            const successRate = this.calculateSuccessRateByKey(previewKey);
+
+            return `${this.labels.estimatedSuccess} ${successRate}% · ${this.riskLabelForRate(successRate)}`;
+        },
+
+        encounterSummary(familyKey, difficultyKey) {
+            return this.encounterSummaryByKey(this.previewKey(familyKey, difficultyKey));
+        },
+
+        encounterSummaryByKey(previewKey) {
+            return String(this.previewOptionByKey(previewKey)?.encounter_summary ?? '');
+        },
+
+        successToneClass(familyKey, difficultyKey) {
+            return this.successToneClassByKey(this.previewKey(familyKey, difficultyKey));
+        },
+
+        successToneClassByKey(previewKey) {
+            const successRate = this.calculateSuccessRateByKey(previewKey);
+
+            if (successRate >= 85) {
+                return 'text-emerald-50';
+            }
+
+            if (successRate >= 65) {
+                return 'text-sky-50';
+            }
+
+            if (successRate >= 45) {
+                return 'text-amber-50';
+            }
+
+            return 'text-rose-50';
         },
     }),
 );

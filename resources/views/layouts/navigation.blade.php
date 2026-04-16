@@ -159,6 +159,7 @@
                     <div
                         class="portal-navbar-stat portal-navbar-stat-gauge"
                         x-data="resourceGauge({
+                            resourceKey: 'stamina',
                             current: {{ (int) $displayNavbarStamina }},
                             maximum: {{ $navbarMaxStamina }},
                             nextTickSeconds: {{ $staminaNavbarNextTickSeconds === null ? 'null' : (int) $staminaNavbarNextTickSeconds }},
@@ -184,6 +185,7 @@
                     <div
                         class="portal-navbar-stat portal-navbar-stat-gauge"
                         x-data="resourceGauge({
+                            resourceKey: 'health',
                             current: {{ (int) $displayNavbarHealth }},
                             maximum: {{ $navbarMaxHealth }},
                             nextTickSeconds: {{ $healthNavbarNextTickSeconds === null ? 'null' : (int) $healthNavbarNextTickSeconds }},
@@ -208,6 +210,7 @@
                     <div
                         class="portal-navbar-stat portal-navbar-stat-gauge"
                         x-data="resourceGauge({
+                            resourceKey: 'sp',
                             current: {{ (int) $displayNavbarSp }},
                             maximum: {{ $navbarMaxSp }},
                             nextTickSeconds: {{ $spNavbarNextTickSeconds === null ? 'null' : (int) $spNavbarNextTickSeconds }},
