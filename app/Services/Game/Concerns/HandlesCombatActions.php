@@ -1435,14 +1435,23 @@ trait HandlesCombatActions
 
         if ($encounterType === 'boss') {
             $progress->pressure = 0;
-            $progress->boss_fights += 1;
-            $progress->last_boss_at = $processedAt;
+
+            if ($victory) {
+                $progress->boss_fights += 1;
+                $progress->last_boss_at = $processedAt;
+            }
         } elseif ($encounterType === 'lumiis') {
             $progress->pressure += (int) ($rewards['pressure_gain'] ?? 0);
-            $progress->lumiis_searches += 1;
+
+            if ($victory) {
+                $progress->lumiis_searches += 1;
+            }
         } else {
             $progress->pressure += (int) ($rewards['pressure_gain'] ?? 0);
-            $progress->monster_fights += 1;
+
+            if ($victory) {
+                $progress->monster_fights += 1;
+            }
         }
 
         $progress->save();
@@ -3199,14 +3208,23 @@ trait HandlesCombatActions
 
         if ($encounterType === 'boss') {
             $progress->pressure = 0;
-            $progress->boss_fights += 1;
-            $progress->last_boss_at = $processedAt;
+
+            if ($victory) {
+                $progress->boss_fights += 1;
+                $progress->last_boss_at = $processedAt;
+            }
         } elseif ($encounterType === 'lumiis') {
             $progress->pressure += (int) ($rewards['pressure_gain'] ?? 0);
-            $progress->lumiis_searches += 1;
+
+            if ($victory) {
+                $progress->lumiis_searches += 1;
+            }
         } else {
             $progress->pressure += (int) ($rewards['pressure_gain'] ?? 0);
-            $progress->monster_fights += 1;
+
+            if ($victory) {
+                $progress->monster_fights += 1;
+            }
         }
 
         $progress->save();

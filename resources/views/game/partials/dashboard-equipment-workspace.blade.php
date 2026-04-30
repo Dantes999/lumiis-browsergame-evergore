@@ -39,7 +39,7 @@
                             $equippedSlot = $equipmentBySlot->get($slot);
                             $equippedInventoryItem = $equippedSlot?->characterItem;
                             $equippedItem = $equippedInventoryItem?->item;
-                            $detailSide = in_array($slot, ['offhand', 'mount'], true) ? 'left' : 'right';
+                            $detailSide = in_array($slot, ['earring', 'offhand', 'boots', 'mount'], true) ? 'left' : 'right';
                         @endphp
 
                         <div

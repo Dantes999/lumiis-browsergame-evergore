@@ -5,14 +5,10 @@
     $equipmentPriceLabel = $equippedItem && (int) $equippedItem->sell_price > 0
         ? number_format($equippedItem->sell_price).' '.__('Yang')
         : __('None');
-    $equipmentBonusSummary = $equippedItem
-        ? collect([
-            $equippedInventoryItem->effectiveBonus('attack_bonus') ? '+'.$equippedInventoryItem->effectiveBonus('attack_bonus').' ATK' : null,
-            $equippedInventoryItem->effectiveBonus('defense_bonus') ? '+'.$equippedInventoryItem->effectiveBonus('defense_bonus').' DEF' : null,
-            $equippedInventoryItem->effectiveBonus('speed_bonus') ? '+'.$equippedInventoryItem->effectiveBonus('speed_bonus').' SPD' : null,
-            $equippedInventoryItem->effectiveBonus('health_bonus') ? '+'.$equippedInventoryItem->effectiveBonus('health_bonus').' HP' : null,
-        ])->filter()->implode(' · ')
-        : null;
+    $primaryEquipmentStat = $equippedItem ? $equippedInventoryItem->primaryEquipmentStat() : null;
+    $equipmentPrimaryStatSummary = $primaryEquipmentStat === null
+        ? null
+        : $primaryEquipmentStat['label'].' +'.$primaryEquipmentStat['value'].' '.$primaryEquipmentStat['suffix'];
 @endphp
 
 <div class="equipment-slot-popover-sheet">
@@ -64,8 +60,8 @@
             </div>
         </div>
 
-        @if (filled($equipmentBonusSummary))
-            <p class="equipment-slot-popover-meta">{{ $equipmentBonusSummary }}</p>
+        @if (filled($equipmentPrimaryStatSummary))
+            <p class="equipment-slot-popover-meta">{{ $equipmentPrimaryStatSummary }}</p>
         @endif
 
         @if ($equippedInventoryItem->bonusLines() !== [])

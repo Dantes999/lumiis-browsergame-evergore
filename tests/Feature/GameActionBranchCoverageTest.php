@@ -525,7 +525,7 @@ class GameActionBranchCoverageTest extends TestCase
         $this->assertSame(0, CharacterItem::query()->where('game_character_id', $character->id)->count());
     }
 
-    public function test_smith_upgrade_rejects_non_weapon_items(): void
+    public function test_smith_upgrade_allows_armor_items(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
             'yang' => 200,
@@ -547,10 +547,10 @@ class GameActionBranchCoverageTest extends TestCase
             'character_item_id' => $armorItem->id,
         ]);
 
-        $response->assertSessionHas('error');
+        $response->assertSessionHas('status');
         $this->assertDatabaseHas('character_items', [
             'id' => $armorItem->id,
-            'upgrade_level' => 0,
+            'upgrade_level' => 1,
         ]);
     }
 

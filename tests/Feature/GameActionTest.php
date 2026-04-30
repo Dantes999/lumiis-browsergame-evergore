@@ -518,6 +518,31 @@ class GameActionTest extends TestCase
             ->assertSee('Orc Guard Shield');
     }
 
+    public function test_dashboard_renders_extended_equipment_slots_and_original_metin2_accessories(): void
+    {
+        [$user] = $this->createCharacterAt('yongan', [
+            'yang' => 500,
+            'level' => 25,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard', [
+            'focus' => 'armor-dealer',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSee(__('Helmet'))
+            ->assertSee(__('Necklace'))
+            ->assertSee(__('Earrings'))
+            ->assertSee(__('Bracelet'))
+            ->assertSee('Holzhalskette')
+            ->assertSee('Holzarmband')
+            ->assertSee('Holzohrringe')
+            ->assertSee('Lederschuhe')
+            ->assertSee('Traditioneller Helm')
+            ->assertSee('Schlachtschild');
+    }
+
     public function test_dashboard_can_render_a_focused_biologist_hotspot_with_active_research(): void
     {
         [$user, $character] = $this->createCharacterAt('yongan', [
@@ -698,7 +723,7 @@ class GameActionTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee(__('Weapon Upgrades +0 to +9'))
+            ->assertSee(__('Equipment Upgrades +0 to +9'))
             ->assertSee('Sword +0')
             ->assertSee(__('Upgrade'));
     }
@@ -2820,7 +2845,9 @@ class GameActionTest extends TestCase
         $inventoryItem->refresh();
         $shardStack->refresh();
 
-        $this->assertSame(420, (int) $character->yang);
+        $expectedYang = 500 - (int) SmithRefineRate::forUpgradeLevel(3)?->yang_cost;
+
+        $this->assertSame($expectedYang, (int) $character->yang);
         $this->assertSame(4, (int) $inventoryItem->upgrade_level);
         $this->assertSame(1, (int) $shardStack->quantity);
     }

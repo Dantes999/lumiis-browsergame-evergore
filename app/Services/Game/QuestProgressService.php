@@ -212,7 +212,9 @@ class QuestProgressService
         foreach ($locationQuests as $quest) {
             /** @var CharacterQuest|null $characterQuest */
             $characterQuest = $characterQuestByQuestId->get($quest->id);
-            $progress = $characterQuest?->progress ?? min($quest->objective_target, $this->currentProgressFor($character, $quest, $characterQuest));
+            $progress = $characterQuest === null
+                ? min($quest->objective_target, $this->currentProgressFor($character, $quest, null))
+                : $this->dashboardProgressFor($character, $quest, $characterQuest);
             $payload = [
                 'title' => $quest->translated('title'),
                 'story_text' => $quest->translated('story_text'),
@@ -512,6 +514,15 @@ class QuestProgressService
             'deliver_item_to_biologist' => (int) ($characterQuest?->progress ?? 0),
             default => 0,
         };
+    }
+
+    private function dashboardProgressFor(GameCharacter $character, Quest $quest, CharacterQuest $characterQuest): int
+    {
+        if ($characterQuest->status === CharacterQuestStatus::Completed) {
+            return (int) $quest->objective_target;
+        }
+
+        return min($quest->objective_target, $this->currentProgressFor($character, $quest, $characterQuest));
     }
 
     private function areaCounter(GameCharacter $character, ?string $areaSlug, string $column): int

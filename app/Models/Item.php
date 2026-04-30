@@ -22,6 +22,7 @@ class Item extends Model
         'item_type',
         'equipment_slot',
         'weapon_type',
+        'intrinsic_bonuses',
         'allowed_races',
         'description',
         'skill_slug',
@@ -48,6 +49,7 @@ class Item extends Model
         return [
             'stackable' => 'boolean',
             'inventory_height' => 'integer',
+            'intrinsic_bonuses' => 'array',
             'allowed_races' => 'array',
         ];
     }
@@ -203,6 +205,46 @@ class Item extends Model
     public function weaponTypeLabel(): ?string
     {
         return WeaponTypeCatalog::label($this->weaponType());
+    }
+
+    /**
+     * @return list<array{type?: ?string, label: string, value: int, suffix?: string}>
+     */
+    public function intrinsicBonuses(): array
+    {
+        return collect($this->intrinsic_bonuses ?? [])
+            ->filter(fn (mixed $entry): bool => is_array($entry) && filled($entry['label'] ?? null))
+            ->map(function (array $entry): array {
+                return [
+                    'type' => isset($entry['type']) ? (string) $entry['type'] : null,
+                    'label' => (string) $entry['label'],
+                    'value' => (int) ($entry['value'] ?? 0),
+                    'suffix' => (string) ($entry['suffix'] ?? ''),
+                ];
+            })
+            ->filter(fn (array $entry): bool => $entry['value'] !== 0)
+            ->values()
+            ->all();
+    }
+
+    public function intrinsicBonusValue(string $bonusType): int
+    {
+        return (int) collect($this->intrinsicBonuses())
+            ->where('type', $bonusType)
+            ->sum('value');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function intrinsicBonusLines(): array
+    {
+        return collect($this->intrinsicBonuses())
+            ->map(function (array $entry): string {
+                return '+'.$entry['value'].($entry['suffix'] ?? '').' '.$entry['label'];
+            })
+            ->values()
+            ->all();
     }
 
     /**

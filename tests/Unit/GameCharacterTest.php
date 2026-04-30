@@ -149,7 +149,7 @@ class GameCharacterTest extends TestCase
         ]));
         $character->setRelation('learnedSkills', new Collection());
 
-        $this->assertSame(13, $character->effectiveAttack());
+        $this->assertSame(18, $character->effectiveAttack());
     }
 
     public function test_equipped_weapon_type_reads_the_weapon_slot_item(): void

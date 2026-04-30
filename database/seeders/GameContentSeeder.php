@@ -548,6 +548,7 @@ class GameContentSeeder extends Seeder
                 'heal_amount' => 0,
                 'stamina_restore' => 0,
             ],
+            ...$this->metin2EquipmentItems(),
             [
                 'slug' => 'wolf-pelt',
                 'name' => 'Wolf Pelt',
@@ -1411,6 +1412,9 @@ class GameContentSeeder extends Seeder
             'inventory_height' => $item['inventory_height'] ?? ($item['equipment_slot'] === null ? 1 : 2),
             'icon_path' => $item['icon_path'] ?? null,
             'weapon_type' => $item['weapon_type'] ?? null,
+            'intrinsic_bonuses' => isset($item['intrinsic_bonuses'])
+                ? json_encode($item['intrinsic_bonuses'], JSON_THROW_ON_ERROR)
+                : null,
             'allowed_races' => isset($item['allowed_races'])
                 ? json_encode($item['allowed_races'], JSON_THROW_ON_ERROR)
                 : null,
@@ -1428,6 +1432,7 @@ class GameContentSeeder extends Seeder
                 'item_type',
                 'equipment_slot',
                 'weapon_type',
+                'intrinsic_bonuses',
                 'allowed_races',
                 'description',
                 'skill_slug',
@@ -1510,14 +1515,14 @@ class GameContentSeeder extends Seeder
 
         $refineRates = [
             ['upgrade_level' => 0, 'success_percent' => 100, 'yang_cost' => 25, 'lumiis_shard_cost' => 0, 'destroy_on_fail' => true, 'sort_order' => 10],
-            ['upgrade_level' => 1, 'success_percent' => 95, 'yang_cost' => 40, 'lumiis_shard_cost' => 0, 'destroy_on_fail' => true, 'sort_order' => 20],
-            ['upgrade_level' => 2, 'success_percent' => 90, 'yang_cost' => 60, 'lumiis_shard_cost' => 0, 'destroy_on_fail' => true, 'sort_order' => 30],
-            ['upgrade_level' => 3, 'success_percent' => 84, 'yang_cost' => 80, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 40],
-            ['upgrade_level' => 4, 'success_percent' => 76, 'yang_cost' => 115, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 50],
-            ['upgrade_level' => 5, 'success_percent' => 62, 'yang_cost' => 160, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 60],
-            ['upgrade_level' => 6, 'success_percent' => 48, 'yang_cost' => 220, 'lumiis_shard_cost' => 2, 'destroy_on_fail' => true, 'sort_order' => 70],
-            ['upgrade_level' => 7, 'success_percent' => 34, 'yang_cost' => 300, 'lumiis_shard_cost' => 2, 'destroy_on_fail' => true, 'sort_order' => 80],
-            ['upgrade_level' => 8, 'success_percent' => 24, 'yang_cost' => 390, 'lumiis_shard_cost' => 3, 'destroy_on_fail' => true, 'sort_order' => 90],
+            ['upgrade_level' => 1, 'success_percent' => 95, 'yang_cost' => 50, 'lumiis_shard_cost' => 0, 'destroy_on_fail' => true, 'sort_order' => 20],
+            ['upgrade_level' => 2, 'success_percent' => 90, 'yang_cost' => 90, 'lumiis_shard_cost' => 0, 'destroy_on_fail' => true, 'sort_order' => 30],
+            ['upgrade_level' => 3, 'success_percent' => 80, 'yang_cost' => 80, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 40],
+            ['upgrade_level' => 4, 'success_percent' => 70, 'yang_cost' => 120, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 50],
+            ['upgrade_level' => 5, 'success_percent' => 55, 'yang_cost' => 180, 'lumiis_shard_cost' => 1, 'destroy_on_fail' => true, 'sort_order' => 60],
+            ['upgrade_level' => 6, 'success_percent' => 40, 'yang_cost' => 260, 'lumiis_shard_cost' => 2, 'destroy_on_fail' => true, 'sort_order' => 70],
+            ['upgrade_level' => 7, 'success_percent' => 28, 'yang_cost' => 380, 'lumiis_shard_cost' => 2, 'destroy_on_fail' => true, 'sort_order' => 80],
+            ['upgrade_level' => 8, 'success_percent' => 18, 'yang_cost' => 560, 'lumiis_shard_cost' => 3, 'destroy_on_fail' => true, 'sort_order' => 90],
         ];
 
         $refineRates = array_map(fn (array $rate): array => [
@@ -2462,10 +2467,12 @@ class GameContentSeeder extends Seeder
             if (($normalized['area_kind'] ?? null) === 'hunting') {
                 $normalized['lumiis_loot_table'] = array_merge(
                     is_array($normalized['lumiis_loot_table']) ? $normalized['lumiis_loot_table'] : [],
+                    $this->metin2EquipmentLootTableForArea($normalized, 'lumiis'),
                     $this->skillBookLootTableForArea($normalized, 'lumiis'),
                 );
                 $normalized['boss_loot_table'] = array_merge(
                     is_array($normalized['boss_loot_table']) ? $normalized['boss_loot_table'] : [],
+                    $this->metin2EquipmentLootTableForArea($normalized, 'boss'),
                     $this->soulStoneLootTableForArea($normalized, 'boss'),
                     $this->skillBookLootTableForArea($normalized, 'boss'),
                 );
@@ -2549,7 +2556,7 @@ class GameContentSeeder extends Seeder
                 'location_area_id' => $areaIds['armor-dealer'],
                 'slug' => 'yongan-armor-dealer',
                 'name' => 'Yongan Armor Dealer',
-                'description' => 'Basic cloth armor, shields and boots for new adventurers.',
+                'description' => 'Armor, helms, shields, shoes and early accessories for new adventurers.',
             ],
             [
                 'location_id' => $locations['joan']->id,
@@ -2613,12 +2620,32 @@ class GameContentSeeder extends Seeder
                 ['cotton-armor', 84, 10],
                 ['traveler-boots', 64, 20],
                 ['pine-shield', 70, 30],
+                ['holzhalskette', 78, 35],
+                ['holzarmband', 78, 40],
+                ['holzohrringe', 78, 45],
+                ['lederschuhe', 64, 50],
+                ['schlachtschild', 70, 55],
+                ['traditioneller-helm', 88, 60],
+                ['blutiger-helm', 88, 65],
+                ['lederkapuze', 88, 70],
+                ['moenchshut', 88, 75],
+                ['skeletthelm', 88, 80],
                 ['guard-jacket', 172, 40],
                 ['iron-buckler', 136, 50],
                 ['march-boots', 128, 60],
                 ['orc-mail', 335, 70],
                 ['scout-boots', 220, 80],
                 ['orc-guard-shield', 240, 90],
+                ['kupferhalskette', 126, 100],
+                ['kupferarmband', 126, 110],
+                ['kupferohrringe', 126, 120],
+                ['bambushautschuhe', 128, 130],
+                ['fuenfeckschild', 136, 140],
+                ['eisenhelm', 164, 150],
+                ['verhoehnender-helm', 164, 160],
+                ['kettenkapuze', 164, 170],
+                ['phoenixhut', 164, 180],
+                ['schwarztuchhelm', 164, 190],
             ],
             'joan-general-store' => [
                 ['small-red-potion', 20, 10],
@@ -2773,6 +2800,688 @@ class GameContentSeeder extends Seeder
         );
 
         ItemBonusDefinition::flushRuntimeCache();
+    }
+
+    private function metin2EquipmentItems(): array
+    {
+        return [
+            $this->equipmentItem([
+                'slug' => 'holzhalskette',
+                'name' => 'Holzhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 1,
+                'price' => 500,
+                'sell_price' => 250,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('yang_rate', 'Yang', 2)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kupferhalskette',
+                'name' => 'Kupferhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 8,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'FW', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'silberhalskette',
+                'name' => 'Silberhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 15,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'WW', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'goldhalskette',
+                'name' => 'Goldhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 22,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'PW', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'jadehalskette',
+                'name' => 'Jadehalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 28,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('dexterity', 'DEX', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'ebenholzhalskette',
+                'name' => 'Ebenholzhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 33,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('vitality', 'VIT', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'perlenhalskette',
+                'name' => 'Perlenhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 38,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('intelligence', 'INT', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'weissgoldhalskette',
+                'name' => 'Weissgoldhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 42,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('strength', 'STR', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kristallhalskette',
+                'name' => 'Kristallhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 46,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'MP-Reg', 8)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'amethysthalskette',
+                'name' => 'Amethysthalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 50,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'TP-Reg', 8)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'himmelstraenenhalskette',
+                'name' => 'Himmelstraenenhalskette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 54,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('crit_chance', 'CdT', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'seelenkristallkette',
+                'name' => 'Seelenkristallkette',
+                'equipment_slot' => 'necklace',
+                'required_level' => 60,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'CTP', 1)],
+            ]),
+
+            $this->equipmentItem([
+                'slug' => 'holzarmband',
+                'name' => 'Holzarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 1,
+                'price' => 500,
+                'sell_price' => 250,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('average_damage', 'AG', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kupferarmband',
+                'name' => 'Kupferarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 8,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('max_sp', 'Max. MP', 5, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'silberarmband',
+                'name' => 'Silberarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 15,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('max_health', 'Max. TP', 20, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'goldarmband',
+                'name' => 'Goldarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 22,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Giftwiderstand', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'jadearmband',
+                'name' => 'Jadearmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 28,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Chance MP wiederherzust.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'ebenholzarmband',
+                'name' => 'Ebenholzarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 33,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Chance TP wiederherzust.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'perlenarmband',
+                'name' => 'Perlenarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 38,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('max_sp', 'Max. MP', 15, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'weissgoldarmband',
+                'name' => 'Weissgoldarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 42,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('max_health', 'Max. TP', 25, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kristallarmband',
+                'name' => 'Kristallarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 46,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'TP-Regeneration', 8)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'amethystarmband',
+                'name' => 'Amethystarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 50,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'MP-Regeneration', 8)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'himmelstraenenarmband',
+                'name' => 'Himmelstraenenarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 54,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('crit_chance', 'Kritischer Treffer', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'seelenkristallarmband',
+                'name' => 'Seelenkristallarmband',
+                'equipment_slot' => 'bracelet',
+                'required_level' => 58,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Chance MP wiederherzust.', 1)],
+            ]),
+
+            $this->equipmentItem([
+                'slug' => 'holzohrringe',
+                'name' => 'Holzohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 1,
+                'price' => 500,
+                'sell_price' => 250,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('dexterity', 'DEX', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kupferohrringe',
+                'name' => 'Kupferohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 8,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('strength', 'STR', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'silberohrringe',
+                'name' => 'Silberohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 15,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('vitality', 'VIT', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'goldohrringe',
+                'name' => 'Goldohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 22,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('intelligence', 'INT', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'jadeohrringe',
+                'name' => 'Jadeohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 28,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('dexterity', 'DEX', 3, ''),
+                    $this->intrinsicBonus('max_sp', 'Max. MP', 10, ''),
+                ],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'ebenholzohrringe',
+                'name' => 'Ebenholzohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 33,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('strength', 'STR', 3, ''),
+                    $this->intrinsicBonus('max_health', 'Max. TP', 25, ''),
+                ],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'perlenohrringe',
+                'name' => 'Perlenohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 38,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('vitality', 'VIT', 3, ''),
+                    $this->intrinsicBonus(null, 'MP-Regeneration', 4),
+                ],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'weissgoldohrringe',
+                'name' => 'Weissgoldohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 42,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('intelligence', 'INT', 3, ''),
+                    $this->intrinsicBonus(null, 'TP-Regeneration', 4),
+                ],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'kristallohrringe',
+                'name' => 'Kristallohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 46,
+                'defense_bonus' => 1,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('dexterity', 'DEX', 5, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'amethystohrringe',
+                'name' => 'Amethystohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 50,
+                'attack_bonus' => 1,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('vitality', 'VIT', 5, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'himmelstraenenohrringe',
+                'name' => 'Himmelstraenenohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 54,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('intelligence', 'INT', 5, ''),
+                    $this->intrinsicBonus('crit_chance', 'Kritischer Treffer', 1),
+                ],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'seelenkristallohrringe',
+                'name' => 'Seelenkristallohrringe',
+                'equipment_slot' => 'earring',
+                'required_level' => 62,
+                'intrinsic_bonuses' => [
+                    $this->intrinsicBonus('strength', 'STR', 5, ''),
+                    $this->intrinsicBonus(null, 'MP-Absorption', 1),
+                ],
+            ]),
+
+            $this->equipmentItem([
+                'slug' => 'lederschuhe',
+                'name' => 'Lederschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 1,
+                'price' => 500,
+                'sell_price' => 250,
+                'defense_bonus' => 1,
+                'travel_speed_percent_bonus' => 2,
+            ]),
+            $this->equipmentItem([
+                'slug' => 'bambushautschuhe',
+                'name' => 'Bambushautschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 9,
+                'defense_bonus' => 2,
+                'travel_speed_percent_bonus' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Feuerwiderst.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'holzschuhe',
+                'name' => 'Holzschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 17,
+                'defense_bonus' => 2,
+                'travel_speed_percent_bonus' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Blitzwiderst.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'goldverzierte-schuhe',
+                'name' => 'Goldverzierte Schuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 23,
+                'defense_bonus' => 2,
+                'travel_speed_percent_bonus' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Windwiderst.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'lederstiefel',
+                'name' => 'Lederstiefel',
+                'equipment_slot' => 'boots',
+                'required_level' => 29,
+                'defense_bonus' => 3,
+                'travel_speed_percent_bonus' => 3,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('resist_bow', 'Pfeilwiderst.', 2)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'goldschuhe',
+                'name' => 'Goldschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 34,
+                'defense_bonus' => 4,
+                'travel_speed_percent_bonus' => 3,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Max. AP', 20, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'bronzeschuhe',
+                'name' => 'Bronzeschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 39,
+                'defense_bonus' => 4,
+                'travel_speed_percent_bonus' => 3,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Giftwiderst.', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'jadeschuhe',
+                'name' => 'Jadeschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 43,
+                'defense_bonus' => 4,
+                'travel_speed_percent_bonus' => 3,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('experience_rate', 'EXP', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'ekstaseschuhe',
+                'name' => 'Ekstaseschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 47,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 5,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('yang_rate', 'Yang', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'nimbus-stiefel',
+                'name' => 'Nimbus-Stiefel',
+                'equipment_slot' => 'boots',
+                'required_level' => 51,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 5,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('evade_chance', 'Pfeil-ausweichen', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'phoenixschuhe',
+                'name' => 'Phoenixschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 55,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 5,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Nahkampf-Angriff abblocken', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'feuervogelschuhe',
+                'name' => 'Feuervogelschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 59,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 5,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'DEF', 1, '')],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'euphorieschuhe',
+                'name' => 'Euphorieschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 65,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 25,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('yang_rate', 'Yang', 11)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'glorienstiefel',
+                'name' => 'Glorienstiefel',
+                'equipment_slot' => 'boots',
+                'required_level' => 65,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 25,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('evade_chance', 'Pfeil-ausweichen', 11)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'qilinschuhe',
+                'name' => 'Qilinschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 65,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => 25,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Nahkampf-Angriff abblocken', 11)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'feuerschuhe',
+                'name' => 'Feuerschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 80,
+                'defense_bonus' => 17,
+                'travel_speed_percent_bonus' => 25,
+                'intrinsic_bonuses' => [$this->intrinsicBonus('monster_damage', 'Stark gegen Monster', 2)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'ozeanschuhe',
+                'name' => 'Ozeanschuhe',
+                'equipment_slot' => 'boots',
+                'required_level' => 90,
+                'defense_bonus' => 17,
+                'travel_speed_percent_bonus' => 25,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Widerstand gg Fertigkeiten', 2)],
+            ]),
+
+            $this->equipmentItem([
+                'slug' => 'schlachtschild',
+                'name' => 'Schlachtschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 1,
+                'price' => 400,
+                'sell_price' => 200,
+                'defense_bonus' => 3,
+                'travel_speed_percent_bonus' => -2,
+                'inventory_height' => 2,
+            ]),
+            $this->equipmentItem([
+                'slug' => 'fuenfeckschild',
+                'name' => 'Fünfeckschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 21,
+                'defense_bonus' => 5,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+            ]),
+            $this->equipmentItem([
+                'slug' => 'schwarzer-rundschild',
+                'name' => 'Schwarzer Rundschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 41,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -10,
+                'inventory_height' => 2,
+            ]),
+            $this->equipmentItem([
+                'slug' => 'drachenschuppenschild',
+                'name' => 'Drachenschuppenschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 61,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Abwehr gegen Schamanen', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'dreikaiserschild',
+                'name' => 'Dreikaiserschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 61,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Abwehr gegen Lykaner', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'falkenschild',
+                'name' => 'Falkenschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 61,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Abwehr gegen Krieger', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'loewenkantenschild',
+                'name' => 'Loewenkantenschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 61,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Abwehr gegen Sura', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'tigerschild',
+                'name' => 'Tigerschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 61,
+                'defense_bonus' => 7,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Abwehr gegen Ninja', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'titanenschild',
+                'name' => 'Titanenschild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 81,
+                'defense_bonus' => 9,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Widerstand gegen Fertigkeiten', 1)],
+            ]),
+            $this->equipmentItem([
+                'slug' => 'verdammnis-schild',
+                'name' => 'Verdammnis-Schild',
+                'equipment_slot' => 'offhand',
+                'required_level' => 90,
+                'defense_bonus' => 12,
+                'travel_speed_percent_bonus' => -6,
+                'inventory_height' => 2,
+                'intrinsic_bonuses' => [$this->intrinsicBonus(null, 'Widerstand gg Fertigkeiten', 2)],
+            ]),
+
+            $this->helmetItem('traditioneller-helm', 'Traditioneller Helm', ['warrior'], 1, 5),
+            $this->helmetItem('blutiger-helm', 'Blutiger Helm', ['sura'], 1, 5),
+            $this->helmetItem('lederkapuze', 'Lederkapuze', ['ninja'], 1, 5),
+            $this->helmetItem('moenchshut', 'Mönchshut', ['shaman'], 1, 5),
+            $this->helmetItem('skeletthelm', 'Skeletthelm', ['lycan'], 1, 5),
+            $this->helmetItem('eisenhelm', 'Eisenhelm', ['warrior'], 21, 9),
+            $this->helmetItem('verhoehnender-helm', 'Verhöhnender Helm', ['sura'], 21, 9),
+            $this->helmetItem('kettenkapuze', 'Kettenkapuze', ['ninja'], 21, 9),
+            $this->helmetItem('phoenixhut', 'Phönixhut', ['shaman'], 21, 9),
+            $this->helmetItem('schwarztuchhelm', 'Schwarztuchhelm', ['lycan'], 21, 9),
+            $this->helmetItem('geistermaskenschaller', 'Geistermaskenschaller', ['warrior'], 41, 13),
+            $this->helmetItem('burghelm', 'Burghelm', ['sura'], 41, 13),
+            $this->helmetItem('stahlkapuze', 'Stahlkapuze', ['ninja'], 41, 13),
+            $this->helmetItem('sonnenlichthut', 'Sonnenlichthut', ['shaman'], 41, 13),
+            $this->helmetItem('donnerhelm', 'Donnerhelm', ['lycan'], 41, 13),
+            $this->helmetItem('furchtmaske', 'Furchtmaske', ['warrior'], 60, 17),
+            $this->helmetItem('gehoernter-helm', 'Gehörnter Helm', ['sura'], 60, 17),
+            $this->helmetItem('orkkapuze', 'Orkkapuze', ['ninja'], 60, 17),
+            $this->helmetItem('kardinalshut', 'Kardinalshut', ['shaman'], 60, 17),
+            $this->helmetItem('himmelssegenhelm', 'Himmelssegenhelm', ['lycan'], 60, 17),
+            $this->helmetItem('kriegsmeisterhelm', 'Kriegsmeisterhelm', ['warrior'], 80, 21),
+            $this->helmetItem('magischer-helm', 'Magischer Helm', ['sura'], 80, 21),
+            $this->helmetItem('spinnenkapuze', 'Spinnenkapuze', ['ninja'], 80, 21),
+            $this->helmetItem('seelensplitterhut', 'Seelensplitterhut', ['shaman'], 80, 21),
+            $this->helmetItem('gruenwaldhelm', 'Grünwaldhelm', ['lycan'], 80, 21),
+        ];
+    }
+
+    private function equipmentItem(array $overrides): array
+    {
+        $bonuses = $overrides['intrinsic_bonuses'] ?? [];
+        $description = $overrides['description'] ?? $this->equipmentDescription($overrides['name'], $bonuses);
+
+        return array_merge([
+            'item_type' => 'equipment',
+            'weapon_type' => null,
+            'allowed_races' => [],
+            'description' => $description,
+            'price' => 0,
+            'sell_price' => 0,
+            'stackable' => false,
+            'max_stack' => 1,
+            'inventory_height' => 1,
+            'icon_path' => null,
+            'attack_bonus' => 0,
+            'defense_bonus' => 0,
+            'health_bonus' => 0,
+            'stamina_bonus' => 0,
+            'speed_bonus' => 0,
+            'travel_speed_percent_bonus' => 0,
+            'heal_amount' => 0,
+            'stamina_restore' => 0,
+            'sp_restore' => 0,
+            'intrinsic_bonuses' => $bonuses,
+        ], $overrides, [
+            'description' => $description,
+            'intrinsic_bonuses' => $bonuses,
+        ]);
+    }
+
+    private function helmetItem(string $slug, string $name, array $allowedRaces, int $level, int $defense): array
+    {
+        return $this->equipmentItem([
+            'slug' => $slug,
+            'name' => $name,
+            'equipment_slot' => 'helmet',
+            'allowed_races' => $allowedRaces,
+            'required_level' => $level,
+            'defense_bonus' => $defense,
+        ]);
+    }
+
+    private function intrinsicBonus(?string $type, string $label, int $value, string $suffix = '%'): array
+    {
+        return [
+            'type' => $type,
+            'label' => $label,
+            'value' => $value,
+            'suffix' => $suffix,
+        ];
+    }
+
+    private function equipmentDescription(string $name, array $bonuses): string
+    {
+        $bonusText = collect($bonuses)
+            ->map(fn (array $bonus): string => '+'.$bonus['value'].($bonus['suffix'] ?? '').' '.$bonus['label'])
+            ->implode(', ');
+
+        return $bonusText === ''
+            ? __('Original Metin2 equipment piece: :item.', ['item' => $name])
+            : __('Original Metin2 equipment piece: :item with :bonuses.', ['item' => $name, 'bonuses' => $bonusText]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $area
+     * @return list<array{slug: string, chance: int, min: int, max: int}>
+     */
+    private function metin2EquipmentLootTableForArea(array $area, string $encounterType): array
+    {
+        $recommendedLevel = max(1, (int) ($area['recommended_level'] ?? 1));
+
+        if (! in_array($encounterType, ['lumiis', 'boss'], true) || $recommendedLevel < 8) {
+            return [];
+        }
+
+        $tiers = [
+            1 => ['holzhalskette', 'holzarmband', 'holzohrringe', 'lederschuhe', 'schlachtschild', 'traditioneller-helm'],
+            8 => ['kupferhalskette', 'kupferarmband', 'kupferohrringe', 'bambushautschuhe', 'eisenhelm'],
+            15 => ['silberhalskette', 'silberarmband', 'silberohrringe', 'holzschuhe', 'fuenfeckschild'],
+            22 => ['goldhalskette', 'goldarmband', 'goldohrringe', 'goldverzierte-schuhe', 'schwarztuchhelm'],
+            28 => ['jadehalskette', 'jadearmband', 'jadeohrringe', 'lederstiefel', 'schwarzer-rundschild'],
+            33 => ['ebenholzhalskette', 'ebenholzarmband', 'ebenholzohrringe', 'goldschuhe'],
+            38 => ['perlenhalskette', 'perlenarmband', 'perlenohrringe', 'bronzeschuhe'],
+            42 => ['weissgoldhalskette', 'weissgoldarmband', 'weissgoldohrringe', 'jadeschuhe'],
+            46 => ['kristallhalskette', 'kristallarmband', 'kristallohrringe', 'ekstaseschuhe'],
+            50 => ['amethysthalskette', 'amethystarmband', 'amethystohrringe', 'nimbus-stiefel'],
+            54 => ['himmelstraenenhalskette', 'himmelstraenenarmband', 'himmelstraenenohrringe', 'phoenixschuhe'],
+            60 => ['seelenkristallkette', 'seelenkristallarmband', 'seelenkristallohrringe', 'drachenschuppenschild', 'falkenschild'],
+            65 => ['euphorieschuhe', 'glorienstiefel', 'qilinschuhe', 'dreikaiserschild', 'loewenkantenschild', 'tigerschild'],
+            80 => ['feuerschuhe', 'titanenschild', 'kriegsmeisterhelm', 'magischer-helm', 'spinnenkapuze'],
+            90 => ['ozeanschuhe', 'verdammnis-schild', 'gruenwaldhelm', 'seelensplitterhut'],
+        ];
+
+        $candidateSlugs = collect($tiers)
+            ->filter(fn (array $slugs, int $minLevel): bool => $recommendedLevel >= $minLevel)
+            ->sortKeysDesc()
+            ->flatten()
+            ->unique()
+            ->values();
+
+        if ($candidateSlugs->isEmpty()) {
+            return [];
+        }
+
+        $chance = $encounterType === 'boss' ? 520 : 320;
+        $limit = $encounterType === 'boss' ? 6 : 4;
+
+        return $candidateSlugs
+            ->take($limit)
+            ->map(fn (string $slug): array => $this->loot($slug, $chance))
+            ->all();
     }
 
     /**

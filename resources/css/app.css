@@ -5706,14 +5706,14 @@
         position: relative;
         display: grid;
         justify-content: center;
-        grid-template-columns: repeat(4, 3.05rem);
+        grid-template-columns: repeat(5, 3.05rem);
         grid-template-rows: repeat(5, 3.05rem);
         grid-template-areas:
-            "weapon . . offhand"
-            "weapon armor armor offhand"
-            ". armor armor ."
-            ". armor armor ."
-            "boots . . mount";
+            ". helmet weapon necklace ."
+            "earring armor weapon offhand bracelet"
+            ". armor armor armor ."
+            ". armor armor armor ."
+            "boots . . mount .";
         align-items: stretch;
         gap: 0.3rem;
         min-height: 0;
@@ -5822,12 +5822,28 @@
         grid-area: weapon;
     }
 
+    .equipment-slot-helmet {
+        grid-area: helmet;
+    }
+
+    .equipment-slot-necklace {
+        grid-area: necklace;
+    }
+
+    .equipment-slot-earring {
+        grid-area: earring;
+    }
+
     .equipment-slot-offhand {
         grid-area: offhand;
     }
 
     .equipment-slot-armor {
         grid-area: armor;
+    }
+
+    .equipment-slot-bracelet {
+        grid-area: bracelet;
     }
 
     .equipment-slot-boots {
@@ -5878,6 +5894,10 @@
         max-height: 5.9rem;
     }
 
+    .equipment-slot-helmet .equipment-board-icon,
+    .equipment-slot-necklace .equipment-board-icon,
+    .equipment-slot-earring .equipment-board-icon,
+    .equipment-slot-bracelet .equipment-board-icon,
     .equipment-slot-boots .equipment-board-icon,
     .equipment-slot-mount .equipment-board-icon {
         max-height: 2.5rem;

@@ -89,4 +89,36 @@ class ItemBonusCatalogTest extends TestCase
         $this->assertGreaterThanOrEqual(9, $value);
         $this->assertLessThanOrEqual(12, $value);
     }
+
+    public function test_intrinsic_item_bonuses_are_formatted_and_available_on_the_item(): void
+    {
+        $item = Item::query()->create([
+            'slug' => 'jade-necklace',
+            'name' => 'Jadehalskette',
+            'item_type' => 'equipment',
+            'equipment_slot' => 'necklace',
+            'description' => 'Test item.',
+            'price' => 0,
+            'sell_price' => 0,
+            'required_level' => 28,
+            'stackable' => false,
+            'max_stack' => 1,
+            'attack_bonus' => 0,
+            'defense_bonus' => 0,
+            'health_bonus' => 0,
+            'stamina_bonus' => 0,
+            'speed_bonus' => 0,
+            'travel_speed_percent_bonus' => 0,
+            'heal_amount' => 0,
+            'stamina_restore' => 0,
+            'sp_restore' => 0,
+            'intrinsic_bonuses' => [
+                ['type' => 'dexterity', 'label' => 'DEX', 'value' => 1],
+                ['label' => 'FW', 'value' => 5, 'suffix' => '%'],
+            ],
+        ]);
+
+        $this->assertSame(1, $item->intrinsicBonusValue('dexterity'));
+        $this->assertSame(['+1 DEX', '+5% FW'], $item->intrinsicBonusLines());
+    }
 }

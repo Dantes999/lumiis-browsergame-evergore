@@ -90,13 +90,40 @@ class CharacterItem extends Model
         return $baseName.' +'.$this->upgrade_level;
     }
 
-    /**
-     * Only smith-upgradable equipment should use the plus system for now.
-     * We keep the first version narrow on purpose: starter weapon flow first, other gear later.
-     */
     public function canBeSmithUpgraded(): bool
     {
-        return $this->item?->equipment_slot === 'weapon';
+        return $this->item?->isEquippable() === true && $this->item?->equipment_slot !== 'mount';
+    }
+
+    /**
+     * @return array{label: string, value: int, suffix: string}|null
+     */
+    public function primaryEquipmentStat(): ?array
+    {
+        if (! $this->item?->isEquippable()) {
+            return null;
+        }
+
+        return match ($this->item->equipment_slot) {
+            'weapon' => [
+                'label' => __('Damage'),
+                'value' => $this->effectiveBonus('attack_bonus'),
+                'suffix' => 'ATK',
+            ],
+            'armor', 'offhand', 'helmet' => [
+                'label' => __('Defense'),
+                'value' => $this->effectiveBonus('defense_bonus'),
+                'suffix' => 'DEF',
+            ],
+            'boots' => [
+                'label' => $this->effectiveBonus('defense_bonus') > 0 ? __('Defense') : __('Speed'),
+                'value' => $this->effectiveBonus('defense_bonus') > 0
+                    ? $this->effectiveBonus('defense_bonus')
+                    : $this->effectiveBonus('speed_bonus'),
+                'suffix' => $this->effectiveBonus('defense_bonus') > 0 ? 'DEF' : 'SPD',
+            ],
+            default => null,
+        };
     }
 
     public function smithUpgradeCost(): int
@@ -181,8 +208,13 @@ class CharacterItem extends Model
             ? $this->bonuses
             : $this->bonuses()->get();
 
-        return $bonuses
+        $intrinsicLines = $this->item?->intrinsicBonusLines() ?? [];
+
+        return collect($intrinsicLines)
+            ->concat(
+                $bonuses
             ->map(fn (CharacterItemBonus $bonus): string => $bonus->displayLine())
+            )
             ->values()
             ->all();
     }
@@ -202,12 +234,31 @@ class CharacterItem extends Model
         }
 
         return match ($column) {
-            'attack_bonus' => $this->item->equipment_slot === 'weapon' ? $this->upgrade_level : 0,
-            'defense_bonus' => in_array($this->item->equipment_slot, ['armor', 'offhand'], true) ? $this->upgrade_level : 0,
-            'health_bonus' => $this->item->equipment_slot === 'armor' ? $this->upgrade_level * 2 : 0,
-            'speed_bonus' => $this->item->equipment_slot === 'boots' ? intdiv($this->upgrade_level, 3) : 0,
+            'attack_bonus' => $this->item->equipment_slot === 'weapon'
+                ? $this->upgradeCurveValue([0, 2, 5, 8, 12, 17, 23, 30, 38, 47])
+                : 0,
+            'defense_bonus' => in_array($this->item->equipment_slot, ['armor', 'offhand', 'helmet', 'boots'], true)
+                ? $this->upgradeCurveValue([0, 1, 3, 5, 8, 11, 15, 20, 26, 33])
+                : 0,
+            'health_bonus' => in_array($this->item->equipment_slot, ['armor', 'helmet'], true)
+                ? $this->upgradeCurveValue([0, 6, 14, 22, 32, 44, 58, 74, 92, 112])
+                : 0,
+            'speed_bonus' => $this->item->equipment_slot === 'boots'
+                ? $this->upgradeCurveValue([0, 0, 1, 1, 2, 3, 4, 6, 8, 10])
+                : 0,
             default => 0,
         };
+    }
+
+    /**
+     * @param  list<int>  $curve
+     */
+    private function upgradeCurveValue(array $curve): int
+    {
+        $maxIndex = count($curve) - 1;
+        $index = min(max(0, $this->upgrade_level), $maxIndex);
+
+        return (int) ($curve[$index] ?? 0);
     }
 
     /**

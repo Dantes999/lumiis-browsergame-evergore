@@ -2,6 +2,7 @@
     $priceLabel = (int) $item->sell_price > 0
         ? number_format($item->sell_price).' '.__('Yang')
         : __('None');
+    $primaryEquipmentStat = $inventoryItem->primaryEquipmentStat();
     $detailMetaParts = collect([
         __('Type').': '.strtoupper((string) $item->item_type),
         $item->isWeapon() && $item->weaponTypeLabel() !== null ? __('Weapon').': '.$item->weaponTypeLabel() : null,
@@ -37,6 +38,13 @@
             <span>{{ __('Count') }}</span>
             <strong>{{ number_format($inventoryItem->quantity) }}</strong>
         </div>
+
+        @if ($primaryEquipmentStat !== null)
+            <div class="inventory-list-row-details-stat">
+                <span>{{ $primaryEquipmentStat['label'] }}</span>
+                <strong>+{{ $primaryEquipmentStat['value'] }} {{ $primaryEquipmentStat['suffix'] }}</strong>
+            </div>
+        @endif
     </div>
 
     @if ($detailMetaParts->isNotEmpty())

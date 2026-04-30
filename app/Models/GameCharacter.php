@@ -621,16 +621,13 @@ class GameCharacter extends Model
 
     private function equippedBonusType(string $bonusType): int
     {
-        if (! ItemBonusCatalog::isKnownType($bonusType)) {
-            return 0;
-        }
-
         $equipment = $this->relationLoaded('equipment')
             ? $this->equipment
-            : $this->equipment()->with('characterItem.bonuses')->get();
+            : $this->equipment()->with('characterItem.item', 'characterItem.bonuses')->get();
 
         return (int) $equipment->sum(
-            static fn (CharacterEquipment $equipment): int => (int) $equipment->characterItem?->bonusValue($bonusType),
+            static fn (CharacterEquipment $equipment): int => (int) $equipment->characterItem?->bonusValue($bonusType)
+                + (int) $equipment->characterItem?->item?->intrinsicBonusValue($bonusType),
         );
     }
 

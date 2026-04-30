@@ -201,7 +201,7 @@ trait HandlesInventoryActions
     private function upgradeItem(GameCharacter $character, array $payload): array
     {
         if (! $character->location->is_safe_zone) {
-            throw new GameActionException(__('Weapon upgrades are only possible at a town smith.'));
+            throw new GameActionException(__('Equipment upgrades are only possible at a town smith.'));
         }
 
         $this->serviceArea(
@@ -215,11 +215,11 @@ trait HandlesInventoryActions
         $item = $inventoryItem->item;
 
         if (! $inventoryItem->canBeSmithUpgraded()) {
-            throw new GameActionException(__('The smith only upgrades weapons in the current build.'));
+            throw new GameActionException(__('The smith cannot upgrade that item.'));
         }
 
         if ($inventoryItem->upgrade_level >= 9) {
-            throw new GameActionException(__('That weapon is already at the maximum upgrade level.'));
+            throw new GameActionException(__('That item is already at the maximum upgrade level.'));
         }
 
         $refineRate = SmithRefineRate::forUpgradeLevel($inventoryItem->upgrade_level);

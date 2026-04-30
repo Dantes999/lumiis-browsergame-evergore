@@ -301,25 +301,34 @@
             </div>
         @elseif ($smithableItems->isEmpty())
             <div class="form-card mt-5">
-                <p class="action-title">{{ __('No Weapon To Upgrade') }}</p>
+                <p class="action-title">{{ __('No Equipment To Upgrade') }}</p>
                 <p class="action-copy">
-                    {{ __('You do not currently carry an upgradeable weapon. Visit the weapon dealer first.') }}
+                    {{ __('You do not currently carry any upgradeable equipment. Visit a dealer first.') }}
                 </p>
             </div>
         @else
             <div class="mt-5 space-y-3">
                 <div class="theme-paper-panel px-4 py-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
-                        <p class="action-title">{{ __('Weapon Upgrades +0 to +9') }}</p>
+                        <p class="action-title">{{ __('Equipment Upgrades +0 to +9') }}</p>
                         <span class="cozy-chip">{{ __('Shards') }}: {{ number_format($lumiisShardCount) }}</span>
                     </div>
-                    <p class="shop-item-meta">{{ __('Fail destroys the weapon') }}</p>
+                    <p class="shop-item-meta">{{ __('Fail destroys the item') }}</p>
                 </div>
 
                 @foreach ($smithableItems as $inventoryItem)
                     @php
                         $item = $inventoryItem->item;
                         $nextUpgradeLevel = min(9, $inventoryItem->upgrade_level + 1);
+                        $primaryStat = $inventoryItem->primaryEquipmentStat();
+                        $missingYang = max(0, $inventoryItem->smithUpgradeCost() - $character->yang);
+                        $missingShards = max(0, $inventoryItem->smithUpgradeShardCost() - $lumiisShardCount);
+                        $missingRequirements = collect([
+                            $missingYang > 0 ? number_format($missingYang).' '.__('Yang') : null,
+                            $missingShards > 0
+                                ? $missingShards.' '.($missingShards === 1 ? __('Lumiis Shard') : __('Lumiis Shards'))
+                                : null,
+                        ])->filter()->implode(' · ');
                     @endphp
 
                     <div class="form-card">
@@ -334,8 +343,12 @@
                                         </span>
                                     @endif
                                 </div>
+                                <p class="shop-item-meta mt-2">{{ $item->description }}</p>
                                 <p class="mt-3 text-xs uppercase tracking-[0.24em] text-amber-900/70">
-                                    {{ $inventoryItem->effectiveBonus('attack_bonus') }} ATK now
+                                    @if ($primaryStat !== null)
+                                        {{ $primaryStat['label'] }}: +{{ $primaryStat['value'] }} {{ $primaryStat['suffix'] }}
+                                        ·
+                                    @endif
                                     · {{ $inventoryItem->smithUpgradeSuccessPercent() }}% success
                                     · {{ number_format($inventoryItem->smithUpgradeCost()) }} Yang
                                     @if ($inventoryItem->smithUpgradeShardCost() > 0)
@@ -360,9 +373,9 @@
                                 </button>
                             </form>
                         </div>
-                        @if ($lumiisShardCount < $inventoryItem->smithUpgradeShardCost())
+                        @if ($missingRequirements !== '')
                             <p class="action-cost-warning mt-3">
-                                {{ __('Missing') }} {{ $inventoryItem->smithUpgradeShardCost() - $lumiisShardCount }} {{ ($inventoryItem->smithUpgradeShardCost() - $lumiisShardCount) === 1 ? __('Lumiis Shard') : __('Lumiis Shards') }}
+                                {{ __('Missing') }}: {{ $missingRequirements }}
                             </p>
                         @endif
                     </div>

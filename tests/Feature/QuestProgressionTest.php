@@ -229,6 +229,10 @@ class QuestProgressionTest extends TestCase
         [$user, $character] = $this->createActiveCharacterAt('yongan', [
             'level' => 2,
             'experience' => 212,
+            'health' => 180,
+            'max_health' => 180,
+            'attack' => 28,
+            'defense' => 18,
         ]);
         $area = $this->starterArea('riverbank');
 
