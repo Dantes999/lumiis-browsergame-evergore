@@ -1407,22 +1407,43 @@ class GameContentSeeder extends Seeder
             ...MetinClassCatalog::seedSkillBookDefinitions(),
         ];
 
-        $items = array_map(fn (array $item): array => [
-            ...$item,
-            'inventory_height' => $item['inventory_height'] ?? ($item['equipment_slot'] === null ? 1 : 2),
-            'icon_path' => $item['icon_path'] ?? null,
-            'weapon_type' => $item['weapon_type'] ?? null,
-            'intrinsic_bonuses' => isset($item['intrinsic_bonuses'])
-                ? json_encode($item['intrinsic_bonuses'], JSON_THROW_ON_ERROR)
-                : null,
-            'allowed_races' => isset($item['allowed_races'])
-                ? json_encode($item['allowed_races'], JSON_THROW_ON_ERROR)
-                : null,
-            'sp_restore' => $item['sp_restore'] ?? 0,
-            'skill_slug' => $item['skill_slug'] ?? null,
-            'created_at' => $timestamp,
-            'updated_at' => $timestamp,
-        ], $items);
+        $items = array_map(function (array $item) use ($timestamp): array {
+            $equipmentSlot = $item['equipment_slot'] ?? null;
+
+            return [
+                'slug' => $item['slug'],
+                'name' => $item['name'],
+                'item_type' => $item['item_type'],
+                'equipment_slot' => $equipmentSlot,
+                'weapon_type' => $item['weapon_type'] ?? null,
+                'intrinsic_bonuses' => isset($item['intrinsic_bonuses'])
+                    ? json_encode($item['intrinsic_bonuses'], JSON_THROW_ON_ERROR)
+                    : null,
+                'allowed_races' => isset($item['allowed_races'])
+                    ? json_encode($item['allowed_races'], JSON_THROW_ON_ERROR)
+                    : null,
+                'description' => $item['description'],
+                'skill_slug' => $item['skill_slug'] ?? null,
+                'price' => $item['price'],
+                'sell_price' => $item['sell_price'],
+                'required_level' => $item['required_level'],
+                'stackable' => $item['stackable'],
+                'max_stack' => $item['max_stack'],
+                'inventory_height' => $item['inventory_height'] ?? ($equipmentSlot === null ? 1 : 2),
+                'icon_path' => $item['icon_path'] ?? null,
+                'attack_bonus' => $item['attack_bonus'] ?? 0,
+                'defense_bonus' => $item['defense_bonus'] ?? 0,
+                'health_bonus' => $item['health_bonus'] ?? 0,
+                'stamina_bonus' => $item['stamina_bonus'] ?? 0,
+                'speed_bonus' => $item['speed_bonus'] ?? 0,
+                'travel_speed_percent_bonus' => $item['travel_speed_percent_bonus'] ?? 0,
+                'heal_amount' => $item['heal_amount'] ?? 0,
+                'stamina_restore' => $item['stamina_restore'] ?? 0,
+                'sp_restore' => $item['sp_restore'] ?? 0,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+        }, $items);
 
         Item::query()->upsert(
             $items,
