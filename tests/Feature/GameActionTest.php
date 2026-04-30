@@ -26,6 +26,7 @@ use App\Services\Game\CharacterInventoryService;
 use App\Services\Game\ManualEncounterPreviewService;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -116,6 +117,8 @@ class GameActionTest extends TestCase
         [$user] = $this->createCharacterAt('yongan', [
             'level' => 2,
         ]);
+        $user->forceFill(['locale' => 'en'])->save();
+        App::setLocale('en');
 
         $area = LocationArea::query()
             ->whereHas('location', fn ($query) => $query->where('slug', 'yongan'))
@@ -125,9 +128,11 @@ class GameActionTest extends TestCase
         $character = $user->fresh()->character()->with(['location.areas.monsterAssignments.monster', 'learnedSkills.skill', 'equipment.characterItem.item'])->firstOrFail();
         $previews = app(ManualEncounterPreviewService::class)->buildActionPreviews($character, $area);
 
-        $response = $this->actingAs($user)->get(route('dashboard', [
-            'focus' => 'riverbank',
-        ]));
+        $response = $this->actingAs($user)
+            ->withHeader('Accept-Language', 'en')
+            ->get(route('dashboard', [
+                'focus' => 'riverbank',
+            ]));
 
         $response
             ->assertOk()
