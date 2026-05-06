@@ -63,7 +63,7 @@ class ProfileController extends Controller
         ])->save();
         $this->syncLocaleSession($request);
 
-        return $this->settingsRedirect($request)->with('status', __('Language updated.'));
+        return $this->settingsRedirect($request);
     }
 
     /**

@@ -17,6 +17,7 @@ use App\Http\Controllers\CharacterSelectionController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameDashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
 // Public landing page for the project.
@@ -27,6 +28,9 @@ Route::get('/', function () {
 
     return view('welcome');
 });
+
+// Public endpoint to set a session locale for guests.
+Route::patch('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 // Normal player routes. Everything inside this group requires a signed-in account.
 Route::middleware(['auth', 'no-store'])->group(function () {

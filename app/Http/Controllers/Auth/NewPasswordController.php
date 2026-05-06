@@ -52,12 +52,22 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // Map broker response codes to explicit translation keys so we control
+        // where the messages live and how they are translated.
+        $translationMap = [
+            Password::PASSWORD_RESET => 'passwords.reset',
+            Password::INVALID_USER => 'passwords.user',
+            Password::INVALID_TOKEN => 'passwords.token',
+            Password::RESET_THROTTLED => 'passwords.throttled',
+        ];
+
+        $translationKey = $translationMap[$status] ?? $status;
+
+        if ($status == Password::PASSWORD_RESET) {
+            return redirect()->route('login')->with('status', __($translationKey));
+        }
+
+        return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => __($translationKey)]);
     }
 }

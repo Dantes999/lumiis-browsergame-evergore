@@ -15,7 +15,10 @@
 
             <div>
                 <x-input-label for="email" :value="__('Email')" />
-                <x-text-input id="email" class="mt-2 block w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
+                {{-- keep email value in a hidden input to prevent casual client-side tampering --}}
+                <input type="hidden" name="email" value="{{ old('email', $request->email) }}">
+                {{-- show the email as a disabled/read-only field for clarity --}}
+                <input id="email_display" class="mt-2 block w-full bg-gray-100/60 text-gray-800 border rounded px-3 py-2" type="text" value="{{ old('email', $request->email) }}" disabled aria-disabled="true" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 

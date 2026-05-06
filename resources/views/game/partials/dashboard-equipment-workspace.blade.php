@@ -26,11 +26,7 @@
     >
         <div class="equipment-board-shell">
             <div class="equipment-board-window">
-                <div class="equipment-board-window-head">
-                    <span class="equipment-board-window-title">{{ __('Equipment') }}</span>
-                    <span class="equipment-board-window-emblem" aria-hidden="true"></span>
-                </div>
-
+    
                 <div class="equipment-board-frame">
                     <div class="equipment-board-silhouette" aria-hidden="true"></div>
 

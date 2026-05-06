@@ -28,6 +28,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // If the guest previously picked a session locale, persist it to the
+        // user's account so the preference becomes permanent.
+        $sessionLocale = $request->session()->get('app_locale');
+        if ($sessionLocale && $request->user()) {
+            $user = $request->user();
+            if (data_get($user->getAttributes(), 'locale') !== $sessionLocale) {
+                $user->forceFill(['locale' => $sessionLocale])->save();
+                $request->session()->put('app_locale', $sessionLocale);
+            }
+        }
+
         return redirect(route('characters.index', absolute: false));
     }
 

@@ -34,6 +34,8 @@ class PasswordResetLinkController extends Controller
         // account does not exist so the reset form cannot be used to enumerate users.
         Password::sendResetLink($request->only('email'));
 
-        return back()->with('status', __(Password::RESET_LINK_SENT));
+        // Use explicit translation key so translations live in our files,
+        // rather than relying on facade-returned strings.
+        return back()->with('status', __('passwords.sent'));
     }
 }

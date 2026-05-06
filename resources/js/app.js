@@ -826,6 +826,44 @@ Alpine.data(
             }, 'Leave View');
         },
 
+        navigateHome() {
+            // Close panels if open. If an active battle is present, show the modal
+            // and don't alter persisted state until the user confirms.
+            if (this.activePanel !== null) {
+                if (this.hasActiveBattle) {
+                    this.openActiveBattleCloseModal(() => {
+                        // user confirmed: perform close and persist cleared panel state
+                        this.performPanelClose();
+                        try {
+                            window.localStorage?.setItem(DASHBOARD_SHELL_STORAGE_KEY, JSON.stringify({ activePanel: null, chatTab: this.chatTab }));
+                        } catch (e) { }
+                    }, 'Close Panel');
+
+                    return;
+                }
+
+                // No active battle: perform close immediately and persist cleared panel state.
+                this.performPanelClose();
+
+                try {
+                    window.localStorage?.setItem(DASHBOARD_SHELL_STORAGE_KEY, JSON.stringify({ activePanel: null, chatTab: this.chatTab }));
+                } catch (e) { }
+            }
+
+            // After layout settles, scroll the map into view.
+            this.$nextTick(() => {
+                const el = document.querySelector('.dashboard-map-stage');
+
+                if (el) {
+                    try {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } catch (e) {
+                        // ignore scroll failures
+                    }
+                }
+            });
+        },
+
         openActiveBattleCloseModal(action = null, actionLabel = null) {
             this.activeBattleCloseAction = typeof action === 'function' ? action : null;
             this.activeBattleCloseActionLabel = actionLabel ?? this.activeBattleCloseProceedLabel;

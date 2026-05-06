@@ -1,12 +1,7 @@
 <div class="metin2-auth-shell">
     <div class="metin2-auth-intro">
         <x-auth-session-status class="mb-4 theme-success-text" :status="session('status')" />
-
-        <span class="metin2-auth-kicker">{{ __('Return to the Realm') }}</span>
         <h1 class="metin2-auth-title">{{ __('Welcome Back') }}</h1>
-        <p class="metin2-auth-copy">
-            {{ __('Log in and keep playing.') }}
-        </p>
     </div>
 
     <form method="POST" action="{{ route('login') }}" class="metin2-auth-form">

@@ -31,8 +31,23 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
+        $raceOptions = MetinClassCatalog::races();
+
+        // Count existing characters per race and pick the least-used as default.
+        $counts = DB::table('game_characters')
+            ->select('race', DB::raw('count(*) as cnt'))
+            ->groupBy('race')
+            ->pluck('cnt', 'race')
+            ->toArray();
+
+        $defaultRace = collect(array_keys($raceOptions))
+            ->sortBy(fn (string $race) => $counts[$race] ?? 0)
+            ->values()
+            ->first();
+
         return view('auth.register', [
-            'raceOptions' => MetinClassCatalog::races(),
+            'raceOptions' => $raceOptions,
+            'defaultRace' => $defaultRace,
         ]);
     }
 
@@ -64,6 +79,7 @@ class RegisteredUserController extends Controller
                 'name' => $characterName,
                 'email' => $request->string('email')->lower()->value(),
                 'password' => Hash::make($request->string('password')->value()),
+                'locale' => $request->session()->get('app_locale') ?? null,
             ]);
 
             $character = $characterProvisioningService->create($user, $characterName, $race);

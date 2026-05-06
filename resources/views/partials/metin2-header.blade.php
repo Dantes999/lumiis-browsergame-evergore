@@ -16,6 +16,11 @@
         ['label' => __('Systems'), 'route' => url('/#systems'), 'active' => false],
         ['label' => __('Interface'), 'route' => url('/#gallery'), 'active' => false],
     ];
+    // Resolve the current locale the same way middleware does: prefer the
+    // authenticated user's stored locale, then the session override, then
+    // browser detection, finally the app fallback. Using `app()->getLocale()`
+    // here ensures the value matches what the middleware set for the request.
+    $currentLocalePreference = app()->getLocale();
 @endphp
 
 <div class="public-site-header-wrap">
@@ -24,9 +29,32 @@
             <span class="public-site-brand-mark" aria-hidden="true">L</span>
             <span class="public-site-brand-copy">
                 <span class="public-site-brand-name">Lumiis</span>
-                <span class="public-site-brand-tag">{{ __('Browser Realm') }}</span>
+                <!--<span class="public-site-brand-tag">{{ __('Browser Realm') }}</span>-->
             </span>
+            @guest()
+                <span>
+                    <form method="POST" action="{{ route('locale.update') }}" class="text-center">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="locale_preference" value="de">
+                        <button type="submit" class="action-button w-full" @disabled($currentLocalePreference === 'de')>
+                            🇩🇪
+                        </button>
+                    </form>
+                </span>
+                <span>
+                    <form method="POST" action="{{ route('locale.update') }}" class="text-center">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="locale_preference" value="en">
+                        <button type="submit" class="action-button w-full" @disabled($currentLocalePreference === 'en')>
+                            🇬🇧
+                        </button>
+                    </form>
+                </span>
+            @endguest
         </a>
+     
 
         @unless ($compactHeader)
             <nav class="public-site-nav" aria-label="{{ __('Primary navigation') }}">

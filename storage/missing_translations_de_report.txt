@@ -1,0 +1,400 @@
+FOUND_KEYS_COUNT: 997
+DE_KEYS_COUNT: 388
+MISSING_COUNT: 747
+
+3-monster packs
+4 successful submissions
+A condensed stone of will. Once a skill reaches G1, this stone can push it through the remaining G stages and finally into P.
+A disciplined overhead strike with heavier direct impact.
+A harder hybrid finisher for important targets.
+A nastier focused thrust for weakened targets.
+A redesigned realm shell with Metin2-inspired color language and modern interaction patterns.
+A soul rises into the sky.
+A stronger direct hit for priority targets.
+ATK
+Abandon Fight
+Access
+Action Failed
+Action Logs
+Action already processed.
+Action cooldown
+Active Buffs
+Active Character
+Active Quest
+Add Bonus
+Aggressive melee path with burst strikes, fast area swings and self-sustain.
+Another action is already being processed. Please try again.
+Arcane spin that lashes the full enemy line.
+Archery
+Area
+Areas
+Armor
+Armor slot
+Armor Â· shields Â· boots
+Ask the dragon for aid and raise your critical pressure for the next few rounds.
+Assassin
+Assassin Strike
+Assets
+Attack Only
+Authenticated navigation
+Auto Fight
+Auto Lumiis
+Back Home
+Back To Map
+Back to Map
+Back to Realm
+Back to Start
+Back to login
+Back to realm
+Bag
+Bag Items
+Bag Page
+Bag Ready
+Barrier-like healing school ward for safer longer fights.
+Basic pack fights stay available right after the tutorial.
+Battle Lost
+Battle Won
+Battle effects
+Bell
+Biologist message delivered.
+Biologist research opens at level 5, but your first submission only unlocks after this map boss quest is finished.
+Black Magic
+Blacksmith Locked
+Blade slot
+Blade-enhancing Sura school with close-range spells, fear tools and enchanted defense.
+Blessed Guard
+Body
+Bonus Balance
+Bonuses
+Book Phase
+Books
+Boots
+Boots slot
+Boss Chance
+Boss Pressure
+Boss Ready
+Boss Soul
+Boss Souls
+Boss fights are manual only. Fill the pressure meter by clearing packs and Lumiis, then release the source of the corruption yourself.
+Boss releases become available at level 4.
+Boss soul fights unlock at level 4.
+Boss souls stay sealed until level 4. Keep leveling, complete the starter questline, and fill the area pressure when the boss unlock opens.
+Bow
+Bracelet
+Bracelet slot
+Break Lumiis cores to release the souls they have trapped inside.
+Break a glowing Lumiis core to release trapped monster souls and push the area closer to its boss.
+Broader lightning call that cracks through the whole enemy line.
+Browser Realm
+Built for quick entry
+Burn
+Burst
+Burst Cleave
+Burst Shot
+Burst Strike
+Burst forward, slash through the pack and make the next counter harder to land.
+Buy here Â· sell via inventory panel
+CD :rounds', ['rounds' => data_get($skill, 'cooldown_remaining
+Call down a larger dragon-force impact into the full enemy pack.
+Call the dragon blessing and blunt incoming physical punishment for several rounds.
+Caster
+Change Character
+Channel supportive power into yourself and raise attack for the next few rounds.
+Character Hall
+Character name
+Characters
+Check Your Input
+Choose a combat race
+Choose a combat school before claiming a matching skill book reward.
+Choose a locked bonus only if you also carry a Soul Anchor.
+Choose a longer rest if you need more stamina, SP and healing. While resting, actions stay locked.
+Choose a valid soul imprint from your inventory.
+Choose a valid soul prism from your inventory.
+Choose a valid soul reweaver from your inventory.
+Choose a valid status attribute.
+Choose one of the two combat schools for your race. This decision defines which Metin2-like skill tree you can learn.
+Choose one of your two combat schools before learning skills.
+Choose your combat school before studying skill books.
+Claim Quest Reward
+Claimed
+Clear roaming packs, free lesser souls and keep building pressure toward the boss reveal.
+Cleave
+Close View
+Close blade spell that mixes steel and magic in one hit.
+Close-range assassin route with poison pressure, evasive tools and fast finishers.
+Closing or leaving the current view will not forfeit this battle.
+Closing the tab pauses this fight. Use Abandon Fight to end it with no rewards.
+Closing this panel does not abort the fight. Your manual fight stays active and can be resumed from the dashboard.
+Code
+Combat Skill
+Combat Skills
+Combat schools open at level 5. You then choose one of the two skill groups of your race.
+Combined quantity across your current bag.
+Condense power into one heavier follow-through.
+Confirm
+Continue
+Control Cleave
+Control Panel
+Cotton Armor ready
+Create Character
+Create or select a character before entering the realm.
+Crit
+Critical Strike
+Critical hit!
+Crush the ground and carry the shock through the whole enemy line.
+Current Language
+Current Resources
+DEF
+Dagger
+Damage
+Dangerous
+Dealers and Smith
+Decrease quantity
+Deep 120m
+Deep Rest
+Defeat roaming monster packs to weaken the corruption across the map.
+Delete Character
+Delete Slot
+Deleting this slot permanently removes its progress, inventory, quests, battles, and messages. This cannot be undone.
+Dense orb that clips the whole pack on release.
+Desktop gets room to breathe; portrait and landscape stay fast.
+Desktop, portrait and landscape layouts share the same system.
+Deutsch
+Dexterity
+Direct player messages unlock at level 3.
+Dismiss message
+Distinct bag entries currently available.
+Dragon Force
+Dragon Volley
+Dragon projectile that carries pressure through nearby enemies.
+Drain Strike
+Drive the pack back with a steadier but heavier shockwave.
+Early upgrades cost only Yang. Higher steps also consume Lumiis Shards gathered from Lumiis stones and boss souls.
+Earring slot
+Earrings
+Easy
+Edit Area
+Edit Character
+Edit Location
+Edit Monster
+Edit Quest
+Edit Shop
+Edit User
+Ember reds, lacquer black and aged gold stay intact.
+Empower the blade with dark force, raising attack and stealing life for several rounds.
+Empowered Spell
+Empowered Strike
+Empty Slot
+Ends around
+Enemies
+Enemy
+Enemy Lv
+Equip Cotton Armor
+Equip Recruit Blade
+Equip Weapon and Armor
+Equip your Recruit Blade and Cotton Armor before continuing.
+Equip your Recruit Blade and Cotton Armor from the inventory below. Once both are equipped, the tutorial can continue to the first fight.
+Equip your starter weapon and armor before moving on.
+Equipment Upgrades +0 to +9
+Equipment Window
+Equipment upgrades are only possible at a town smith.
+Equipped
+Equipped items must be unequipped before they can be moved in the bag.
+Est. success
+Evade
+Evasive Strike
+Evasive Volley
+Every new character starts in Yongan with the same baseline gear and tutorial state as a fresh account.
+Exit
+Extended 60m
+Extended Rest
+Fail destroys the item
+Fair
+Fallen
+Fan
+Fast close-range opener with strong single-target pressure.
+Fast crossing slashes that ripple into nearby enemies.
+Fast dragon-force talisman for direct magical pressure.
+Fast precision fighter with high evasion and burst windows.
+Fast travel is currently disabled.
+Fight In Progress
+Fight Open
+Fight Window
+Fight monsters or visit town services to fill the bag again.
+Fights
+Fill
+Fill a hunting area pressure meter, then defeat its boss in a manual fight.
+Fill the first four bonus slots before unlocking the fifth bonus.
+Finish :quest first.', ['quest' => trans('quests.yongan-alpha-release.title
+Finish or abandon the current manual fight before switching characters.
+Finish or abandon the live manual fight on this slot before renaming or deleting it.
+Finish the current manual battle before starting a new one.
+Finish the onboarding sequence to unlock the full realm interface.
+Finish the tutorial battle before using other features.
+Finish the tutorial fight before leaving it.
+Finisher
+Flash-step through the pack and leave wide cuts behind.
+Focus
+Focused Spell
+Focused spirit pressure with heavy magical impact.
+Focused toxic shot with better finish pressure.
+Follow the tutorial step first. Other actions stay locked for now.
+Footer navigation
+Forbidden
+Free more souls in this area first. The boss will only appear once the corruption pressure is full.
+Free wandering souls
+Frontier field
+Frontline melee fighter with the most stable early-game defense and weapon pressure.
+Full English interface for story, menus and action feedback.
+Full German interface for story, menus and action feedback.
+Future mini-game slot
+Gear pieces
+Global Chat
+Global chat unlocks at level 2.
+Glowing stones and trapped soul waves unlock at level 2.
+Ground the enemy pack with a sturdy sweeping impact.
+Guard
+Guard Break
+Guard Skill
+HP Lost
+HP Potions
+Hard
+Harden the body for several rounds and weather incoming blows like a true Mental Warrior.
+Heal Strike
+Healing Force
+Heavy Cleave
+Heavy Spell
+Heavy Strike
+Heavy Volley
+Heavy Wave
+Helmet
+Helmet slot
+Highest Lv
+Hunting Grounds
+Hunting is on cooldown.
+Hybrid
+Hybrid Strike
+Hybrid fighter that mixes physical pressure with darker magic scaling.
+Impact Strike
+Increase quantity
+Inn Rest
+Interface
+Inventory Control
+Item Workspace
+Keep Fight Open
+Keep Slot
+Keep clearing monster packs and follow the map questline. Lumiis hunts unlock once your character reaches level 2.
+Keep the local questline moving to unlock the next systems.
+Large dark wave for mid-fight area control.
+Large ranged burst built to punish clustered waves.
+Late archery boost that turns the next fire shot into a finisher.
+Late black-magic boost that sharpens your direct burst.
+Late body-warrior boost that hardens the next spinning opener.
+Late dagger boost that amplifies the assassination burst window.
+Late dragon-force boost that sharpens your signature projectile burst.
+Late healing-force boost that turns the lightning call into a bigger wave.
+Late mental-warrior boost that sharpens the finishing blow.
+Late weaponary boost that sharpens the hybrid burst pattern.
+Later, this panel can host a lightweight mini-game during the rest timer, similar to the Chrome offline T-Rex game. For now this description marks the reserved slot.
+Layout
+Learn / Upgrade
+Live actions
+Location
+Locations
+Lock
+Locked Bonus
+Locked onboarding
+Locking only makes sense once the item has multiple bonuses.
+Log Out
+Long rests are only possible inside a safe town or camp.
+Loot
+Lumiis
+Lumiis Hunts
+Lumiis Shard
+Lumiis Shards
+Lumiis Waves
+Lumiis hunts unlock at level 2.
+Lumiis stones are trapping the souls of this land. Clear monsters, shatter Lumiis cores, and expose the boss soul to heal the map.
+Lv 4 Â· core + soul waves
+Magic Burst
+Magic Cleave
+Manage equipment, consumables and sell-ready drops from one contained workspace.
+Manual Boss Fight
+Manual Fight
+Manual Fight Still Active
+Manual Lumiis
+Manual Lumiis fights unlock at level 2.
+Manual Turn
+Manual battle connection stable.
+Manual target selection
+Map
+Map Hotspots
+Map Overview
+Map overview
+Map1 Monster Pool
+Matching Skill Book
+Matchups
+Materials
+Max
+Medium
+Mental
+Menu placeholder: Best score
+Menu placeholder: Return to rest timer
+Menu placeholder: Start mini-game
+Meteor Wave
+Misc
+Missing
+Monster Groups
+Monster Hunts
+Monster Pool
+Monsters
+Mount
+Mount slot
+Move and cast faster for the next few rounds, making retaliation harder to land.
+Move like the wind and stay harder to pin down for the next exchanges.
+Mystic caster with the highest SP base and supportive magic tools.
+N/A
+Necklace
+Necklace slot
+Need Soul Stone
+New Character
+Next Objective
+Next Step
+Ninja
+No Equipment To Upgrade
+No Matching Stock
+No Rewards On Abandon
+No active chain
+No active map quest
+No active map questline is tracked right now. Keep using hotspots and clearing the current map to unlock the next quest chain.
+No additional compatible bonus remains for that item.
+No global messages yet.
+No item drop
+No lock
+No smith refine rate is configured for that upgrade step.
+No whispers yet.
+None
+Not Found
+Not Ready
+Not enough compatible bonus types remain for that reroll.
+Not ready yet
+Nothing to select yet.
+Offense
+Offensive shaman path with talismans, dragon bursts and empowering blessings.
+Onboarding
+Once a skill reaches G1, Soul Stones drive it through the remaining G stages and into P.
+One-Hand Sword
+Only consumables can be used directly from the inventory.
+Only equippable items can receive extra bonuses.
+Only equippable items can reroll their bonuses.
+Open Another Slot
+Open Character
+Open Equipment
+Open Hunting Grounds
+Open Inventory
+Open Quests
+Open Slot
+Open the inventory window, equip your Recruit Blade and Cotton Armor, then continue once both slots are filled.
+Open the quest log and claim the finished reward manually.
+Orb Wave
+Overview

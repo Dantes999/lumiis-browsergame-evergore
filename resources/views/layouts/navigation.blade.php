@@ -56,7 +56,7 @@
 @if ($useUtilityPublicHeader)
     <div class="public-site-header-wrap utility-site-header-wrap">
         <header class="public-site-header public-surface utility-site-header">
-            <a class="public-site-brand" href="{{ url('/') }}">
+                <a class="public-site-brand" href="{{ url('/') }}">
                 <span class="public-site-brand-mark" aria-hidden="true">L</span>
                 <span class="public-site-brand-copy">
                     <span class="public-site-brand-name">Lumiis</span>
@@ -72,8 +72,12 @@
                 <a href="{{ url('/#gallery') }}" class="public-site-nav-link">{{ __('Interface') }}</a>
             </nav>
 
-            <div class="public-site-actions utility-site-actions">
-                <a href="{{ route('dashboard') }}" @class(['theme-primary-button public-site-cta-link', 'is-active' => request()->routeIs('dashboard', 'game.dashboard')])>
+                <div class="public-site-actions utility-site-actions">
+                <a
+                    href="{{ route('dashboard') }}"
+                    @class(['theme-primary-button public-site-cta-link', 'is-active' => request()->routeIs('dashboard', 'game.dashboard')])
+                    @click="if($event.metaKey || $event.ctrlKey || $event.shiftKey || $event.altKey) return; $event.preventDefault(); window.dispatchEvent(new CustomEvent('dashboard-navigate-home')); setTimeout(() => { window.location.assign(@json(route('dashboard'))); }, 20);"
+                >
                     {{ __('Realm') }}
                 </a>
 
