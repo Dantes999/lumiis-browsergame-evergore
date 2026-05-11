@@ -69,11 +69,6 @@ class GameDashboardController extends Controller
             return to_route('characters.index');
         }
 
-        // Lightweight rework: render a simplified Bootstrap dashboard view centered on the map.
-        return view('dashboard_bootstrap', [
-            'character' => $character,
-        ]);
-
         // The dashboard is the main inventory read surface, so we repair stale slot data here too.
         // That keeps older characters compatible after bag-layout schema changes.
         $inventoryService->ensureLayout($character);

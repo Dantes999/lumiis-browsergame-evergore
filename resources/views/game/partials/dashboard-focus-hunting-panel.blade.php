@@ -77,39 +77,32 @@
     </div>
 @endif
 
-@if (($character->cooldownSecondsRemaining() ?? 0) > 0 || (($restingState['remaining_seconds'] ?? 0) > 0))
-    <div class="theme-empty-state mt-5 px-4 py-4 text-sm leading-6" data-action-lock-seconds-remaining="{{ $restingState !== null ? ($restingState['remaining_seconds'] ?? 0) : $character->cooldownSecondsRemaining() }}">
-        <p class="text-[0.62rem] uppercase tracking-[0.24em] text-amber-900/70">
-            @if (empty($restingState))
-                <span>{{ __('Action cooldown') }}</span>
-            @else
-                <span>{{ __('Rest in progress') }}</span>
-            @endif
-        </p>
+<div class="theme-empty-state mt-5 px-4 py-4 text-sm leading-6" x-show="isActionLocked()" x-cloak>
+    <p class="text-[0.62rem] uppercase tracking-[0.24em] text-amber-900/70">
+        <span x-show="!isResting()" x-cloak>{{ __('Action cooldown') }}</span>
+        <span x-show="isResting()" x-cloak>{{ __('Rest in progress') }}</span>
+    </p>
 
-        <p class="mt-2 font-semibold text-stone-900">
-            @if (empty($restingState))
-                {{ __('Hunting is on cooldown.') }}
-            @else
-                {{ __('You are currently resting.') }}
-            @endif
-        </p>
+    <p class="mt-2 font-semibold text-stone-900" x-show="!isResting()" x-cloak>
+        {{ __('Hunting is on cooldown.') }}
+    </p>
+    <p class="mt-2 font-semibold text-stone-900" x-show="isResting()" x-cloak>
+        {{ __('You are currently resting.') }}
+    </p>
 
-        <p class="mt-2 text-stone-700">
-            @if (empty($restingState))
-                {{ __('Time left') }}:
-                <strong data-action-lock-countdown-target>{{ $character->cooldownSecondsRemaining() > 0 ? sprintf('%02d:%02d', intdiv($character->cooldownSecondsRemaining(), 60), $character->cooldownSecondsRemaining() % 60) : __('Ready') }}</strong>
-                · {{ __('Ready at') }}:
-                <strong>{{ $character->actionLockReadyAtLabel() }}</strong>
-            @else
-                {{ __('Rest ends in') }}:
-                <strong data-action-lock-countdown-target>{{ ($restingState['remaining_seconds'] ?? 0) > 0 ? sprintf('%02d:%02d', intdiv($restingState['remaining_seconds'] ?? 0, 60), ($restingState['remaining_seconds'] ?? 0) % 60) : __('Ready') }}</strong>
-                · {{ __('Ready at') }}:
-                <strong>{{ $restingState['ends_at_label'] ?? '' }}</strong>
-            @endif
-        </p>
-    </div>
-@endif
+    <p class="mt-2 text-stone-700" x-show="!isResting()" x-cloak>
+        {{ __('Time left') }}:
+        <strong x-text="formattedActionLockCountdown()"></strong>
+        · {{ __('Ready at') }}:
+        <strong x-text="actionLockReadyAtLabel()"></strong>
+    </p>
+    <p class="mt-2 text-stone-700" x-show="isResting()" x-cloak>
+        {{ __('Rest ends in') }}:
+        <strong x-text="formattedActionLockCountdown()"></strong>
+        · {{ __('Ready at') }}:
+        <strong x-text="actionLockReadyAtLabel()"></strong>
+    </p>
+</div>
 
 @php
     $manualEncounterPreviewCharacter = [
@@ -145,12 +138,24 @@
     $lumiisManualPreview = (array) ($encounterActionPreviews['lumiis_manual'] ?? []);
 @endphp
 
-<div class="mt-5 grid gap-3 lg:grid-cols-2"
-     data-manual-preview
-     data-manual-character='@json($manualEncounterPreviewCharacter)'
-     data-manual-resources='@json(["health" => (int) $displayHealth, "sp" => (int) $displaySp, "stamina" => (int) $displayStamina])'
-     data-manual-options='@json($manualEncounterPreviewOptions)'
-     data-manual-labels='@json(["estimatedSuccess" => __("Est. success"), "safe" => __("Safe"), "fair" => __("Fair"), "risky" => __("Risky"), "dangerous" => __("Dangerous")])'
+<div
+    class="mt-5 grid gap-3 lg:grid-cols-2"
+    x-data="manualEncounterPreview({
+        character: @js($manualEncounterPreviewCharacter),
+        initialResources: @js([
+            'health' => (int) $displayHealth,
+            'sp' => (int) $displaySp,
+            'stamina' => (int) $displayStamina,
+        ]),
+        options: @js($manualEncounterPreviewOptions),
+        labels: {
+            estimatedSuccess: @js(__('Est. success')),
+            safe: @js(__('Safe')),
+            fair: @js(__('Fair')),
+            risky: @js(__('Risky')),
+            dangerous: @js(__('Dangerous')),
+        },
+    })"
 >
     <div class="form-card">
         @php
@@ -177,17 +182,22 @@
             <button
                 type="submit"
                 class="action-button mt-5"
-                data-manual-disable-on-lock
+                x-bind:disabled="isActionLocked() || @js($monsterFightStaminaMissing > 0 || $monsterFightLocked)"
                 @disabled($monsterFightStaminaMissing > 0 || $monsterFightLocked)
             >
                 <span class="block">{{ __('Auto Fight') }}</span>
                 @if ($monsterAutoPreview !== [])
-                    <span class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
-                          data-preview-key="monster_auto" data-preview-kind="rate">
+                    <span
+                        class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                        x-bind:class="successToneClassByKey('monster_auto')"
+                        x-text="successRateLabelByKey('monster_auto')"
+                    >
                         {{ __('Est. success') }} {{ data_get($monsterAutoPreview, 'success_rate_percent', 0) }}% · {{ data_get($monsterAutoPreview, 'risk_label') }}
                     </span>
-                    <span class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
-                          data-preview-key="monster_auto" data-preview-kind="summary">
+                    <span
+                        class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                        x-text="encounterSummaryByKey('monster_auto')"
+                    >
                         {{ data_get($monsterAutoPreview, 'encounter_summary') }}
                     </span>
                 @endif
@@ -234,17 +244,22 @@
                                     <button
                                         type="submit"
                                         class="action-button-muted w-full"
-                                        data-manual-disable-on-lock
+                                        x-bind:disabled="isActionLocked() || @js($difficultyStaminaMissing > 0 || $monsterFightLocked)"
                                         @disabled($difficultyStaminaMissing > 0 || $monsterFightLocked)
                                     >
                                         <span class="block">{{ $difficultyLabel }}</span>
                                         @if ($difficultyPreview)
-                                            <span class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] {{ $successToneClass }}"
-                                                  data-preview-key="{{ $family['key'] }}.{{ $difficultyKey }}" data-preview-kind="rate">
+                                            <span
+                                                class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] {{ $successToneClass }}"
+                                                x-bind:class="successToneClass('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                                x-text="successRateLabel('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                            >
                                                 {{ __('Est. success') }} {{ $successRate }}% · {{ data_get($difficultyPreview, 'risk_label') }}
                                             </span>
-                                            <span class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
-                                                  data-preview-key="{{ $family['key'] }}.{{ $difficultyKey }}" data-preview-kind="summary">
+                                            <span
+                                                class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                                                x-text="encounterSummary('{{ $family['key'] }}', '{{ $difficultyKey }}')"
+                                            >
                                                 {{ data_get($difficultyPreview, 'encounter_summary') }}
                                             </span>
                                         @endif
@@ -297,15 +312,22 @@
                 <button
                     type="submit"
                     class="action-button"
-                    data-manual-disable-on-lock
+                    x-bind:disabled="isActionLocked() || @js($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)"
                     @disabled($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)
                 >
                     <span class="block">{{ __('Auto Lumiis') }}</span>
                     @if ($lumiisAutoPreview !== [])
-                        <span class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50" data-preview-key="lumiis_auto" data-preview-kind="rate">
+                        <span
+                            class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                            x-bind:class="successToneClassByKey('lumiis_auto')"
+                            x-text="successRateLabelByKey('lumiis_auto')"
+                        >
                             {{ __('Est. success') }} {{ data_get($lumiisAutoPreview, 'success_rate_percent', 0) }}% · {{ data_get($lumiisAutoPreview, 'risk_label') }}
                         </span>
-                        <span class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75" data-preview-key="lumiis_auto" data-preview-kind="summary">
+                        <span
+                            class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                            x-text="encounterSummaryByKey('lumiis_auto')"
+                        >
                             {{ data_get($lumiisAutoPreview, 'encounter_summary') }}
                         </span>
                     @endif
@@ -322,15 +344,22 @@
                 <button
                     type="submit"
                     class="action-button-muted w-full"
-                    data-manual-disable-on-lock
+                    x-bind:disabled="isActionLocked() || @js($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)"
                     @disabled($lumiisFightStaminaMissing > 0 || $lumiisFightLocked)
                 >
                     <span class="block">{{ __('Manual Lumiis') }}</span>
                     @if ($lumiisManualPreview !== [])
-                        <span class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50" data-preview-key="lumiis_manual" data-preview-kind="rate">
+                        <span
+                            class="mt-1 block text-[0.58rem] uppercase tracking-[0.18em] text-emerald-50"
+                            x-bind:class="successToneClassByKey('lumiis_manual')"
+                            x-text="successRateLabelByKey('lumiis_manual')"
+                        >
                             {{ __('Est. success') }} {{ data_get($lumiisManualPreview, 'success_rate_percent', 0) }}% · {{ data_get($lumiisManualPreview, 'risk_label') }}
                         </span>
-                        <span class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75" data-preview-key="lumiis_manual" data-preview-kind="summary">
+                        <span
+                            class="mt-1 block text-[0.58rem] tracking-[0.06em] text-white/75"
+                            x-text="encounterSummaryByKey('lumiis_manual')"
+                        >
                             {{ data_get($lumiisManualPreview, 'encounter_summary') }}
                         </span>
                     @endif
@@ -377,7 +406,7 @@
                     <button
                         type="submit"
                         class="action-button w-full"
-                        data-manual-disable-on-lock
+                        x-bind:disabled="isActionLocked() || @js($bossFightStaminaMissing > 0 || $bossFightLocked)"
                         @disabled($bossFightStaminaMissing > 0 || $bossFightLocked)
                     >
                         {{ __('Manual Boss Fight') }}

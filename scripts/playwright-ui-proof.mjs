@@ -1,6 +1,6 @@
 import { chromium, devices } from 'playwright';
 import { execFile } from 'node:child_process';
-import { mkdir, access } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import path from 'node:path';
 
@@ -90,94 +90,6 @@ async function syncProofUsers() {
     await execFileAsync('php', ['artisan', 'game:sync-proof-users'], {
         cwd: process.cwd(),
     });
-}
-
-async function ensureStorageState(browser, credentials, storagePath) {
-    try {
-        await access(storagePath);
-        return;
-    } catch (e) {
-        // create storage by logging in
-    }
-
-    // create a predictable desktop context for the login attempt
-    const ctx = await browser.newContext({
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1440, height: 1024 },
-        isMobile: false,
-        hasTouch: false,
-    });
-    const page = await ctx.newPage();
-
-    try {
-        await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-
-        // try to ensure inputs are visible; if not, fallback to setting values via JS
-        try {
-            await page.waitForSelector('input[name="email"], input#email', { state: 'visible', timeout: 3000 });
-        } catch (e) {
-            // ignore
-        }
-
-        try {
-            await page.getByLabel(/e-mail|email/i).fill(credentials.email);
-        } catch (e) {
-            await page.evaluate((value) => {
-                const el = document.querySelector('input[name="email"], input#email');
-
-                if (el) {
-                    el.value = value;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }, credentials.email);
-        }
-
-        try {
-            await page.getByLabel(/passwort|password/i).fill(credentials.password);
-        } catch (e) {
-            await page.evaluate((value) => {
-                const el = document.querySelector('input[name="password"], input#password');
-
-                if (el) {
-                    el.value = value;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }, credentials.password);
-        }
-
-        try {
-            await page.getByRole('button', { name: /einloggen|log in|login/i }).click();
-        } catch (e) {
-            try {
-                await page.click('button[type="submit"]');
-            } catch (e2) {
-                // last resort: submit the first form on the page
-                await page.evaluate(() => {
-                    const f = document.querySelector('form');
-
-                    if (f) f.submit();
-                });
-            }
-        }
-
-        // wait for a page load or indicator that we're logged in
-        try {
-            await page.waitForLoadState('networkidle', { timeout: 8000 });
-        } catch (e) {
-            // ignore
-        }
-
-        // save storage state (best-effort)
-        try {
-            await ctx.storageState({ path: storagePath });
-        } catch (e) {
-            // ignore
-        }
-    } catch (e) {
-        // best-effort: ignore failures here
-    } finally {
-        await ctx.close();
-    }
 }
 
 async function auditPage(page, label, options = {}) {
@@ -473,58 +385,10 @@ async function auditPage(page, label, options = {}) {
 
 async function login(page, credentials) {
     await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-
-    try {
-        await page.waitForSelector('input[name="email"], input#email', { state: 'visible', timeout: 3000 });
-    } catch (e) {
-        // ignore
-    }
-
-    try {
-        await page.getByLabel(/e-mail|email/i).fill(credentials.email);
-    } catch (e) {
-        await page.evaluate((value) => {
-            const el = document.querySelector('input[name="email"], input#email');
-
-            if (el) {
-                el.value = value;
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }, credentials.email);
-    }
-
-    try {
-        await page.getByLabel(/passwort|password/i).fill(credentials.password);
-    } catch (e) {
-        await page.evaluate((value) => {
-            const el = document.querySelector('input[name="password"], input#password');
-
-            if (el) {
-                el.value = value;
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }, credentials.password);
-    }
-
-    try {
-        await page.getByRole('button', { name: /einloggen|log in|login/i }).click();
-    } catch (e) {
-        try {
-            await page.click('button[type="submit"]');
-        } catch (e2) {
-            await page.evaluate(() => {
-                const f = document.querySelector('form');
-
-                if (f) f.submit();
-            });
-        }
-    }
-
-    try {
-        await page.waitForLoadState('networkidle', { timeout: 8000 });
-    } catch (e) {
-        // ignore
-    }
+    await page.getByLabel(/e-mail|email/i).fill(credentials.email);
+    await page.getByLabel(/passwort|password/i).fill(credentials.password);
+    await page.getByRole('button', { name: /einloggen|log in|login/i }).click();
+    await page.waitForLoadState('networkidle');
 }
 
 async function capture(page, relativeUrl, fileName) {
@@ -548,11 +412,7 @@ async function captureFirstEditPage(page, indexUrl, fileName) {
 
 async function captureDashboardFocus(page, fileName) {
     await page.goto(`${baseUrl}/dashboard?focus=riverbank`, { waitUntil: 'networkidle' });
-    try {
-        await page.waitForSelector('.dashboard-map-stage', { state: 'visible', timeout: 3000 });
-    } catch (e) {
-        await page.waitForTimeout(400);
-    }
+    await page.waitForTimeout(400);
     await auditPage(page, fileName, page.viewportSize()?.width >= 1024
         ? { forbidVerticalScrollIn: '.dashboard-map-stage' }
         : {});
@@ -566,12 +426,7 @@ async function captureDashboardPanel(page, panel, fileName) {
             detail: { panel: panelName },
         }));
     }, panel);
-    try {
-        await page.waitForSelector(`#dashboard-${panel}-overlay, #tutorial-${panel}-overlay, .dashboard-map-overlay-panel`, { state: 'visible', timeout: 4000 });
-    } catch (e) {
-        // fallback: allow a brief pause
-        await page.waitForTimeout(250);
-    }
+    await page.waitForTimeout(250);
     await auditPage(page, fileName, page.viewportSize()?.width >= 1024
         ? { forbidVerticalScrollIn: '.dashboard-map-stage' }
         : {});
@@ -581,39 +436,13 @@ async function captureDashboardPanel(page, panel, fileName) {
 async function startManualBattle(page) {
     await page.goto(`${baseUrl}/dashboard?focus=riverbank`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(300);
-    try {
-        const btn = page.getByRole('button', { name: /manual fight|manueller kampf/i }).first();
-
-        // If the legacy manual-fight button is not present, skip starting a battle.
-        if ((await btn.count()) === 0) {
-            console.warn('startManualBattle: manual fight button not found; skipping.');
-            return;
-        }
-
-        await btn.click();
-        await page.waitForLoadState('networkidle');
-
-        try {
-            await page.locator('#tutorial-battle-window').waitFor({ state: 'visible', timeout: 5000 });
-        } catch (e) {
-            // tolerate missing tutorial battle window
-            console.warn('startManualBattle: battle window did not appear after click; continuing.');
-        }
-    } catch (e) {
-        console.warn('startManualBattle: error while attempting to start manual battle; skipping.', e?.message ?? e);
-        return;
-    }
+    await page.getByRole('button', { name: /manual fight|manueller kampf/i }).first().click();
+    await page.waitForLoadState('networkidle');
+    await page.locator('#tutorial-battle-window').waitFor({ state: 'visible' });
 }
 
 async function captureBattleState(page, fileName) {
     await startManualBattle(page);
-    const battleWindow = page.locator('#tutorial-battle-window');
-
-    if (!(await battleWindow.isVisible())) {
-        console.warn('captureBattleState: no battle window visible; skipping battle capture.');
-        return;
-    }
-
     await auditPage(page, fileName);
     await page.screenshot({ path: path.join(outputDir, fileName), fullPage: true });
 }
@@ -625,36 +454,19 @@ async function captureBattleAfterAttack(page, fileName) {
         await startManualBattle(page);
     }
 
-    if (!(await battleWindow.isVisible())) {
-        console.warn('captureBattleAfterAttack: no battle window available; skipping attack capture.');
-        return;
-    }
-
-    try {
-        await battleWindow.locator('form[action*="battle-attack"] button').first().click();
-        await page.waitForLoadState('networkidle');
-        await auditPage(page, fileName);
-        await page.screenshot({ path: path.join(outputDir, fileName), fullPage: true });
-    } catch (e) {
-        console.warn('captureBattleAfterAttack: failed to perform attack or capture; skipping.', e?.message ?? e);
-        return;
-    }
+    await battleWindow.locator('form[action*="battle-attack"] button').first().click();
+    await page.waitForLoadState('networkidle');
+    await auditPage(page, fileName);
+    await page.screenshot({ path: path.join(outputDir, fileName), fullPage: true });
 }
 
 async function createContext(browser, viewportConfig) {
-    const options = {
+    return browser.newContext({
         ...devices['Desktop Chrome'],
         viewport: viewportConfig.viewport,
         isMobile: viewportConfig.isMobile ?? false,
         hasTouch: viewportConfig.hasTouch ?? false,
-    };
-
-    // allow optional pre-authenticated storage state file
-    if (arguments.length >= 3 && arguments[2]) {
-        options.storageState = arguments[2];
-    }
-
-    return browser.newContext(options);
+    });
 }
 
 async function main() {
@@ -662,57 +474,16 @@ async function main() {
     const browser = await chromium.launch({ headless: true });
 
     try {
-        // prepare proof users and storage state once
-        await syncProofUsers();
-
-        const stateDir = path.resolve(process.cwd(), 'tmp', 'playwright-storage');
-        await mkdir(stateDir, { recursive: true });
-        const normalState = path.join(stateDir, 'normal.json');
-        const adminState = path.join(stateDir, 'admin.json');
-
-        await ensureStorageState(browser, normalUser, normalState);
-        await ensureStorageState(browser, adminUser, adminState);
-
         for (const viewportConfig of viewports) {
-            const context = await createContext(browser, viewportConfig, normalState);
+            await syncProofUsers();
+            const context = await createContext(browser, viewportConfig);
             const page = await context.newPage();
-
-            // apply defensive defaults for stability
-            page.setDefaultTimeout(30000);
-            page.setDefaultNavigationTimeout(30000);
-            await page.addInitScript(() => {
-                const style = document.createElement('style');
-                style.id = 'pw-disable-animations';
-                style.innerHTML = '* { transition: none !important; animation: none !important; }';
-                document.head.appendChild(style);
-            });
 
             for (const [relativeUrl, label] of publicPages) {
                 await capture(page, relativeUrl, `${viewportConfig.name}-${label}.png`);
             }
 
-            // member pages: rely on storageState; fall back to login if needed
-            let needsLogin = false;
-
-            try {
-                await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' });
-                const el = await page.$('input[type="password"], form[action*="login"]');
-                needsLogin = Boolean(el);
-            } catch (e) {
-                // navigation may abort on certain dev server states; try login page as fallback
-                try {
-                    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-                    const el = await page.$('input[type="password"], form[action*="login"]');
-                    needsLogin = Boolean(el);
-                } catch (e2) {
-                    needsLogin = true;
-                }
-            }
-
-            if (needsLogin) {
-                await login(page, normalUser);
-            }
-
+            await login(page, normalUser);
             for (const [relativeUrl, label] of memberPages) {
                 await capture(page, relativeUrl, `${viewportConfig.name}-${label}.png`);
             }
@@ -727,45 +498,15 @@ async function main() {
 
             await context.close();
 
-            const adminContext = await createContext(browser, viewportConfig, adminState);
+            const adminContext = await createContext(browser, viewportConfig);
             const adminPage = await adminContext.newPage();
-
-            adminPage.setDefaultTimeout(30000);
-            adminPage.setDefaultNavigationTimeout(30000);
-            await adminPage.addInitScript(() => {
-                const style = document.createElement('style');
-                style.id = 'pw-disable-animations-admin';
-                style.innerHTML = '* { transition: none !important; animation: none !important; }';
-                document.head.appendChild(style);
-            });
-
-            let adminNeedsLogin = false;
-
-            try {
-                await adminPage.goto(`${baseUrl}/admin`, { waitUntil: 'networkidle' });
-                const el = await adminPage.$('input[type="password"], form[action*="login"]');
-                adminNeedsLogin = Boolean(el);
-            } catch (e) {
-                try {
-                    await adminPage.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-                    const el = await adminPage.$('input[type="password"], form[action*="login"]');
-                    adminNeedsLogin = Boolean(el);
-                } catch (e2) {
-                    adminNeedsLogin = true;
-                }
-            }
-
-            if (adminNeedsLogin) {
-                await login(adminPage, adminUser);
-            }
-
+            await login(adminPage, adminUser);
             for (const [relativeUrl, label] of adminPages) {
                 await capture(adminPage, relativeUrl, `${viewportConfig.name}-${label}.png`);
             }
             for (const [relativeUrl, label] of adminEditPages) {
                 await captureFirstEditPage(adminPage, relativeUrl, `${viewportConfig.name}-${label}.png`);
             }
-
             await adminContext.close();
         }
 

@@ -30,7 +30,7 @@
             }
         </script>
 
-        @vite(['resources/css/app.css', 'resources/js/bootstrap-only.js'])
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body @class([
         'game-shell simple-ui antialiased',

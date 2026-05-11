@@ -6,13 +6,17 @@
             'equipment.characterItem.item',
             'equipment.characterItem.bonuses',
             'learnedSkills.skill',
-    ]);
+        ]);
+    $navbarMoment = now();
+    $staminaNavbarPreview = $currentCharacter?->staminaRecoveryState($navbarMoment);
+    $healthNavbarPreview = $currentCharacter?->healthRecoveryState($navbarMoment);
+    $spNavbarPreview = $currentCharacter?->spRecoveryState($navbarMoment);
+    $displayNavbarStamina = $staminaNavbarPreview['stamina'] ?? $currentCharacter?->stamina;
+    $displayNavbarHealth = $healthNavbarPreview['health'] ?? $currentCharacter?->health;
+    $displayNavbarSp = $spNavbarPreview['sp'] ?? $currentCharacter?->effectiveCurrentSp();
+    $navbarMaxStamina = $currentCharacter?->effectiveMaxStamina() ?? 0;
     $navbarMaxHealth = $currentCharacter?->effectiveMaxHealth() ?? 0;
     $navbarMaxSp = $currentCharacter?->effectiveMaxSp() ?? 0;
-    $navbarMaxStamina = $currentCharacter?->effectiveMaxStamina() ?? 0;
-    $displayNavbarHealth = $displayNavbarHealth ?? ($currentCharacter ? (int) $currentCharacter->health : 0);
-    $displayNavbarSp = $displayNavbarSp ?? ($currentCharacter ? (int) $currentCharacter->sp : 0);
-    $displayNavbarStamina = $displayNavbarStamina ?? ($currentCharacter ? (int) $currentCharacter->stamina : 0);
     $staminaNavbarNextTickSeconds = $staminaNavbarPreview['next_tick_seconds'] ?? null;
     $healthNavbarNextTickSeconds = $healthNavbarPreview['next_tick_seconds'] ?? null;
     $spNavbarNextTickSeconds = $spNavbarPreview['next_tick_seconds'] ?? null;
@@ -112,15 +116,19 @@
     </div>
 @else
     <nav @class(['portal-stage pb-0', 'dashboard-classic-header-wrapper' => $useClassicDashboardHeader])>
-            <div
+        <div
             @class(['portal-shell portal-navbar', 'dashboard-classic-header' => $useClassicDashboardHeader])
             @if ($currentCharacter)
-                data-action-lock-seconds-remaining="{{ $currentCharacter->cooldownSecondsRemaining() }}"
-                data-action-lock-title="{{ config('app.name').' · '.$currentCharacter->name }}"
-                data-action-lock-sync-document-title="{{ request()->routeIs('dashboard', 'game.dashboard') ? '1' : '0' }}"
-                data-action-lock-ready-label="{{ __('Ready') }}"
-                data-action-lock-cooldown-label="{{ __('Cooldown Active') }}"
-                data-action-lock-open-label="{{ __('Action Lock Open') }}"
+                x-data="actionLock({
+                    secondsRemaining: {{ $currentCharacter->cooldownSecondsRemaining() }},
+                    title: @js(config('app.name').' · '.$currentCharacter->name),
+                    syncDocumentTitle: @js(request()->routeIs('dashboard', 'game.dashboard')),
+                    labels: {
+                        ready: @js(__('Ready')),
+                        cooldownActive: @js(__('Cooldown Active')),
+                        actionLockOpen: @js(__('Action Lock Open')),
+                    },
+                })"
             @endif
         >
             <div class="portal-navbar-brand">
@@ -141,7 +149,7 @@
                     </div>
                     <div class="portal-navbar-stat">
                         <span class="portal-navbar-stat-label">{{ __('Action Lock') }}</span>
-                        <span class="portal-navbar-stat-value" data-action-lock-countdown-target>
+                        <span class="portal-navbar-stat-value" @if ($currentCharacter) x-text="formattedCountdown()" @endif>
                             {{ $currentCharacter->cooldownSecondsRemaining() > 0 ? sprintf('%02d:%02d', intdiv($currentCharacter->cooldownSecondsRemaining(), 60), $currentCharacter->cooldownSecondsRemaining() % 60) : __('Ready') }}
                         </span>
                     </div>
@@ -152,65 +160,80 @@
                             <span>{{ number_format($currentCharacter->yang) }}</span>
                         </span>
                     </div>
-                    <div class="portal-navbar-stat portal-navbar-stat-gauge"
-                         data-resource-gauge
-                         data-resource-key="stamina"
-                         data-current="{{ (int) $displayNavbarStamina }}"
-                         data-maximum="{{ $navbarMaxStamina }}"
-                         data-next-tick-seconds="{{ $staminaNavbarNextTickSeconds === null ? 'null' : (int) $staminaNavbarNextTickSeconds }}"
-                         data-interval-seconds="600"
-                         data-points-per-tick="1"
-                         data-labels-full-short="{{ __('Full') }}"
-                         data-labels-minutes-short="{{ __('min') }}">
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            resourceKey: 'stamina',
+                            current: {{ (int) $displayNavbarStamina }},
+                            maximum: {{ $navbarMaxStamina }},
+                            nextTickSeconds: {{ $staminaNavbarNextTickSeconds === null ? 'null' : (int) $staminaNavbarNextTickSeconds }},
+                            intervalSeconds: 600,
+                            pointsPerTick: 1,
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
                         <div class="portal-navbar-stat-head">
                             <span class="portal-navbar-stat-label">{{ __('Stamina') }}</span>
-                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" data-resource-value-target>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
                                 {{ number_format((int) $displayNavbarStamina) }}/{{ number_format($navbarMaxStamina) }}
                             </span>
                         </div>
-                        <div class="portal-resource-gauge portal-resource-gauge-stamina" aria-hidden="true">
-                            <span class="portal-resource-gauge-fill" data-resource-fill style="width: {{ $navbarStaminaPercent }}%;"></span>
+                        <div class="portal-resource-gauge portal-resource-gauge-stamina" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarStaminaPercent }}%;"></span>
                         </div>
-                        <span class="portal-navbar-stat-note" data-resource-nexttick-target>{{ $staminaNavbarCompactTickLabel }}</span>
+                        <span class="portal-navbar-stat-note" x-text="compactNextTick()">{{ $staminaNavbarCompactTickLabel }}</span>
                     </div>
-                    <div class="portal-navbar-stat portal-navbar-stat-gauge"
-                         data-resource-gauge
-                         data-resource-key="health"
-                         data-current="{{ (int) $displayNavbarHealth }}"
-                         data-maximum="{{ $navbarMaxHealth }}"
-                         data-next-tick-seconds="{{ $healthNavbarNextTickSeconds === null ? 'null' : (int) $healthNavbarNextTickSeconds }}"
-                         data-interval-seconds="300"
-                         data-points-per-tick="{{ $navbarHealthPointsPerTick }}"
-                         data-labels-full-short="{{ __('Full') }}"
-                         data-labels-minutes-short="{{ __('min') }}">
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            resourceKey: 'health',
+                            current: {{ (int) $displayNavbarHealth }},
+                            maximum: {{ $navbarMaxHealth }},
+                            nextTickSeconds: {{ $healthNavbarNextTickSeconds === null ? 'null' : (int) $healthNavbarNextTickSeconds }},
+                            intervalSeconds: 300,
+                            pointsPerTick: {{ $navbarHealthPointsPerTick }},
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
                         <div class="portal-navbar-stat-head">
                             <span class="portal-navbar-stat-label">{{ __('HP') }}</span>
-                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" data-resource-value-target>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
                                 {{ number_format((int) $displayNavbarHealth) }}/{{ number_format($navbarMaxHealth) }}
                             </span>
                         </div>
-                        <div class="portal-resource-gauge portal-resource-gauge-health" aria-hidden="true">
-                            <span class="portal-resource-gauge-fill" data-resource-fill style="width: {{ $navbarHealthPercent }}%;"></span>
+                        <div class="portal-resource-gauge portal-resource-gauge-health" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarHealthPercent }}%;"></span>
                         </div>
                     </div>
-                    <div class="portal-navbar-stat portal-navbar-stat-gauge"
-                         data-resource-gauge
-                         data-resource-key="sp"
-                         data-current="{{ (int) $displayNavbarSp }}"
-                         data-maximum="{{ $navbarMaxSp }}"
-                         data-next-tick-seconds="{{ $spNavbarNextTickSeconds === null ? 'null' : (int) $spNavbarNextTickSeconds }}"
-                         data-interval-seconds="180"
-                         data-points-per-tick="{{ $navbarSpPointsPerTick }}"
-                         data-labels-full-short="{{ __('Full') }}"
-                         data-labels-minutes-short="{{ __('min') }}">
+                    <div
+                        class="portal-navbar-stat portal-navbar-stat-gauge"
+                        x-data="resourceGauge({
+                            resourceKey: 'sp',
+                            current: {{ (int) $displayNavbarSp }},
+                            maximum: {{ $navbarMaxSp }},
+                            nextTickSeconds: {{ $spNavbarNextTickSeconds === null ? 'null' : (int) $spNavbarNextTickSeconds }},
+                            intervalSeconds: 180,
+                            pointsPerTick: {{ $navbarSpPointsPerTick }},
+                            labels: {
+                                fullShort: @js(__('Full')),
+                                minutesShort: @js(__('min')),
+                            },
+                        })"
+                    >
                         <div class="portal-navbar-stat-head">
                             <span class="portal-navbar-stat-label">{{ __('SP') }}</span>
-                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" data-resource-value-target>
+                            <span class="portal-navbar-stat-value portal-navbar-stat-value-inline" x-text="formattedValue()">
                                 {{ number_format((int) $displayNavbarSp) }}/{{ number_format($navbarMaxSp) }}
                             </span>
                         </div>
-                        <div class="portal-resource-gauge portal-resource-gauge-sp" aria-hidden="true">
-                            <span class="portal-resource-gauge-fill" data-resource-fill style="width: {{ $navbarSpPercent }}%;"></span>
+                        <div class="portal-resource-gauge portal-resource-gauge-sp" x-bind:class="{ 'is-refilling': isRefilling }" aria-hidden="true">
+                            <span class="portal-resource-gauge-fill" x-bind:style="fillStyle()" style="width: {{ $navbarSpPercent }}%;"></span>
                         </div>
                     </div>
                 </div>
@@ -232,7 +255,7 @@
                         id="tutorial-character-button"
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
-                        data-open-panel="character"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'character' })"
                         @disabled(! $navbarCanOpenCharacter)
                     >
                         {{ __('Character') }}
@@ -241,7 +264,7 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
-                        data-open-panel="skills"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'skills' })"
                         @disabled(! $navbarCanOpenSkills)
                     >
                         {{ __('Skills') }}
@@ -250,7 +273,7 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
-                        data-open-panel="quests"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'quests' })"
                         @disabled(! $navbarCanOpenQuests)
                     >
                         {{ __('Quests') }}
@@ -259,7 +282,7 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
-                        data-open-panel="inventory"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'inventory' })"
                         @disabled(! $navbarCanOpenInventory)
                     >
                         {{ __('Inventory') }}
@@ -268,7 +291,7 @@
                     <button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact"
-                        data-open-panel="equipment"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'equipment' })"
                         @disabled(! $navbarCanOpenEquipment)
                     >
                         {{ __('Equipment') }}
@@ -277,7 +300,7 @@
                     <!--<button
                         type="button"
                         class="theme-button theme-button-primary theme-button-compact dashboard-mobile-window-pill"
-                        onclick="window.dispatchEvent(new CustomEvent('dashboard-panel-open', { detail: 'mobile-info' }));"
+                        x-on:click="$dispatch('dashboard-panel-open', { panel: 'mobile-info' })"
                         @disabled(! $navbarCanOpenMobileInfo)
                     >
                         {{ __('Info') }}
@@ -287,7 +310,7 @@
                         <button
                             type="button"
                             class="theme-button theme-button-primary theme-button-compact"
-                            data-open-panel="settings"
+                            x-on:click="$dispatch('dashboard-panel-open', { panel: 'settings' })"
                         >
                             {{ __('Settings') }}
                         </button>
@@ -297,7 +320,7 @@
                         <button
                             type="button"
                             class="theme-button theme-button-primary theme-button-compact"
-                            data-open-panel="chat"
+                            x-on:click="$dispatch('dashboard-panel-open', { panel: 'chat' })"
                         >
                             {{ __('Chat') }}
                         </button>
@@ -328,7 +351,7 @@
                             <button
                                 type="button"
                                 class="theme-dropdown-link"
-                                onclick="window.dispatchEvent(new CustomEvent('dashboard-active-battle-link', { detail: { href: '{{ $charactersUrl }}' } }));"
+                                x-on:click="$dispatch('dashboard-active-battle-link', { href: '{{ $charactersUrl }}' })"
                             >
                                 {{ __('Change Character') }}
                             </button>

@@ -613,85 +613,33 @@
     @endphp
 
         <div
-            data-dashboard-shell='@json([
-                'activePanel' => $tutorialActive ? match ($tutorialStep) {
+            x-data="dashboardShell({
+                activePanel: @js($tutorialActive ? match ($tutorialStep) {
                     6 => 'inventory',
                     default => null,
-                } : null,
-                'requestedPanel' => $tutorialActive ? null : $initialDashboardPanel,
-                'chatTab' => 'global',
-                'tutorial' => $tutorialDriverPayload,
-                'actionLockSeconds' => $character->cooldownSecondsRemaining(),
-                'resting' => $restingState,
-                'activeBattleRound' => $hasActiveBattle ? max(1, (int) data_get($activeBattleState, 'round', 1)) : 0,
-                'hasActiveBattle' => $hasActiveBattle,
-                'activeBattleCloseTitle' => __('Manual Fight Still Active'),
-                'activeBattleCloseConfirmation' => __('Closing this panel does not abort the fight. Your manual fight stays active and can be resumed from the dashboard.'),
-                'activeBattleCloseWarning' => __('Use Abandon Fight only if you want to end it with no rewards.'),
-                'activeBattleCloseStayLabel' => __('Keep Fight Open'),
-                'activeBattleCloseProceedLabel' => __('Close View'),
-            ])'
+                } : null),
+                requestedPanel: @js($tutorialActive ? null : $initialDashboardPanel),
+                chatTab: 'global',
+                tutorial: @js($tutorialDriverPayload),
+                actionLockSeconds: {{ $character->cooldownSecondsRemaining() }},
+                resting: @js($restingState),
+                activeBattleRound: {{ $hasActiveBattle ? max(1, (int) data_get($activeBattleState, 'round', 1)) : 0 }},
+                hasActiveBattle: @js($hasActiveBattle),
+                activeBattleCloseTitle: @js(__('Manual Fight Still Active')),
+                activeBattleCloseConfirmation: @js(__('Closing this panel does not abort the fight. Your manual fight stays active and can be resumed from the dashboard.')),
+                activeBattleCloseWarning: @js(__('Use Abandon Fight only if you want to end it with no rewards.')),
+                activeBattleCloseStayLabel: @js(__('Keep Fight Open')),
+                activeBattleCloseProceedLabel: @js(__('Close View')),
+            })"
         class="portal-stage dashboard-portal"
         data-tutorial-step="{{ $tutorialActive ? $tutorialStep : '' }}"
+        @keydown.escape.window="activeBattleCloseModalOpen ? dismissActiveBattleCloseModal() : closePanel()"
+        @dashboard-panel-open.window="openPanel($event.detail?.panel ?? $event.detail)"
+        @dashboard-navigate-home.window="navigateHome()"
+        @dashboard-chat-open.window="openChatTab($event.detail?.tab ?? 'global')"
+        @dashboard-active-battle-link.window="confirmNavigation($event.detail?.href ?? null)"
     >
         @include('game.partials.dashboard-server-messages', ['dashboardServerMessages' => $dashboardServerMessages])
-        <!-- Mobile rail toggles: small buttons to open icon strips on narrow viewports -->
-        <div x-cloak x-show="!activePanel" class="dashboard-mobile-rails">
-            <!-- Left rail toggle -->
-            <div class="dashboard-rail-toggle dashboard-rail-toggle-left" data-toggle-left-rail>
-                <button type="button" class="theme-button theme-button-secondary" aria-label="{{ __('Open left menu') }}">☰</button>
-            </div>
-
-            <div class="dashboard-rail-icon-strip dashboard-rail-left" data-rail="left">
-                <div class="dashboard-rail-icons">
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="character">{{ __('Character') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="skills">{{ __('Skills') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="quests">{{ __('Quests') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="inventory">{{ __('Inventory') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="equipment">{{ __('Equipment') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="settings">{{ __('Settings') }}</button>
-                    @if ($dashboardCanOpenChat)
-                        <button type="button" class="theme-button theme-button-compact" data-open-panel="chat">{{ __('Chat') }}</button>
-                    @endif
-                </div>
-                <div class="dashboard-rail-strip-close">
-                    <button type="button" class="dashboard-rail-strip-close-btn" data-close-rail="left">{{ __('Close') }}</button>
-                </div>
-            </div>
-
-            <!-- Right rail toggle -->
-            <div class="dashboard-rail-toggle dashboard-rail-toggle-right" data-toggle-right-rail>
-                <button type="button" class="theme-button theme-button-secondary" aria-label="{{ __('Open right menu') }}">⋮</button>
-            </div>
-
-            <div class="dashboard-rail-icon-strip dashboard-rail-right" data-rail="right">
-                <div class="dashboard-rail-icons">
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="focus">{{ __('Focus') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="mobile-info">{{ __('Info') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="quests">{{ __('Hotspots') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="inventory">{{ __('Materials') }}</button>
-                </div>
-                <div class="dashboard-rail-strip-close">
-                    <button type="button" class="dashboard-rail-strip-close-btn" data-close-rail="right">{{ __('Close') }}</button>
-                </div>
-            </div>
-
-            <!-- Footer toggle -->
-            <div class="dashboard-rail-toggle dashboard-rail-toggle-bottom" data-toggle-footer-strip>
-                <button type="button" class="theme-button theme-button-secondary" aria-label="{{ __('Open footer menu') }}">⌖</button>
-            </div>
-
-            <div class="dashboard-rail-icon-strip dashboard-rail-bottom" data-rail="bottom">
-                <div class="dashboard-rail-icons">
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="mobile-info">{{ __('Info') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="settings">{{ __('Settings') }}</button>
-                    <button type="button" class="theme-button theme-button-compact" data-open-panel="chat">{{ __('Chat') }}</button>
-                </div>
-                <div class="dashboard-rail-strip-close">
-                    <button type="button" class="dashboard-rail-strip-close-btn" data-close-rail="bottom">{{ __('Close') }}</button>
-                </div>
-            </div>
-        </div>
 
         <div
             x-show="activeBattleCloseModalOpen"
@@ -701,7 +649,7 @@
             aria-modal="true"
             aria-labelledby="active-battle-close-title"
         >
-            <div class="battle-replay-backdrop" data-dashboard-action="dismissActiveBattleCloseModal"></div>
+            <div class="battle-replay-backdrop" @click="dismissActiveBattleCloseModal()"></div>
 
             <div class="battle-replay-window battle-warning-window">
                 <div class="battle-replay-header">
@@ -726,8 +674,8 @@
                         </div>
 
                         <div class="battle-warning-actions">
-                            <button type="button" class="theme-button theme-button-primary" data-dashboard-action="dismissActiveBattleCloseModal" x-text="activeBattleCloseStayLabel"></button>
-                            <button type="button" class="theme-button theme-button-secondary" data-dashboard-action="proceedActiveBattleCloseModal" x-text="activeBattleCloseActionLabel ?? activeBattleCloseProceedLabel"></button>
+                            <button type="button" class="theme-button theme-button-primary" @click="dismissActiveBattleCloseModal()" x-text="activeBattleCloseStayLabel"></button>
+                            <button type="button" class="theme-button theme-button-secondary" @click="proceedActiveBattleCloseModal()" x-text="activeBattleCloseActionLabel ?? activeBattleCloseProceedLabel"></button>
                         </div>
                     </article>
                 </div>
@@ -745,7 +693,7 @@
                                     <a
                                         href="{{ route('dashboard') }}"
                                         class="metin2-main-nav-link is-active"
-                                        onclick="if(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigateHome()"
+                                        @click="$event.metaKey || $event.ctrlKey || $event.shiftKey || $event.altKey ? true : ($event.preventDefault(), navigateHome())"
                                     >
                                         {{ __('Realm') }}
                                     </a>
@@ -758,7 +706,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenSkills,
                                         ])
-                                        data-open-panel="skills"
+                                        @click="openPanel('skills')"
                                         @disabled(! $dashboardCanOpenSkills)
                                     >
                                         {{ __('Skills') }}
@@ -772,7 +720,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenCharacter,
                                         ])
-                                        data-open-panel="character"
+                                        @click="openPanel('character')"
                                         @disabled(! $dashboardCanOpenCharacter)
                                     >
                                         {{ __('Character') }}
@@ -786,7 +734,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenQuests,
                                         ])
-                                        data-open-panel="quests"
+                                        @click="openPanel('quests')"
                                         @disabled(! $dashboardCanOpenQuests)
                                     >
                                             {{ __('Quests') }}{{ $readyQuestCount > 0 ? ' · '.$readyQuestCount : '' }}
@@ -800,7 +748,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenInventory,
                                         ])
-                                        data-open-panel="inventory"
+                                        @click="openPanel('inventory')"
                                         @disabled(! $dashboardCanOpenInventory)
                                     >
                                         {{ __('Inventory') }}
@@ -814,7 +762,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenEquipment,
                                         ])
-                                        data-open-panel="equipment"
+                                        @click="openPanel('equipment')"
                                         @disabled(! $dashboardCanOpenEquipment)
                                     >
                                         {{ __('Equipment') }}
@@ -828,7 +776,7 @@
                                             'dashboard-side-link',
                                             'dashboard-side-link-disabled' => ! $dashboardCanOpenSettings,
                                         ])
-                                        data-open-panel="settings"
+                                        @click="openPanel('settings')"
                                         @disabled(! $dashboardCanOpenSettings)
                                     >
                                         {{ __('Settings') }}
@@ -841,7 +789,7 @@
                                     <button
                                         type="button"
                                         class="dashboard-side-utility-link"
-                                        data-open-panel="chat"
+                                        @click="openPanel('chat')"
                                     >
                                         {{ __('Chat') }}
                                     </button>
@@ -1260,7 +1208,6 @@
                                                 <button
                                                     type="submit"
                                                     class="action-button w-full"
-                                                    data-manual-disable-on-lock
                                                     @disabled(! $enemyIsAlive || ($tutorialActive && $tutorialStep === 8))
                                                     @if ($tutorialActive && $tutorialStep === 9 && $loop->first && $enemyIsAlive)
                                                         id="tutorial-attack-button"
@@ -1286,7 +1233,6 @@
                                                         <button
                                                             type="submit"
                                                             class="action-button-muted w-full"
-                                                            data-manual-disable-on-lock
                                                             @disabled(
                                                                 ! $enemyIsAlive
                                                                 || (int) data_get($activeBattlePlayer, 'current_sp', $character->effectiveCurrentSp()) < (int) data_get($skill, 'sp_cost', 0)
@@ -1313,33 +1259,33 @@
             </div>
         @elseif ($manualBattleResultPayload)
             <div
-                data-battle-resolution='@json([
-                    'result' => $manualBattleResultPayload,
-                    'autoOpen' => true,
-                    'labels' => [
-                        'victory' => __('Victory'),
-                        'retreat' => __('Retreat'),
-                        'defeat' => __('Defeat'),
-                        'fallen' => __('Fallen'),
-                        'encounterTypes' => [
-                            'monster' => __('Monster'),
-                            'boss' => __('Boss'),
-                            'lumiis' => __('Lumiis'),
-                        ],
-                        'titles' => [
-                            'bossSoulRises' => __('A soul rises into the sky.'),
-                            'fieldIsYours' => __('The field is yours.'),
-                            'drivenBack' => __('You were driven back.'),
-                        ],
-                        'categories' => [
-                            'monster' => __('Monster'),
-                            'boss' => __('Boss'),
-                            'lumiisCore' => __('Lumiis Core'),
-                            'freedSoul' => __('Freed Soul'),
-                            'tutorialPack' => __('Tutorial Pack'),
-                        ],
-                    ],
-                ])'
+                x-data="battleResolution({
+                    result: @js($manualBattleResultPayload),
+                    autoOpen: true,
+                    labels: {
+                        victory: @js(__('Victory')),
+                        retreat: @js(__('Retreat')),
+                        defeat: @js(__('Defeat')),
+                        fallen: @js(__('Fallen')),
+                        encounterTypes: {
+                            monster: @js(__('Monster')),
+                            boss: @js(__('Boss')),
+                            lumiis: @js(__('Lumiis')),
+                        },
+                        titles: {
+                            bossSoulRises: @js(__('A soul rises into the sky.')),
+                            fieldIsYours: @js(__('The field is yours.')),
+                            drivenBack: @js(__('You were driven back.')),
+                        },
+                        categories: {
+                            monster: @js(__('Monster')),
+                            boss: @js(__('Boss')),
+                            lumiisCore: @js(__('Lumiis Core')),
+                            freedSoul: @js(__('Freed Soul')),
+                            tutorialPack: @js(__('Tutorial Pack')),
+                        },
+                    },
+                })"
                 @keydown.escape.window="close()"
             >
                 <div x-show="isOpen" x-cloak class="battle-replay-overlay">
@@ -1530,34 +1476,34 @@
             </div>
         @elseif ($battleReplayPayload)
             <div
-                data-battle-replay='@json([
-                    'replay' => $battleReplayPayload,
-                    'autoOpen' => $autoOpenBattleReplay,
-                    'labels' => [
-                        'replayReady' => __('Battle replay ready.'),
-                        'victory' => __('Victory'),
-                        'defeat' => __('Defeat'),
-                        'retreat' => __('Retreat'),
-                        'playing' => __('Playing'),
-                        'finished' => __('Finished'),
-                        'ready' => __('Ready'),
-                        'battleWon' => __('Battle Won'),
-                        'battleLost' => __('Battle Lost'),
-                        'fallen' => __('Fallen'),
-                        'encounterTypes' => [
-                            'monster' => __('Monster'),
-                            'boss' => __('Boss'),
-                            'lumiis' => __('Lumiis'),
-                        ],
-                        'categories' => [
-                            'monster' => __('Monster'),
-                            'boss' => __('Boss'),
-                            'lumiisCore' => __('Lumiis Core'),
-                            'freedSoul' => __('Freed Soul'),
-                            'tutorialPack' => __('Tutorial Pack'),
-                        ],
-                    ],
-                ])'
+                x-data="battleReplay({
+                    replay: @js($battleReplayPayload),
+                    autoOpen: @js($autoOpenBattleReplay),
+                        labels: {
+                        replayReady: @js(__('Battle replay ready.')),
+                        victory: @js(__('Victory')),
+                        defeat: @js(__('Defeat')),
+                        retreat: @js(__('Retreat')),
+                        playing: @js(__('Playing')),
+                        finished: @js(__('Finished')),
+                        ready: @js(__('Ready')),
+                        battleWon: @js(__('Battle Won')),
+                        battleLost: @js(__('Battle Lost')),
+                        fallen: @js(__('Fallen')),
+                        encounterTypes: {
+                            monster: @js(__('Monster')),
+                            boss: @js(__('Boss')),
+                            lumiis: @js(__('Lumiis')),
+                        },
+                        categories: {
+                            monster: @js(__('Monster')),
+                            boss: @js(__('Boss')),
+                            lumiisCore: @js(__('Lumiis Core')),
+                            freedSoul: @js(__('Freed Soul')),
+                            tutorialPack: @js(__('Tutorial Pack')),
+                        },
+                    },
+                })"
                 @open-battle-replay.window="open()"
                 @keydown.escape.window="close()"
             >
@@ -1920,7 +1866,7 @@
                                 <button
                                     type="button"
                                     class="action-button"
-                                    data-open-panel="inventory"
+                                    @click="openPanel('inventory')"
                                     @disabled(! $dashboardCanOpenInventory)
                                 >
                                     {{ __('Open Inventory') }}
@@ -1929,7 +1875,7 @@
                                 <button
                                     type="button"
                                     class="action-button-muted"
-                                    data-open-panel="equipment"
+                                    @click="openPanel('equipment')"
                                     @disabled(! $dashboardCanOpenEquipment)
                                 >
                                     {{ __('Open Equipment') }}
@@ -1938,7 +1884,7 @@
                                 <button
                                     type="button"
                                     class="action-button-muted"
-                                    data-open-panel="character"
+                                    @click="openPanel('character')"
                                     @disabled(! $dashboardCanOpenCharacter)
                                 >
                                     {{ __('Open Character') }}
@@ -1947,7 +1893,7 @@
                                 <button
                                     type="button"
                                     class="action-button-muted"
-                                    data-open-panel="skills"
+                                    @click="openPanel('skills')"
                                     @disabled(! $dashboardCanOpenSkills)
                                 >
                                     {{ __('Skills') }}
@@ -1956,7 +1902,7 @@
                                 <button
                                     type="button"
                                     class="action-button-muted"
-                                    data-open-panel="quests"
+                                    @click="openPanel('quests')"
                                     @disabled(! $dashboardCanOpenQuests)
                                 >
                                     {{ __('Open Quests') }}{{ $readyQuestCount > 0 ? ' · '.$readyQuestCount : '' }}
@@ -2027,17 +1973,17 @@
                         </div>
                         <div
                             class="stat-card"
-                            data-stamina-preview='@json([
-                                'current' => (int) $displayStamina,
-                                'maximum' => (int) $character->effectiveMaxStamina(),
-                                'nextTickSeconds' => $nextStaminaTickSeconds === null ? null : (int) $nextStaminaTickSeconds,
-                                'labels' => [
-                                    'fullyRecovered' => __('Fully recovered'),
-                                    'nextPointIn' => __('Next point in'),
-                                    'minutesShort' => __('min'),
-                                    'fullShort' => __('Full'),
-                                ],
-                            ])'
+                            x-data="staminaPreview({
+                                current: {{ (int) $displayStamina }},
+                                maximum: {{ (int) $character->effectiveMaxStamina() }},
+                                nextTickSeconds: {{ $nextStaminaTickSeconds === null ? 'null' : (int) $nextStaminaTickSeconds }},
+                                labels: {
+                                    fullyRecovered: @js(__('Fully recovered')),
+                                    nextPointIn: @js(__('Next point in')),
+                                    minutesShort: @js(__('min')),
+                                    fullShort: @js(__('Full')),
+                                },
+                            })"
                         >
                             <span class="stat-label">{{ __('Stamina') }}</span>
                             <span class="stat-value stat-value-compact">
@@ -2251,10 +2197,10 @@
 
                 <div
                     class="inventory-workspace"
-                    data-inventory-workspace='@json([
-                        'equipmentInspector' => $equipmentInspectorDefaultSlot,
-                        'inventorySelection' => $inventorySelectionDefaultId,
-                    ])'
+                    x-data="{
+                        equipmentInspector: @js($equipmentInspectorDefaultSlot),
+                        inventorySelection: @js($inventorySelectionDefaultId),
+                    }"
                 >
                     <div class="inventory-overview-grid">
                         <article class="inventory-summary-card">
@@ -4070,7 +4016,7 @@
                                         'dashboard-side-cta',
                                         'dashboard-side-link-disabled' => ! $dashboardCanOpenInventory,
                                     ])
-                                    data-open-panel="inventory"
+                                    @click="openPanel('inventory')"
                                     @disabled(! $dashboardCanOpenInventory)
                                 >
                                     {{ __('Open Inventory') }}

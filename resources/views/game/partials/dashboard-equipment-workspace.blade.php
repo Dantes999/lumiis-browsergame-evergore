@@ -18,7 +18,12 @@
         </div>
     @endif
 
-    <div class="{{ $showPanelHead ? 'equipment-board mt-6' : 'equipment-board' }}">
+    <div
+        class="{{ $showPanelHead ? 'equipment-board mt-6' : 'equipment-board' }}"
+        x-data="equipmentBoard()"
+        @keydown.escape.window="closeInfo()"
+        @click.outside="closeInfo()"
+    >
         <div class="equipment-board-shell">
             <div class="equipment-board-window">
     
@@ -33,7 +38,10 @@
                             $detailSide = in_array($slot, ['earring', 'offhand', 'boots', 'mount'], true) ? 'left' : 'right';
                         @endphp
 
-                            <div class="equipment-board-slot-card {{ $slotConfig['class'] }}" data-slot="{{ $slot }}">
+                        <div
+                            class="equipment-board-slot-card {{ $slotConfig['class'] }}"
+                            x-bind:class="{ 'equipment-board-slot-card-open': isInfoOpen('{{ $slot }}') }"
+                        >
                             <button
                                 type="button"
                                 class="equipment-board-slot {{ $equippedItem ? 'equipment-board-slot-filled' : '' }}"
@@ -59,7 +67,12 @@
                                 </span>
                             </button>
 
-                            <button type="button" class="equipment-board-slot-info-toggle" data-toggle-info="{{ $slot }}" aria-expanded="false">
+                            <button
+                                type="button"
+                                class="equipment-board-slot-info-toggle"
+                                @click.stop="toggleInfo('{{ $slot }}')"
+                                x-bind:aria-expanded="isInfoOpen('{{ $slot }}')"
+                            >
                                 {{ __('Info') }}
                             </button>
 

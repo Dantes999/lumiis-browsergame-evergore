@@ -157,11 +157,11 @@
                                     </div>
                                 </form>
 
-                                    <div class="flex flex-wrap gap-3 xl:justify-end">
+                                <div class="flex flex-wrap gap-3 xl:justify-end">
                                     <button
                                         type="button"
                                         class="theme-button theme-button-danger"
-                                        onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: '{{ $deleteModalName }}' })); return false;"
+                                        x-on:click.prevent="$dispatch('open-modal', '{{ $deleteModalName }}')"
                                         @disabled($slotLockedByBattle)
                                     >
                                         {{ __('Delete Slot') }}
@@ -186,8 +186,8 @@
                                         </p>
                                     @endif
 
-                                        <div class="mt-6 flex flex-wrap gap-3">
-                                        <button type="button" class="theme-button theme-button-secondary" onclick="window.dispatchEvent(new CustomEvent('close-modal', { detail: '{{ $deleteModalName }}' })); return false;">
+                                    <div class="mt-6 flex flex-wrap gap-3">
+                                        <button type="button" class="theme-button theme-button-secondary" x-on:click="$dispatch('close-modal', '{{ $deleteModalName }}')">
                                             {{ __('Keep Slot') }}
                                         </button>
 

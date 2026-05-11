@@ -1,5 +1,5 @@
-<section id="dashboard-settings-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" data-panel="settings">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="dashboard-settings-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'settings'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-map-overlay-window">
         <div class="dashboard-overlay-head">
@@ -11,7 +11,7 @@
                 </p>
             </div>
 
-            <button type="button" class="dashboard-overlay-close">
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                 {{ __('Close') }}
             </button>
         </div>
@@ -34,8 +34,8 @@
     </div>
 </section>
 
-<section id="dashboard-character-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" data-panel="character">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="dashboard-character-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'character'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="if (!tutorial?.active) closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-map-overlay-window">
         <div class="dashboard-overlay-head">
@@ -44,9 +44,9 @@
                 <h2 class="dashboard-overlay-title">{{ __('Character') }}</h2>
             </div>
 
-            @if (! $tutorialActive)
-                <button type="button" class="dashboard-overlay-close">{{ __('Close') }}</button>
-            @endif
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()" x-show="!tutorial?.active" x-cloak>
+                {{ __('Close') }}
+            </button>
         </div>
 
         <div class="dashboard-overlay-scroll">
@@ -91,12 +91,28 @@
                         <span class="stat-label">{{ __('Health') }}</span>
                         <span class="stat-value stat-value-compact">{{ number_format((int) $displayHealth) }}/{{ number_format($character->effectiveMaxHealth()) }}</span>
                     </div>
-                    <div class="stat-card" data-resource-gauge data-resource-key="stamina" data-current="{{ (int) $displayStamina }}" data-maximum="{{ (int) $character->effectiveMaxStamina() }}" data-next-tick-seconds="{{ $nextStaminaTickSeconds === null ? 'null' : (int) $nextStaminaTickSeconds }}" data-interval-seconds="60" data-points-per-tick="1" data-labels-full-short="{{ __('Full') }}" data-labels-minutes-short="{{ __('min') }}">
+                    <div
+                        class="stat-card"
+                        x-data="staminaPreview({
+                            resourceKey: 'stamina',
+                            current: {{ (int) $displayStamina }},
+                            maximum: {{ (int) $character->effectiveMaxStamina() }},
+                            nextTickSeconds: {{ $nextStaminaTickSeconds === null ? 'null' : (int) $nextStaminaTickSeconds }},
+                            labels: {
+                                fullyRecovered: @js(__('Fully recovered')),
+                                nextPointIn: @js(__('Next point in')),
+                                minutesShort: @js(__('min')),
+                                fullShort: @js(__('Full')),
+                            },
+                        })"
+                    >
                         <span class="stat-label">{{ __('Stamina') }}</span>
                         <span class="stat-value stat-value-compact">
-                            <span data-resource-value-target>{{ number_format($displayStamina) }}</span>/{{ number_format($character->effectiveMaxStamina()) }}
+                            <span x-text="current.toLocaleString()">{{ number_format($displayStamina) }}</span>/{{ number_format($character->effectiveMaxStamina()) }}
                         </span>
-                        <span class="stat-note" data-resource-nexttick-target>{{ $nextStaminaTickLabel === __('Full') ? __('Fully recovered') : __('Next point in').' '.$nextStaminaTickLabel }}</span>
+                        <span class="stat-note" x-text="formattedNextTick()">
+                            {{ $nextStaminaTickLabel === __('Full') ? __('Fully recovered') : __('Next point in').' '.$nextStaminaTickLabel }}
+                        </span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-label">{{ __('SP') }}</span>
@@ -194,8 +210,8 @@
 </section>
 
 @if ($activeArea && ! $tutorialActive)
-    <section id="dashboard-focus-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" data-panel="focus">
-        <div class="dashboard-overlay-backdrop"></div>
+    <section id="dashboard-focus-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'focus'" x-cloak>
+        <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
         <div class="dashboard-overlay-window dashboard-map-overlay-window">
             <div class="dashboard-overlay-head">
@@ -214,7 +230,7 @@
                         </span>
                     @endif
 
-                    <button type="button" class="dashboard-overlay-close">
+                    <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                         {{ __('Close') }}
                     </button>
                 </div>
@@ -242,8 +258,8 @@
     </section>
 @endif
 
-<section id="dashboard-skills-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" data-panel="skills">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="dashboard-skills-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'skills'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-map-overlay-window">
         <div class="dashboard-overlay-head">
@@ -252,7 +268,7 @@
                 <h2 class="dashboard-overlay-title">{{ __('Skills') }}</h2>
             </div>
 
-            <button type="button" class="dashboard-overlay-close">
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                 {{ __('Close') }}
             </button>
         </div>
@@ -263,8 +279,8 @@
     </div>
 </section>
 
-<section id="dashboard-quests-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" data-panel="quests">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="dashboard-quests-overlay" class="dashboard-overlay-panel dashboard-map-overlay-panel" x-show="activePanel === 'quests'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-map-overlay-window">
         <div class="dashboard-overlay-head">
@@ -273,7 +289,7 @@
                 <h2 class="dashboard-overlay-title">{{ __('Questlog') }}</h2>
             </div>
 
-            <button type="button" class="dashboard-overlay-close">
+            <button type="button" class="dashboard-overlay-close" @click="closePanel()">
                 {{ __('Close') }}
             </button>
         </div>
@@ -284,8 +300,8 @@
     </div>
 </section>
 
-<section id="dashboard-equipment-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-map-overlay-panel dashboard-map-overlay-panel-inventory" data-panel="equipment">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="dashboard-equipment-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-map-overlay-panel dashboard-map-overlay-panel-inventory" x-show="activePanel === 'equipment'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-overlay-window-inventory dashboard-map-overlay-window">
         <div class="dashboard-overlay-head dashboard-overlay-head-inventory">
@@ -295,7 +311,9 @@
             </div>
 
             <div class="dashboard-overlay-head-actions">
-                <button type="button" class="dashboard-overlay-close">{{ __('Close') }}</button>
+                <button type="button" class="dashboard-overlay-close" @click="closePanel()">
+                    {{ __('Close') }}
+                </button>
             </div>
         </div>
 
@@ -309,8 +327,8 @@
     </div>
 </section>
 
-<section id="tutorial-inventory-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-map-overlay-panel dashboard-map-overlay-panel-inventory" data-panel="inventory">
-    <div class="dashboard-overlay-backdrop"></div>
+<section id="tutorial-inventory-overlay" class="dashboard-overlay-panel dashboard-overlay-panel-inventory dashboard-map-overlay-panel dashboard-map-overlay-panel-inventory" x-show="activePanel === 'inventory'" x-cloak>
+    <div class="dashboard-overlay-backdrop" @click="if (!tutorial?.active) closePanel()"></div>
 
     <div class="dashboard-overlay-window dashboard-overlay-window-inventory dashboard-map-overlay-window">
         <div class="dashboard-overlay-head dashboard-overlay-head-inventory">
@@ -327,9 +345,9 @@
                     {{ number_format($bagItems->count()) }} {{ __('Stacks') }}
                 </span>
 
-                @if (! $tutorialActive)
-                    <button type="button" class="dashboard-overlay-close">{{ __('Close') }}</button>
-                @endif
+                <button type="button" class="dashboard-overlay-close" @click="closePanel()" x-show="!tutorial?.active" x-cloak>
+                    {{ __('Close') }}
+                </button>
             </div>
         </div>
 
@@ -422,7 +440,15 @@
                 $defaultInventoryCategory = data_get($inventoryCategories, '0.key');
             @endphp
 
-            <div class="inventory-workspace" data-inventory-list data-default-category="{{ $defaultInventoryCategory }}" data-total-items="{{ $bagItems->count() }}" data-per-page="10">
+            <div
+                class="inventory-workspace"
+                x-data="inventoryList({
+                    totalItems: {{ $bagItems->count() }},
+                    perPage: 10,
+                    categories: @js($inventoryCategories),
+                    defaultCategory: @js($defaultInventoryCategory),
+                })"
+            >
                 @if ($tutorialActive && $tutorialStep === 6)
                     <div class="inventory-modal-main">
                         @include('game.partials.dashboard-equipment-workspace', [
@@ -446,8 +472,9 @@
                                 @foreach ($inventoryCategories as $inventoryCategory)
                                     <button
                                         type="button"
-                                        class="inventory-subinventory-tab @if($inventoryCategory['key'] === $defaultInventoryCategory) inventory-subinventory-tab-active @endif"
-                                        data-inventory-tab="{{ $inventoryCategory['key'] }}"
+                                        class="inventory-subinventory-tab"
+                                        @click="setCategory('{{ $inventoryCategory['key'] }}')"
+                                        x-bind:class="{ 'inventory-subinventory-tab-active': activeCategory === '{{ $inventoryCategory['key'] }}' }"
                                     >
                                         <span class="inventory-subinventory-tab-copy">
                                             <span class="inventory-subinventory-page-label">{{ __('Bag') }} {{ $inventoryBagPageNumerals[$loop->index] ?? (string) ($loop->iteration) }}</span>
@@ -459,28 +486,38 @@
                             </div>
                         @endif
 
-                            <div class="inventory-list-pagination mt-6">
+                        <div class="inventory-list-pagination mt-6">
                             <p class="inventory-list-pagination-copy">
-                                <span data-inventory-start>{{ number_format($bagItems->isEmpty() ? 0 : 1) }}</span>
+                                <span x-text="visibleStartNumber().toLocaleString()">{{ number_format($bagItems->isEmpty() ? 0 : 1) }}</span>
                                 -
-                                <span data-inventory-end>{{ number_format(min(10, $bagItems->count())) }}</span>
+                                <span x-text="endIndex().toLocaleString()">{{ number_format(min(10, $bagItems->count())) }}</span>
                                 /
-                                <span data-inventory-total>{{ number_format($bagItems->count()) }}</span>
+                                <span x-text="filteredTotalItems().toLocaleString()">{{ number_format($bagItems->count()) }}</span>
                             </p>
 
                             <div class="inventory-list-pagination-controls">
-                                <button type="button" class="action-button-muted" data-inventory-prev disabled>
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="previousPage()"
+                                    x-bind:disabled="currentPage <= 1"
+                                >
                                     {{ __('Previous') }}
                                 </button>
 
                                 <span class="inventory-list-page-indicator">
                                     {{ __('Page') }}
-                                    <span data-inventory-current>1</span>
+                                    <span x-text="currentPage">1</span>
                                     /
-                                    <span data-inventory-pages>1</span>
+                                    <span x-text="totalPages()">1</span>
                                 </span>
 
-                                <button type="button" class="action-button-muted" data-inventory-next @if($bagItems->count() <= 10) disabled @endif>
+                                <button
+                                    type="button"
+                                    class="action-button-muted"
+                                    @click="nextPage()"
+                                    x-bind:disabled="currentPage >= totalPages()"
+                                >
                                     {{ __('Next') }}
                                 </button>
                             </div>
@@ -491,7 +528,7 @@
                                 $inventoryCategoryLabel = $inventoryCategoryItems->first()?->item?->inventoryCategoryLabel() ?? __('Misc');
                             @endphp
 
-                            <section class="inventory-subinventory-section mt-6 @if($defaultInventoryCategory !== $inventoryCategoryKey) d-none @endif" data-inventory-section="{{ $inventoryCategoryKey }}">
+                            <section class="inventory-subinventory-section mt-6" x-show="activeCategory === '{{ $inventoryCategoryKey }}'" x-cloak>
                                 <div class="inventory-subinventory-head">
                                     <div>
                                         <p class="panel-kicker">{{ __('Bag Page') }} {{ $inventoryBagPageNumerals[$loop->index] ?? (string) ($loop->iteration) }}</p>
@@ -512,7 +549,12 @@
                                                 && ((int) ($item->heal_amount ?? 0) > 0 || (int) ($item->sp_restore ?? 0) > 0);
                                         @endphp
 
-                                        <article class="inventory-list-row" data-inventory-item-id="{{ $inventoryItem->id }}">
+                                        <article
+                                            class="inventory-list-row"
+                                            x-show="isVisible('{{ $inventoryCategoryKey }}', {{ $loop->index }})"
+                                            x-cloak
+                                            x-bind:class="{ 'inventory-list-row-open': isInfoOpen({{ $inventoryItem->id }}) }"
+                                        >
                                             <div class="inventory-list-row-header">
                                                 <div class="inventory-list-row-main">
                                                     <span class="inventory-list-row-art" aria-hidden="true">
@@ -559,11 +601,14 @@
                                                             @endif
 
                                                             @if ($item->stackable && $inventoryItem->quantity > 1)
-                                                                <div class="inventory-list-row-quantity-field quantity-stepper" data-quantity-stepper data-min="1" data-max="{{ $inventoryItem->quantity }}" data-value="1">
+                                                                <div class="inventory-list-row-quantity-field quantity-stepper" x-data="quantityStepper({ min: 1, max: {{ $inventoryItem->quantity }}, value: 1 })">
                                                                     <label class="inventory-list-row-quantity-label" for="inventory-list-use-quantity-{{ $inventoryItem->id }}">{{ __('Qty') }}</label>
                                                                     <div class="quantity-stepper-controls">
-                                                                        <button type="button" class="quantity-stepper-button stepper-decrement" aria-label="{{ __('Decrease quantity') }}">-</button>
+                                                                        <button type="button" class="quantity-stepper-button" @click="decrement()" x-bind:disabled="value <= min" aria-label="{{ __('Decrease quantity') }}">-</button>
                                                                         <input
+                                                                            x-ref="input"
+                                                                            x-model="value"
+                                                                            @input="sync()"
                                                                             id="inventory-list-use-quantity-{{ $inventoryItem->id }}"
                                                                             type="number"
                                                                             name="quantity"
@@ -572,8 +617,8 @@
                                                                             value="1"
                                                                             class="inventory-use-quantity inventory-list-row-quantity"
                                                                         >
-                                                                        <button type="button" class="quantity-stepper-button stepper-increment" aria-label="{{ __('Increase quantity') }}">+</button>
-                                                                        <button type="button" class="quantity-stepper-max stepper-max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
+                                                                        <button type="button" class="quantity-stepper-button" @click="increment()" x-bind:disabled="value >= max" aria-label="{{ __('Increase quantity') }}">+</button>
+                                                                        <button type="button" class="quantity-stepper-max" @click="setMax()" x-bind:disabled="value >= max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
                                                                     </div>
                                                                 </div>
                                                             @endif
@@ -620,11 +665,14 @@
                                                             @endif
 
                                                             @if ($item->stackable && $inventoryItem->quantity > 1)
-                                                                <div class="inventory-list-row-quantity-field quantity-stepper" data-quantity-stepper data-min="1" data-max="{{ $inventoryItem->quantity }}" data-value="1">
+                                                                <div class="inventory-list-row-quantity-field quantity-stepper" x-data="quantityStepper({ min: 1, max: {{ $inventoryItem->quantity }}, value: 1 })">
                                                                     <label class="inventory-list-row-quantity-label" for="inventory-list-sell-quantity-{{ $inventoryItem->id }}">{{ __('Qty') }}</label>
                                                                     <div class="quantity-stepper-controls">
-                                                                        <button type="button" class="quantity-stepper-button stepper-decrement" aria-label="{{ __('Decrease quantity') }}">-</button>
+                                                                        <button type="button" class="quantity-stepper-button" @click="decrement()" x-bind:disabled="value <= min" aria-label="{{ __('Decrease quantity') }}">-</button>
                                                                         <input
+                                                                            x-ref="input"
+                                                                            x-model="value"
+                                                                            @input="sync()"
                                                                             id="inventory-list-sell-quantity-{{ $inventoryItem->id }}"
                                                                             type="number"
                                                                             name="quantity"
@@ -633,8 +681,8 @@
                                                                             value="1"
                                                                             class="inventory-use-quantity inventory-list-row-quantity"
                                                                         >
-                                                                        <button type="button" class="quantity-stepper-button stepper-increment" aria-label="{{ __('Increase quantity') }}">+</button>
-                                                                        <button type="button" class="quantity-stepper-max stepper-max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
+                                                                        <button type="button" class="quantity-stepper-button" @click="increment()" x-bind:disabled="value >= max" aria-label="{{ __('Increase quantity') }}">+</button>
+                                                                        <button type="button" class="quantity-stepper-max" @click="setMax()" x-bind:disabled="value >= max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
                                                                     </div>
                                                                 </div>
                                                             @endif
@@ -645,7 +693,14 @@
                                                         </form>
                                                     @endif
 
-                                                    <button type="button" class="inventory-list-row-info-toggle" data-toggle-inventory-info="{{ $inventoryItem->id }}" aria-expanded="false">{{ __('Info') }}</button>
+                                                    <button
+                                                        type="button"
+                                                        class="inventory-list-row-info-toggle"
+                                                        @click.stop="toggleInfo({{ $inventoryItem->id }})"
+                                                        x-bind:aria-expanded="isInfoOpen({{ $inventoryItem->id }})"
+                                                    >
+                                                        {{ __('Info') }}
+                                                    </button>
                                                 </div>
                                             </div>
 
