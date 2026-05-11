@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "XSRF-TOKEN",
+      "value": "eyJpdiI6ImZBa1pWSVh2NVdjVzFXdFlLUlVyS3c9PSIsInZhbHVlIjoiWGJzQTVyNFJoU1lNL0czZHc5SlptRlU5dUQ5c1hWcDE4dXdUbjRzSExybS9wQk9JSWZERHhoVERwYjZ2UFJuWURUZ29RemR6N0xsbWd0MFpDNkp2VTRZaDRDUVdORkhRY2Q0TkNBekk1cTVrUWF2dk1sUG93elBNcTMybTd3OE0iLCJtYWMiOiIzNmU1YWE5NjFhNjIzNDU2M2U1NzNhYzkxNGU5ODg5Nzk2YmVjYTk1MWIyZjc3ZjcwZDI1YzE3YTJjZjgxZTViIiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1778323896.010855,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "lumiis-session",
+      "value": "eyJpdiI6InNVWStFVks1L09IV2ZvUllraWF3L0E9PSIsInZhbHVlIjoiSTlrMG0xYnJqcGxDTVRlc05lb0JuRTVxcDl0Wk5jWFlhNnoyQW5XL0QzYWFLYVNLT0lmMnppMG9WVjJoWG9QZDg0MkZkMTA4NGZmZUdJKzlxYVlScmN4VFFnOFo2RktLNkV4ZzhqZ3JuYTg2YURad2phYmpkdmRYQy9LeFNtYSsiLCJtYWMiOiJiM2JiNWFmYzY3NGU1NDlkMDBjZTE5MmVjOWM2OGFiYmFlMmYwNDM3NjRlOTkxM2RmMzQ2YmJjNjIwMDAyMDNjIiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1778323896.011217,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

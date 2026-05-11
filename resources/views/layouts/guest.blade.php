@@ -23,7 +23,7 @@
             }
         </script>
 
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/bootstrap-only.js'])
     </head>
     <body class="game-shell simple-ui public-login-page antialiased">
         <div class="public-site-shell public-site-shell-login public-site-shell-guest">

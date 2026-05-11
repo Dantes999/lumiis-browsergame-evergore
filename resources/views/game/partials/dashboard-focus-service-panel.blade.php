@@ -244,14 +244,11 @@
                                 <input type="hidden" name="redirect_focus" value="{{ $activeArea->slug }}">
 
                                 <div class="shop-purchase-controls">
-                                    <div class="quantity-stepper" x-data="quantityStepper({ min: 1, max: {{ $shopQuantityInputMax }}, value: 1 })">
+                                    <div class="quantity-stepper" data-quantity-stepper data-min="1" data-max="{{ $shopQuantityInputMax }}" data-value="1">
                                         <label class="shop-purchase-quantity-label" for="shop-buy-quantity-{{ $shopItem->id }}">{{ __('Qty') }}</label>
                                         <div class="quantity-stepper-controls">
-                                            <button type="button" class="quantity-stepper-button" @click="decrement()" x-bind:disabled="value <= min" aria-label="{{ __('Decrease quantity') }}">-</button>
+                                            <button type="button" class="quantity-stepper-button stepper-decrement" aria-label="{{ __('Decrease quantity') }}">-</button>
                                             <input
-                                                x-ref="input"
-                                                x-model="value"
-                                                @input="sync()"
                                                 id="shop-buy-quantity-{{ $shopItem->id }}"
                                                 type="number"
                                                 name="quantity"
@@ -260,8 +257,8 @@
                                                 value="1"
                                                 class="inventory-use-quantity shop-purchase-quantity"
                                             >
-                                            <button type="button" class="quantity-stepper-button" @click="increment()" x-bind:disabled="value >= max" aria-label="{{ __('Increase quantity') }}">+</button>
-                                            <button type="button" class="quantity-stepper-max" @click="setMax()" x-bind:disabled="value >= max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
+                                            <button type="button" class="quantity-stepper-button stepper-increment" aria-label="{{ __('Increase quantity') }}">+</button>
+                                            <button type="button" class="quantity-stepper-max stepper-max" aria-label="{{ __('Use max quantity') }}">{{ __('Max') }}</button>
                                         </div>
                                     </div>
 
