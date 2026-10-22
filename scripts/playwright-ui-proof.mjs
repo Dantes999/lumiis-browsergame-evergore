@@ -94,6 +94,10 @@ async function syncProofUsers() {
 
 async function auditPage(page, label, options = {}) {
     const { minimumFontSizePx = 12, forbidVerticalScrollIn = null } = options;
+    // Park the mouse away from interactive cards so hover popovers do not make
+    // screenshots and viewport audits non-deterministic.
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(250);
     const viewport = page.viewportSize();
     const resolvedMinimumFontSizePx = viewport && viewport.width < 900 ? minimumFontSizePx : 11.5;
     const issues = await page.evaluate(({ minimumFontSizePx: minFontSize, forbidVerticalScrollIn: scrollScopeSelector }) => {
@@ -135,6 +139,24 @@ async function auditPage(page, label, options = {}) {
             return (lighter + 0.05) / (darker + 0.05);
         };
 
+        const isHiddenByAncestor = (element) => {
+            let node = element;
+
+            while (node instanceof HTMLElement) {
+                const style = window.getComputedStyle(node);
+
+                if (style.display === 'none'
+                    || style.visibility === 'hidden'
+                    || Number.parseFloat(style.opacity || '1') <= 0) {
+                    return true;
+                }
+
+                node = node.parentElement;
+            }
+
+            return false;
+        };
+
         const visibleOnScreen = (element) => {
             if (!(element instanceof HTMLElement)) {
                 return false;
@@ -146,6 +168,7 @@ async function auditPage(page, label, options = {}) {
             return style.display !== 'none'
                 && style.visibility !== 'hidden'
                 && Number.parseFloat(style.opacity || '1') > 0
+                && !isHiddenByAncestor(element)
                 && rect.width > 0
                 && rect.height > 0
                 && rect.bottom > 0
@@ -304,7 +327,7 @@ async function auditPage(page, label, options = {}) {
                     const text = normalize(element.innerText || element.textContent || '');
 
                     return text.length >= 2
-                        && !element.closest('button, .cozy-chip, .theme-button, .theme-button-primary, .theme-button-secondary, .theme-button-danger, .action-button, .action-button-muted, .nav-pill, .dashboard-overlay-pill')
+                        && !element.closest('button, .cozy-chip, .battle-matchup-chip, .theme-button, .theme-button-primary, .theme-button-secondary, .theme-button-danger, .action-button, .action-button-muted, .nav-pill, .dashboard-overlay-pill')
                         && !element.matches('.cozy-chip');
                 });
 
@@ -412,7 +435,7 @@ async function captureFirstEditPage(page, indexUrl, fileName) {
 
 async function captureDashboardFocus(page, fileName) {
     await page.goto(`${baseUrl}/dashboard?focus=riverbank`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(800);
     await auditPage(page, fileName, page.viewportSize()?.width >= 1024
         ? { forbidVerticalScrollIn: '.dashboard-map-stage' }
         : {});
@@ -426,7 +449,7 @@ async function captureDashboardPanel(page, panel, fileName) {
             detail: { panel: panelName },
         }));
     }, panel);
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(800);
     await auditPage(page, fileName, page.viewportSize()?.width >= 1024
         ? { forbidVerticalScrollIn: '.dashboard-map-stage' }
         : {});
@@ -435,8 +458,8 @@ async function captureDashboardPanel(page, panel, fileName) {
 
 async function startManualBattle(page) {
     await page.goto(`${baseUrl}/dashboard?focus=riverbank`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(300);
-    await page.getByRole('button', { name: /manual fight|manueller kampf/i }).first().click();
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: /manual fight|manual lumiis|manueller kampf|manueller lumiis/i }).first().click();
     await page.waitForLoadState('networkidle');
     await page.locator('#tutorial-battle-window').waitFor({ state: 'visible' });
 }

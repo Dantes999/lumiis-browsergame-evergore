@@ -10,7 +10,7 @@ use App\Models\Location;
 use App\Models\User;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -291,7 +291,7 @@ class PlayerSecurityTest extends TestCase
         ]);
 
         $this->runInEnvironment('production', function () use ($user): void {
-            $response = $this->withMiddleware(ValidateCsrfToken::class)
+            $response = $this->withMiddleware(PreventRequestForgery::class)
                 ->actingAs($user)
                 ->post(route('game.actions.store', ['action' => 'global-chat']), [
                     'idempotency_key' => (string) Str::uuid(),

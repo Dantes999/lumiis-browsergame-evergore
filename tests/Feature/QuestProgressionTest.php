@@ -330,6 +330,7 @@ class QuestProgressionTest extends TestCase
             'boss_base_chance' => 0,
             'boss_pressure_chance_per_point' => 0,
             'boss_pressure_threshold' => 9999,
+            'lumiis_loot_table' => [],
         ]);
 
         CharacterAreaProgress::query()->create([

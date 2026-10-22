@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@plugin '@tailwindcss/forms';
 
 @layer base {
     :root {
@@ -6933,7 +6935,7 @@
 
     .battle-matchup-kicker {
         margin: 0 0 0.55rem;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.16em;
         text-transform: uppercase;
@@ -8632,7 +8634,7 @@
 
     .dashboard-overlay-subtitle {
         margin-top: 0.3rem;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         line-height: 1.45;
     }
 

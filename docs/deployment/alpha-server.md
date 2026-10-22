@@ -3,10 +3,10 @@
 This project is ready for a single-server alpha on Ubuntu 24.04 with:
 
 - `nginx`
-- `php8.3-fpm`
+- `php8.5-fpm`
 - `mariadb` or `postgresql`
 - `systemd`
-- `node 22`
+- `node 24`
 - `composer`
 
 The checked-in deployment assets live in:
@@ -32,14 +32,14 @@ Install the base stack:
 ```bash
 sudo apt update
 sudo apt install -y nginx mariadb-server unzip git curl
-sudo apt install -y php8.3-cli php8.3-fpm php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl php8.3-zip php8.3-bcmath php8.3-intl
+sudo apt install -y php8.5-cli php8.5-fpm php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip php8.5-bcmath php8.5-intl
 sudo apt install -y composer
 ```
 
-Install Node 22 from NodeSource or your preferred package source:
+Install Node 24 from NodeSource or your preferred package source:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
@@ -158,7 +158,7 @@ Before enabling the config, replace:
 
 - `alpha.example.com`
 - `/var/www/lumiis` if you deployed elsewhere
-- `php8.3-fpm.sock` if your PHP socket path differs
+- `php8.5-fpm.sock` if your PHP socket path differs
 
 ## 7. Start background services
 
@@ -228,7 +228,7 @@ Do not launch alpha without these:
 - UFW or cloud firewall allowing only `22`, `80`, and `443`
 - SSH keys only, no password login
 - `fail2ban` or equivalent SSH protection
-- monitoring for `nginx`, `php8.3-fpm`, and `lumiis-queue.service`
+- monitoring for `nginx`, `php8.5-fpm`, and `lumiis-queue.service`
 
 ## Notes
 

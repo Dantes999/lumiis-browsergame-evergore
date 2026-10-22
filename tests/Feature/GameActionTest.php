@@ -127,6 +127,12 @@ class GameActionTest extends TestCase
             ->where('slug', 'riverbank')
             ->firstOrFail();
 
+        // The automatic preview picks a weighted random pack. Keep one assignment
+        // so the summary asserted below is deterministic.
+        $assignment = $area->monsterAssignments()->orderBy('id')->firstOrFail();
+        $area->monsterAssignments()->where('id', '!=', $assignment->id)->delete();
+        $area->load('monsterAssignments.monster');
+
         $character = $user->fresh()->character()->with(['location.areas.monsterAssignments.monster', 'learnedSkills.skill', 'equipment.characterItem.item'])->firstOrFail();
         $previews = app(ManualEncounterPreviewService::class)->buildActionPreviews($character, $area);
 

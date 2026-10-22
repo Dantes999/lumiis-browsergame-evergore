@@ -973,7 +973,7 @@
         @endif
 
         @if ($hasActiveBattle)
-            <div class="battle-replay-overlay">
+            <div class="battle-replay-overlay" x-data x-init="$store.battleOverlay.open = true">
                 <div class="battle-replay-backdrop"></div>
 
                 <div id="tutorial-battle-window" class="battle-replay-window {{ $tutorialActive && $tutorialHighlight === 'battle' ? 'tutorial-focus-ring' : '' }}">
