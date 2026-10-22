@@ -9,6 +9,7 @@ use App\Models\ItemBonusDefinition;
 use App\Models\LocationArea;
 use App\Support\Game\ItemBonusCatalog;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -114,7 +115,7 @@ class AdminBonusBalanceController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Item>
+     * @return Collection<int, Item>
      */
     private function orderedSoulItems()
     {

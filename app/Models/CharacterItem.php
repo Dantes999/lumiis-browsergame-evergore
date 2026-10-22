@@ -213,7 +213,7 @@ class CharacterItem extends Model
         return collect($intrinsicLines)
             ->concat(
                 $bonuses
-            ->map(fn (CharacterItemBonus $bonus): string => $bonus->displayLine())
+                    ->map(fn (CharacterItemBonus $bonus): string => $bonus->displayLine())
             )
             ->values()
             ->all();

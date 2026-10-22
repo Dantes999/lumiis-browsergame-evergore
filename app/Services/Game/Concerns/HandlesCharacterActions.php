@@ -7,6 +7,7 @@ use App\Exceptions\GameActionException;
 use App\Models\CharacterQuest;
 use App\Models\CharacterSkill;
 use App\Models\GameCharacter;
+use App\Models\LocationArea;
 use App\Models\LocationConnection;
 use App\Models\Skill;
 use App\Support\Game\MetinClassCatalog;
@@ -609,7 +610,7 @@ trait HandlesCharacterActions
      * could drift apart and accidentally allow cross-town or foreign-quest mutations.
      *
      * @param  array<string, mixed>  $payload
-     * @return array{0: \App\Models\LocationArea, 1: \App\Models\CharacterQuest}
+     * @return array{0: LocationArea, 1: CharacterQuest}
      */
     private function resolveBiologistQuestActionContext(GameCharacter $character, array $payload): array
     {

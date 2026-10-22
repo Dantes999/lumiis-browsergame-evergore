@@ -388,7 +388,7 @@ trait ResolvesEncounterData
             ->unique()
             ->values();
 
-        /** @var \Illuminate\Support\Collection<string, Item> $items */
+        /** @var Collection<string, Item> $items */
         $items = Item::query()
             ->whereIn('slug', $slugMap)
             ->get()

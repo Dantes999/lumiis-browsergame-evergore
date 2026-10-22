@@ -17,8 +17,8 @@ use App\Services\Game\Concerns\HandlesTutorialActions;
 use App\Services\Game\Concerns\ManagesCharacterState;
 use App\Services\Game\Concerns\ResolvesEncounterData;
 use App\Support\Game\TutorialFlow;
-use Illuminate\Support\Arr;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -93,8 +93,14 @@ class ProcessGameAction
                 // Action-specific logic lives in the smaller concern traits.
                 $result = $this->dispatchAction($action, $character, $activeBattle, $payload, $processedAt);
 
+                // Quest state must not advance while a manual fight is still running.
+                // Starting a fight and non-final battle turns therefore defer the sync
+                // until the battle actually resolves (victory, defeat or abandon).
+                $deferQuestSync = $action === GameActionType::StartManualFight
+                    || ($activeBattle !== null && ! is_array($result['battle_replay'] ?? null));
+
                 // This normalizes shared post-processing such as level-ups, caps and activity tracking.
-                $this->finalizeCharacterAfterAction($character, $result, $startingLevel, $processedAt);
+                $this->finalizeCharacterAfterAction($character, $result, $startingLevel, $processedAt, ! $deferQuestSync);
 
                 // Every processed action is logged for replay UI, debugging and anti-cheat visibility.
                 $this->recordActionLog($character, $action, $payload, $sourceLocationId, $result, $processedAt);
@@ -425,19 +431,24 @@ class ProcessGameAction
         array &$result,
         int $startingLevel,
         Carbon $processedAt,
+        bool $syncQuests = true,
     ): void {
         $this->applyLevelProgression($character);
-        $questUpdates = $this->questProgressService->syncAfterAction($character, $processedAt);
-        $this->applyLevelProgression($character);
+        $questUpdates = ['messages' => [], 'rewards' => []];
 
-        // Quest rewards can push the player into the next level during the same request.
-        // Run one additional quest sync after that follow-up level-up so chained
-        // level-based quests complete immediately instead of waiting for a second action.
-        $questUpdates = $this->mergeQuestUpdates(
-            $questUpdates,
-            $this->questProgressService->syncAfterAction($character, $processedAt),
-        );
-        $this->applyLevelProgression($character);
+        if ($syncQuests) {
+            $questUpdates = $this->questProgressService->syncAfterAction($character, $processedAt);
+            $this->applyLevelProgression($character);
+
+            // Quest rewards can push the player into the next level during the same request.
+            // Run one additional quest sync after that follow-up level-up so chained
+            // level-based quests complete immediately instead of waiting for a second action.
+            $questUpdates = $this->mergeQuestUpdates(
+                $questUpdates,
+                $this->questProgressService->syncAfterAction($character, $processedAt),
+            );
+            $this->applyLevelProgression($character);
+        }
         $this->syncResourceCaps($character);
 
         if ($character->level > $startingLevel) {

@@ -9,8 +9,9 @@ use App\Models\CharacterQuest;
 use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\Quest;
-use Illuminate\Support\Carbon;
 use App\Support\Game\MetinClassCatalog;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -595,7 +596,7 @@ class QuestProgressService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<string, string>  $itemNameMap
+     * @param  Collection<string, string>  $itemNameMap
      * @param  list<string>  $completedQuestSlugs
      * @param  array<string, Quest>  $prerequisiteQuestMap
      * @return array<string, mixed>

@@ -51,7 +51,6 @@ class AdminShopController extends Controller
     }
 
     /**
-     * @param  mixed  $oldRows
      * @param  array<int, ShopItem>  $shopItems
      * @return array<int, array<string, mixed>>
      */
@@ -98,7 +97,7 @@ class AdminShopController extends Controller
 
             if ($itemId === null) {
                 throw ValidationException::withMessages([
-                    'shop_item_rows' => "Unknown item_slug at row ".($index + 1).": ".$itemSlug,
+                    'shop_item_rows' => 'Unknown item_slug at row '.($index + 1).': '.$itemSlug,
                 ]);
             }
 

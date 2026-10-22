@@ -60,8 +60,7 @@ class RegisteredUserController extends Controller
         Request $request,
         CharacterProvisioningService $characterProvisioningService,
         ActiveCharacterResolver $activeCharacterResolver,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $request->validate([
             'character_name' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9 _-]+$/', 'unique:game_characters,name'],
             'race' => ['required', Rule::in(array_keys(MetinClassCatalog::races()))],

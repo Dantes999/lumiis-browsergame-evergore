@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\GameActionLog;
 use App\Models\GameBattle;
-use App\Models\GameMessage;
 use App\Models\GameCharacter;
+use App\Models\GameMessage;
 use App\Models\LocationArea;
 use App\Models\Skill;
 use App\Services\Game\ActiveCharacterResolver;
@@ -16,8 +16,9 @@ use App\Services\Game\RestStateService;
 use App\Support\Game\FeatureUnlocks;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -35,8 +36,7 @@ class GameDashboardController extends Controller
         ManualEncounterPreviewService $manualEncounterPreviewService,
         QuestProgressService $questProgressService,
         RestStateService $restStateService,
-    ): View|RedirectResponse
-    {
+    ): View|RedirectResponse {
         // Load everything the dashboard needs up front so the Blade template can stay mostly declarative.
         // Location areas are refreshed with their full column set below because the dashboard accesses
         // many area attributes directly (cooldowns, pressure thresholds, names, descriptions).
@@ -230,7 +230,7 @@ class GameDashboardController extends Controller
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, LocationArea>  $locationAreas
+     * @param  Collection<int, LocationArea>  $locationAreas
      */
     private function resolveActiveArea($locationAreas, mixed $focus): ?LocationArea
     {
@@ -255,7 +255,7 @@ class GameDashboardController extends Controller
      * The quest system tracks exact objective completion and rewards, while this summary keeps the
      * "cleanse the whole map" fantasy visible in one glance without needing extra content rows.
      *
-     * @param  \Illuminate\Support\Collection<int, LocationArea>  $locationAreas
+     * @param  Collection<int, LocationArea>  $locationAreas
      * @return array<string, mixed>
      */
     private function buildStoryline(GameCharacter $character, $locationAreas): array

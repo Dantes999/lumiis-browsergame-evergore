@@ -8,6 +8,7 @@ use App\Models\CharacterSkill;
 use App\Models\GameBattle;
 use App\Models\GameCharacter;
 use App\Models\LocationArea;
+use App\Models\Monster;
 use App\Support\Game\DamageTypeCatalog;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
@@ -1526,8 +1527,7 @@ trait HandlesCombatActions
         LocationArea $area,
         ?string $requestedFamily = null,
         ?string $requestedDifficulty = null,
-    ): array
-    {
+    ): array {
         $assignment = $this->resolveMonsterAssignmentForCharacter($area, $character, $requestedFamily, $requestedDifficulty);
         $monster = $assignment->monster;
         $packSize = max(1, (int) $assignment->pack_size);
@@ -1646,7 +1646,7 @@ trait HandlesCombatActions
     private function resolveManualPackExperienceReward(
         GameCharacter $character,
         LocationArea $area,
-        \App\Models\Monster $monster,
+        Monster $monster,
         int $packSize,
         float $rewardMultiplier = 1.0,
     ): int {
@@ -1672,7 +1672,7 @@ trait HandlesCombatActions
     private function resolveManualPackYangReward(
         GameCharacter $character,
         LocationArea $area,
-        \App\Models\Monster $monster,
+        Monster $monster,
         int $packSize,
         float $rewardMultiplier = 1.0,
     ): int {
@@ -2104,8 +2104,7 @@ trait HandlesCombatActions
         ?array $skill,
         LocationArea $area,
         GameCharacter $character,
-    ): void
-    {
+    ): void {
         $player = &$state['player'];
         $enemies = &$state['enemies'];
         $targetIndex = collect($enemies)

@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Enums\GameCharacterState;
 use App\Support\Game\DamageTypeCatalog;
 use App\Support\Game\ExperienceCurve;
-use App\Support\Game\ItemBonusCatalog;
+use App\Support\Game\FeatureUnlocks;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
 use Carbon\CarbonInterface;
@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use App\Support\Game\FeatureUnlocks;
 
 /**
  * Main player domain model.
@@ -207,7 +207,7 @@ class GameCharacter extends Model
      * Calculates how much stamina should exist at a given moment without mutating the model yet.
      * The service layer decides when this preview becomes the actual persisted state.
      *
-     * @return array{stamina: int, recovered: int, next_tick_seconds: ?int, applied_at: \Illuminate\Support\Carbon}
+     * @return array{stamina: int, recovered: int, next_tick_seconds: ?int, applied_at: Carbon}
      */
     public function staminaRecoveryState(?CarbonInterface $moment = null): array
     {
@@ -232,7 +232,7 @@ class GameCharacter extends Model
      * Health regenerates more slowly than stamina so combat damage still matters,
      * but natural recovery prevents characters from getting stuck at low life forever.
      *
-     * @return array{health: int, recovered: int, next_tick_seconds: ?int, applied_at: \Illuminate\Support\Carbon}
+     * @return array{health: int, recovered: int, next_tick_seconds: ?int, applied_at: Carbon}
      */
     public function healthRecoveryState(?CarbonInterface $moment = null): array
     {
@@ -257,7 +257,7 @@ class GameCharacter extends Model
      * SP should recover faster than HP so skill-driven builds remain playable
      * without forcing potion use after every short exchange.
      *
-     * @return array{sp: int, recovered: int, next_tick_seconds: ?int, applied_at: \Illuminate\Support\Carbon}
+     * @return array{sp: int, recovered: int, next_tick_seconds: ?int, applied_at: Carbon}
      */
     public function spRecoveryState(?CarbonInterface $moment = null): array
     {
@@ -665,7 +665,7 @@ class GameCharacter extends Model
      * resolve the current value, count elapsed ticks, clamp to the cap and tell the UI when the
      * next point arrives. The public wrappers keep resource-specific naming readable.
      *
-     * @return array{value: int, recovered: int, next_tick_seconds: ?int, applied_at: \Illuminate\Support\Carbon}
+     * @return array{value: int, recovered: int, next_tick_seconds: ?int, applied_at: Carbon}
      */
     private function resourceRecoveryState(
         int $currentValue,

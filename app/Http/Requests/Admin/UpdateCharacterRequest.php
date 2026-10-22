@@ -7,8 +7,8 @@ use App\Models\GameCharacter;
 use App\Support\Game\MetinClassCatalog;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Validation for direct character edits inside the admin panel.

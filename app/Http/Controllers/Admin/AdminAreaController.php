@@ -95,7 +95,6 @@ class AdminAreaController extends Controller
     }
 
     /**
-     * @param  mixed  $oldRows
      * @param  array<int, array<string, mixed>>  $table
      * @return array<int, array{item_slug: string, chance: int, quantity_min: int, quantity_max: int}>
      */
@@ -155,7 +154,6 @@ class AdminAreaController extends Controller
     }
 
     /**
-     * @param  mixed  $oldRows
      * @param  array<int, LocationAreaMonster>  $assignments
      * @return array<int, array<string, mixed>>
      */
@@ -206,7 +204,7 @@ class AdminAreaController extends Controller
 
             if ($monsterId === null) {
                 throw ValidationException::withMessages([
-                    'monster_assignment_rows' => "Unknown monster_slug at row ".($index + 1).": ".$monsterSlug,
+                    'monster_assignment_rows' => 'Unknown monster_slug at row '.($index + 1).': '.$monsterSlug,
                 ]);
             }
 

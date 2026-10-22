@@ -224,6 +224,96 @@ class QuestProgressionTest extends TestCase
         $this->assertSame(CharacterQuestStatus::Active, $firstLumiis->status);
     }
 
+    public function test_first_lumiis_quest_becomes_ready_only_after_the_manual_fight_resolves(): void
+    {
+        [$user, $character] = $this->createActiveCharacterAt('yongan', [
+            'level' => 2,
+            'health' => 400,
+            'max_health' => 400,
+            'attack' => 60,
+            'defense' => 40,
+            'stamina' => 15,
+            'max_stamina' => 15,
+        ]);
+        $area = $this->starterArea('riverbank');
+
+        $area->update([
+            'boss_base_chance' => 0,
+            'boss_pressure_chance_per_point' => 0,
+            'boss_pressure_threshold' => 9999,
+        ]);
+
+        CharacterAreaProgress::query()->create([
+            'game_character_id' => $character->id,
+            'location_area_id' => $area->id,
+            'monster_fights' => 2,
+            'lumiis_searches' => 1,
+        ]);
+        $this->markQuestCompleted($character, 'yongan-first-sweep', 2);
+
+        $this->actingAs($user)->get(route('dashboard', [
+            'focus' => $area->slug,
+        ]))->assertOk();
+
+        $quest = $this->questFor($character, 'yongan-first-lumiis');
+        $this->assertSame(CharacterQuestStatus::Active, $quest->status);
+
+        $this->actingAs($user)->post(route('game.actions.store', ['action' => 'start-manual-fight']), [
+            'idempotency_key' => (string) Str::uuid(),
+            'location_area_id' => $area->id,
+            'encounter_request' => 'lumiis',
+            'redirect_focus' => $area->slug,
+        ])->assertRedirect();
+
+        // The objective counter is already full, but the quest must not flip while
+        // the player is still inside the manual battle.
+        $this->assertSame(CharacterQuestStatus::Active, $quest->fresh()->status);
+
+        $battle = GameBattle::query()
+            ->where('game_character_id', $character->id)
+            ->where('status', 'ongoing')
+            ->latest('id')
+            ->firstOrFail();
+
+        // Lumiis fights spawn soul waves as the core fractures. Weaken every wave
+        // and attack until the battle really resolves, asserting that the quest stays
+        // Active for all non-final turns.
+        for ($attempt = 0; $attempt < 20 && $battle->fresh()->status === 'ongoing'; $attempt++) {
+            $battle->refresh();
+            $state = $battle->state;
+            $aliveEnemies = collect($state['enemies'] ?? [])
+                ->filter(fn (array $enemy): bool => (int) ($enemy['current_health'] ?? 0) > 0)
+                ->values();
+
+            if ($aliveEnemies->isEmpty()) {
+                break;
+            }
+
+            $state['enemies'] = collect($state['enemies'] ?? [])
+                ->map(fn (array $enemy): array => [...$enemy, 'current_health' => 1])
+                ->values()
+                ->all();
+            $battle->update(['state' => $state]);
+
+            $this->actingAs($user)->post(route('game.actions.store', ['action' => 'battle-attack']), [
+                'idempotency_key' => (string) Str::uuid(),
+                'battle_id' => $battle->id,
+                'battle_round' => $battle->round,
+                'enemy_id' => (string) data_get($aliveEnemies->first(), 'id'),
+                'redirect_focus' => $area->slug,
+            ])->assertRedirect();
+
+            if ($battle->fresh()->status === 'ongoing') {
+                $this->assertSame(CharacterQuestStatus::Active, $quest->fresh()->status);
+            }
+        }
+
+        $battle->refresh();
+
+        $this->assertSame('victory', $battle->status);
+        $this->assertSame(CharacterQuestStatus::ReadyToClaim, $quest->fresh()->status);
+    }
+
     public function test_first_lumiis_quest_can_push_the_character_to_level_three_and_unlock_whispers(): void
     {
         [$user, $character] = $this->createActiveCharacterAt('yongan', [

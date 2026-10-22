@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Item;
 use App\Models\Quest;
 use App\Support\Game\MetinClassCatalog;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -91,7 +92,7 @@ class UpdateQuestRequest extends FormRequest
                         return;
                     }
 
-                    if (! \App\Models\Item::query()->where('slug', $value)->exists()) {
+                    if (! Item::query()->where('slug', $value)->exists()) {
                         $fail(__('The selected reward item is invalid.'));
                     }
                 },

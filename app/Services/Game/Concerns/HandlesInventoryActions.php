@@ -8,9 +8,9 @@ use App\Models\CharacterItem;
 use App\Models\CharacterSkill;
 use App\Models\GameCharacter;
 use App\Models\LocationArea;
+use App\Models\ShopItem;
 use App\Models\Skill;
 use App\Models\SmithRefineRate;
-use App\Models\ShopItem;
 use App\Support\Game\MetinClassCatalog;
 use App\Support\Game\TutorialFlow;
 use Illuminate\Support\Carbon;
@@ -380,8 +380,8 @@ trait HandlesInventoryActions
     /**
      * Skill books handle the later half of skill progression.
      *
-      * Skill points raise a skill through rank 16 and the last point opens M1.
-      * After that, each successful book read advances one mastery stage until the G1 breakthrough.
+     * Skill points raise a skill through rank 16 and the last point opens M1.
+     * After that, each successful book read advances one mastery stage until the G1 breakthrough.
      *
      * @return array{message: string, cooldown_seconds: int, rewards: array<string, int>, target_location_id: int}
      */

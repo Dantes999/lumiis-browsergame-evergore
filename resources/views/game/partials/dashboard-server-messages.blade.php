@@ -1,5 +1,11 @@
 @if ($dashboardServerMessages !== [])
-    <div class="dashboard-server-message-stack" aria-live="polite" aria-atomic="true">
+    <div
+        class="dashboard-server-message-stack"
+        x-show="! ($store.battleOverlay && $store.battleOverlay.open)"
+        x-cloak
+        aria-live="polite"
+        aria-atomic="true"
+    >
         @foreach ($dashboardServerMessages as $dashboardServerMessage)
             <section
                 x-data="{ open: true }"

@@ -68,6 +68,6 @@ class NewPasswordController extends Controller
         }
 
         return back()->withInput($request->only('email'))
-                    ->withErrors(['email' => __($translationKey)]);
+            ->withErrors(['email' => __($translationKey)]);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Support\Game;
 use App\Enums\GameActionType;
 use App\Models\GameCharacter;
 use App\Models\LocationArea;
-use App\Support\Game\FeatureUnlocks;
 
 /**
  * Single source of truth for the forced onboarding flow.

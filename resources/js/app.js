@@ -1583,6 +1583,7 @@ Alpine.data('battleReplay', ({ replay = null, autoOpen = false, labels = {} } = 
         }
 
         this.isOpen = true;
+        Alpine.store('battleOverlay').open = true;
         this.resetState();
         this.syncBattleTitle();
         this.start();
@@ -1590,6 +1591,7 @@ Alpine.data('battleReplay', ({ replay = null, autoOpen = false, labels = {} } = 
 
     close() {
         this.isOpen = false;
+        Alpine.store('battleOverlay').open = false;
         this.stop();
         this.clearBattleTitle();
     },
@@ -1971,10 +1973,12 @@ Alpine.data('battleResolution', ({ result = null, autoOpen = false, labels = {} 
         }
 
         this.isOpen = true;
+        Alpine.store('battleOverlay').open = true;
     },
 
     close() {
         this.isOpen = false;
+        Alpine.store('battleOverlay').open = false;
     },
 
     healthPercent(current, maximum) {
@@ -2191,5 +2195,10 @@ Alpine.data(
 );
 
 window.Alpine = Alpine;
+
+// Tracks whether a battle result/replay overlay is currently covering the page.
+// Server-side messages (especially quest updates) stay hidden until the player
+// actually closes the fight, so the reward does not appear mid-battle.
+Alpine.store('battleOverlay', { open: false });
 
 Alpine.start();
