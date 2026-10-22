@@ -140,8 +140,8 @@ class MetinClassCatalogTest extends TestCase
     private function makeCharacter(array $attributes): GameCharacter
     {
         $character = new GameCharacter($attributes);
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         return $character;
     }

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GameCharacterState;
 use App\Models\CharacterEquipment;
 use App\Models\CharacterItem;
 use App\Models\CharacterSkill;
-use App\Enums\GameCharacterState;
 use App\Models\GameActionLog;
 use App\Models\GameBattle;
 use App\Models\GameCharacter;
@@ -85,7 +85,7 @@ class TutorialFlowTest extends TestCase
             ->assertSee('Lantern Inn')
             ->assertSee('Riverbank');
 
-        $stepTwoDocument = new \DOMDocument();
+        $stepTwoDocument = new \DOMDocument;
         @$stepTwoDocument->loadHTML($stepTwoResponse->getContent());
         $stepTwoXpath = new \DOMXPath($stepTwoDocument);
         $generalStoreLinks = $stepTwoXpath->query('//a[contains(@href, "focus=general-store")]');

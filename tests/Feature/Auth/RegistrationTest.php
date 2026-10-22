@@ -2,12 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\CharacterItem;
 use App\Enums\GameCharacterState;
+use App\Models\CharacterItem;
 use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
+use Database\Seeders\WorldSeeder;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class RegistrationTest extends TestCase
             'name' => 'BladeMaster',
             'faction' => 'Shinsoo',
             'race' => 'warrior',
-            'location_id' => \App\Models\Location::query()->where('slug', 'yongan')->value('id'),
+            'location_id' => Location::query()->where('slug', 'yongan')->value('id'),
             'game_state' => GameCharacterState::Active->value,
             'tutorial_step' => null,
             'stamina' => 15,
@@ -72,7 +73,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_grants_a_practical_starter_loadout_for_the_opening_game_loop(): void
     {
-        $this->seed(\Database\Seeders\WorldSeeder::class);
+        $this->seed(WorldSeeder::class);
 
         $this->post('/register', [
             'character_name' => 'StarterPack',
@@ -102,7 +103,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_grants_the_race_specific_starter_weapon(): void
     {
-        $this->seed(\Database\Seeders\WorldSeeder::class);
+        $this->seed(WorldSeeder::class);
 
         $this->post('/register', [
             'character_name' => 'ShadowStarter',

@@ -2,21 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GameCharacterState;
 use App\Models\GameCharacter;
 use App\Models\Item;
 use App\Models\ItemBonusDefinition;
-use App\Models\LocationArea;
 use App\Models\Location;
+use App\Models\LocationArea;
 use App\Models\LocationConnection;
 use App\Models\Monster;
 use App\Models\Quest;
 use App\Models\Shop;
-use App\Models\ShopItem;
 use App\Models\SmithRefineRate;
 use App\Models\User;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Enums\GameCharacterState;
 use Tests\TestCase;
 
 class AdminPanelTest extends TestCase
@@ -541,7 +540,7 @@ class AdminPanelTest extends TestCase
 
         $response->assertOk();
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
 
         $xpath = new \DOMXPath($document);
@@ -656,7 +655,7 @@ class AdminPanelTest extends TestCase
 
         $response->assertOk();
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
 
         $xpath = new \DOMXPath($document);

@@ -28,7 +28,7 @@ class ResolvesEncounterDataTest extends TestCase
     {
         parent::setUp();
 
-        $this->harness = new ResolvesEncounterDataHarness();
+        $this->harness = new ResolvesEncounterDataHarness;
     }
 
     public function test_resolve_monster_assignment_uses_eligible_rows_then_falls_back_to_the_lowest_level_band_for_overleveled_characters(): void
@@ -182,12 +182,12 @@ class ResolvesEncounterDataTest extends TestCase
             'travel_speed_percent_bonus' => 0,
         ]);
 
-        $weaponItem = new CharacterItem();
+        $weaponItem = new CharacterItem;
         $weaponItem->setRelation('item', $dagger);
         $weaponEquipment = new CharacterEquipment(['slot' => 'weapon']);
         $weaponEquipment->setRelation('characterItem', $weaponItem);
 
-        $armorItem = new CharacterItem();
+        $armorItem = new CharacterItem;
         $armorItem->setRelation('item', $cottonArmor);
         $armorEquipment = new CharacterEquipment(['slot' => 'armor']);
         $armorEquipment->setRelation('characterItem', $armorItem);
@@ -206,7 +206,7 @@ class ResolvesEncounterDataTest extends TestCase
             'slug' => 'empty-hunt',
             'area_kind' => 'hunting',
         ]);
-        $area->setRelation('monsterAssignments', new Collection());
+        $area->setRelation('monsterAssignments', new Collection);
 
         $this->expectException(GameActionException::class);
         $this->expectExceptionMessage('No monster packs are configured for this area yet.');
@@ -258,7 +258,7 @@ class ResolvesEncounterDataTest extends TestCase
             'boss_pressure_threshold' => 40,
         ]);
         $character = $this->createCharacter($location);
-        $character->setRelation('areaProgress', new Collection());
+        $character->setRelation('areaProgress', new Collection);
 
         $progress = $this->harness->callAreaProgress($character, $area);
         $sameProgress = $this->harness->callAreaProgress($character, $area);
@@ -318,7 +318,7 @@ class ResolvesEncounterDataTest extends TestCase
             'max_health' => 100,
         ]);
         $character->setRelation('location', $location);
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         $equippedItem = CharacterItem::query()->create([
             'game_character_id' => $character->id,
@@ -482,9 +482,9 @@ class ResolvesEncounterDataTest extends TestCase
             ...$overrides,
         ]);
 
-        $character->setRelation('areaProgress', new Collection());
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('areaProgress', new Collection);
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         return $character;
     }

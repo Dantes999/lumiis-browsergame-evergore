@@ -24,6 +24,8 @@ use App\Models\SmithRefineRate;
 use App\Models\User;
 use App\Services\Game\CharacterInventoryService;
 use App\Services\Game\ManualEncounterPreviewService;
+use App\Support\Game\ExperienceCurve;
+use App\Support\Game\MetinClassCatalog;
 use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
@@ -142,11 +144,11 @@ class GameActionTest extends TestCase
             ->assertSee('Riverbank')
             ->assertSee(__('Fight Monsters'))
             ->assertSee(__('Est. success'))
-                ->assertSee(data_get($previews, 'monster_auto.encounter_summary'))
-                ->assertSee(data_get($previews, 'monster_auto.risk_label'))
+            ->assertSee(data_get($previews, 'monster_auto.encounter_summary'))
+            ->assertSee(data_get($previews, 'monster_auto.risk_label'))
             ->assertSee(__('Search Lumiis'))
-                ->assertSee(data_get($previews, 'lumiis_auto.encounter_summary'))
-                ->assertSee(data_get($previews, 'lumiis_manual.risk_label'))
+            ->assertSee(data_get($previews, 'lumiis_auto.encounter_summary'))
+            ->assertSee(data_get($previews, 'lumiis_manual.risk_label'))
             ->assertSee((string) $area->lumiis_cooldown_seconds);
     }
 
@@ -308,7 +310,7 @@ class GameActionTest extends TestCase
             'grand_mastery_rank' => 1,
         ]);
 
-        app(CharacterInventoryService::class)->grant($character, \App\Support\Game\MetinClassCatalog::soulStoneSlug(), 2);
+        app(CharacterInventoryService::class)->grant($character, MetinClassCatalog::soulStoneSlug(), 2);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
@@ -355,7 +357,7 @@ class GameActionTest extends TestCase
 
         $response->assertOk();
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $enemyPopups = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " battle-damage-pop-enemy ")]');
@@ -431,9 +433,9 @@ class GameActionTest extends TestCase
             ->assertSee('Small Red Potion')
             ->assertSee(__('Wallet').': 123 '.__('Yang'))
             ->assertSee(__('Buy'))
-            ->assertSee('shop-buy-quantity-'. $shopItem->id, false)
-                ->assertSee('quantity-stepper-button', false)
-                ->assertSee('quantity-stepper-max', false)
+            ->assertSee('shop-buy-quantity-'.$shopItem->id, false)
+            ->assertSee('quantity-stepper-button', false)
+            ->assertSee('quantity-stepper-max', false)
             ->assertSee(__('Wallet Max:'), false)
             ->assertSee('+35 HP')
             ->assertSee('+6 SP');
@@ -449,7 +451,7 @@ class GameActionTest extends TestCase
         $inventory = app(CharacterInventoryService::class);
         $potion = Item::query()->where('slug', 'small-red-potion')->firstOrFail();
         $spPotion = Item::query()->where('slug', 'small-blue-potion')->firstOrFail();
-        $skillBook = Item::query()->where('slug', \App\Support\Game\MetinClassCatalog::skillBookSlug('aura-of-the-sword'))->firstOrFail();
+        $skillBook = Item::query()->where('slug', MetinClassCatalog::skillBookSlug('aura-of-the-sword'))->firstOrFail();
         $upgradeItem = Item::query()->where('slug', 'soul-prism')->firstOrFail();
         $smithItem = Item::query()->where('slug', 'lumiis-shard')->firstOrFail();
         $questItem = Item::query()->where('slug', 'research-catalyst')->firstOrFail();
@@ -595,7 +597,7 @@ class GameActionTest extends TestCase
             ->assertSee(__('Stage :current / :total', ['current' => 1, 'total' => 5]))
             ->assertSee(__('Ready to submit now.'));
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $submitButton = $xpath->query('//form[contains(@action, "submit-quest-item")]//button[not(@disabled)]');
@@ -618,7 +620,7 @@ class GameActionTest extends TestCase
         $response->assertSee('Missing 2 stamina.');
         $response->assertSee('Missing 4 stamina.');
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $autoFightButton = $xpath->query('//form[contains(@action, "fight-monsters")]//button[@disabled]');
@@ -647,7 +649,7 @@ class GameActionTest extends TestCase
             ->assertDontSee('Map Connections')
             ->assertDontSee('Missing 2 stamina.');
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $travelButtons = $xpath->query('//form[contains(@action, "travel")]');
@@ -673,7 +675,7 @@ class GameActionTest extends TestCase
             ->assertDontSee('Travel Routes')
             ->assertDontSee('Map Connections');
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $travelButtons = $xpath->query('//form[contains(@action, "travel")]');
@@ -697,7 +699,7 @@ class GameActionTest extends TestCase
             ->assertSee('Recommended from level 12.')
             ->assertSee('Req. Level 12');
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $disabledFightButtons = $xpath->query('//form[contains(@action, "fight-monsters")]//button[@disabled]');
@@ -1084,7 +1086,7 @@ class GameActionTest extends TestCase
         ]);
 
         $quest = Quest::query()->where('slug', 'yongan-first-sweep')->firstOrFail();
-        $character->experience = max(0, \App\Support\Game\ExperienceCurve::requiredForLevel(5) - (int) $quest->reward_experience);
+        $character->experience = max(0, ExperienceCurve::requiredForLevel(5) - (int) $quest->reward_experience);
         $character->save();
 
         $characterQuest = CharacterQuest::query()->create([
@@ -1169,7 +1171,7 @@ class GameActionTest extends TestCase
 
         $this->assertDatabaseHas('character_items', [
             'game_character_id' => $character->id,
-            'item_id' => Item::query()->where('slug', \App\Support\Game\MetinClassCatalog::soulStoneSlug())->value('id'),
+            'item_id' => Item::query()->where('slug', MetinClassCatalog::soulStoneSlug())->value('id'),
         ]);
     }
 
@@ -1323,8 +1325,8 @@ class GameActionTest extends TestCase
             ->latest('id')
             ->firstOrFail();
 
-        $expGapToNextLevel = \App\Support\Game\ExperienceCurve::requiredForLevel(21)
-            - \App\Support\Game\ExperienceCurve::requiredForLevel(20);
+        $expGapToNextLevel = ExperienceCurve::requiredForLevel(21)
+            - ExperienceCurve::requiredForLevel(20);
 
         $response->assertSessionHas('status');
         $this->assertGreaterThan(150, (int) data_get($battle->rewards, 'experience'));
@@ -1362,8 +1364,8 @@ class GameActionTest extends TestCase
             ->latest('id')
             ->firstOrFail();
 
-        $expGapToNextLevel = \App\Support\Game\ExperienceCurve::requiredForLevel(35)
-            - \App\Support\Game\ExperienceCurve::requiredForLevel(34);
+        $expGapToNextLevel = ExperienceCurve::requiredForLevel(35)
+            - ExperienceCurve::requiredForLevel(34);
 
         $response->assertSessionHas('status');
         $this->assertGreaterThan(300, (int) data_get($battle->rewards, 'experience'));
@@ -1985,7 +1987,7 @@ class GameActionTest extends TestCase
 
         $response->assertOk();
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $firstEnemyCard = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " battle-enemy-card ")][1]');
@@ -3431,7 +3433,7 @@ class GameActionTest extends TestCase
 
         $response->assertSessionHas('error');
         $response->assertSessionHas('error', __('You need to wait :minutes minutes before studying this skill again.', [
-            'minutes' => \App\Support\Game\MetinClassCatalog::skillBookCooldownMinutes(),
+            'minutes' => MetinClassCatalog::skillBookCooldownMinutes(),
         ]));
     }
 
@@ -3483,7 +3485,7 @@ class GameActionTest extends TestCase
                 break;
             }
 
-            $this->travel(\App\Support\Game\MetinClassCatalog::skillBookCooldownMinutes() + 1)->minutes();
+            $this->travel(MetinClassCatalog::skillBookCooldownMinutes() + 1)->minutes();
         }
 
         $this->assertSame(1, (int) $learnedSkill->grand_mastery_rank);
@@ -3511,7 +3513,7 @@ class GameActionTest extends TestCase
             'grand_mastery_rank' => 10,
         ]);
 
-        app(CharacterInventoryService::class)->grant($character, \App\Support\Game\MetinClassCatalog::soulStoneSlug(), 1);
+        app(CharacterInventoryService::class)->grant($character, MetinClassCatalog::soulStoneSlug(), 1);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'advance-skill-mastery']), [
             'idempotency_key' => (string) Str::uuid(),
@@ -3543,7 +3545,7 @@ class GameActionTest extends TestCase
             'grand_mastery_rank' => 0,
         ]);
 
-        app(CharacterInventoryService::class)->grant($character, \App\Support\Game\MetinClassCatalog::soulStoneSlug(), 1);
+        app(CharacterInventoryService::class)->grant($character, MetinClassCatalog::soulStoneSlug(), 1);
 
         $response = $this->actingAs($user)->post(route('game.actions.store', ['action' => 'advance-skill-mastery']), [
             'idempotency_key' => (string) Str::uuid(),
@@ -3553,7 +3555,7 @@ class GameActionTest extends TestCase
         $response->assertSessionHas('error');
         $learnedSkill = CharacterSkill::query()->firstOrFail();
         $this->assertSame(0, (int) $learnedSkill->grand_mastery_rank);
-        $this->assertSame(1, app(CharacterInventoryService::class)->quantityForSlug($character->fresh(), \App\Support\Game\MetinClassCatalog::soulStoneSlug()));
+        $this->assertSame(1, app(CharacterInventoryService::class)->quantityForSlug($character->fresh(), MetinClassCatalog::soulStoneSlug()));
     }
 
     public function test_equipped_mount_reduces_travel_cooldown(): void

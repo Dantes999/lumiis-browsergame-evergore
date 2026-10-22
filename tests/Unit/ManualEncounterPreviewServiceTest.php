@@ -300,18 +300,18 @@ class ManualEncounterPreviewServiceTest extends TestCase
             'travel_speed_percent_bonus' => 0,
         ]);
 
-        $weaponItem = new CharacterItem();
+        $weaponItem = new CharacterItem;
         $weaponItem->setRelation('item', $dagger);
         $weaponEquipment = new CharacterEquipment(['slot' => 'weapon']);
         $weaponEquipment->setRelation('characterItem', $weaponItem);
 
-        $armorItem = new CharacterItem();
+        $armorItem = new CharacterItem;
         $armorItem->setRelation('item', $cottonArmor);
         $armorEquipment = new CharacterEquipment(['slot' => 'armor']);
         $armorEquipment->setRelation('characterItem', $armorItem);
 
         $character->setRelation('equipment', new Collection([$weaponEquipment, $armorEquipment]));
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         return $character;
     }

@@ -59,8 +59,8 @@ class GameCharacterTest extends TestCase
             'last_active_at' => now()->subMinutes(35),
             'stamina_updated_at' => now()->subMinutes(35),
         ]);
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         $preview = $character->staminaRecoveryState(now());
 
@@ -74,8 +74,8 @@ class GameCharacterTest extends TestCase
             'last_active_at' => now()->subMinutes(30),
             'stamina_updated_at' => now()->subMinutes(30),
         ]);
-        $fullCharacter->setRelation('equipment', new Collection());
-        $fullCharacter->setRelation('learnedSkills', new Collection());
+        $fullCharacter->setRelation('equipment', new Collection);
+        $fullCharacter->setRelation('learnedSkills', new Collection);
 
         $fullPreview = $fullCharacter->staminaRecoveryState(now());
 
@@ -95,8 +95,8 @@ class GameCharacterTest extends TestCase
             'health_updated_at' => now()->subMinutes(30),
             'sp_updated_at' => now()->subMinutes(30),
         ]);
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         $healthPreview = $character->healthRecoveryState(now());
         $spPreview = $character->spRecoveryState(now());
@@ -147,7 +147,7 @@ class GameCharacterTest extends TestCase
                 'attack_bonus' => 2,
             ], 3),
         ]));
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(18, $character->effectiveAttack());
     }
@@ -170,7 +170,7 @@ class GameCharacterTest extends TestCase
                 'equipment_slot' => 'armor',
             ]),
         ]));
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame('dagger', $character->equippedWeaponType());
     }
@@ -189,8 +189,8 @@ class GameCharacterTest extends TestCase
             'dexterity' => 6,
             'vitality' => 3,
         ]);
-        $bodyWarrior->setRelation('equipment', new Collection());
-        $bodyWarrior->setRelation('learnedSkills', new Collection());
+        $bodyWarrior->setRelation('equipment', new Collection);
+        $bodyWarrior->setRelation('learnedSkills', new Collection);
 
         $mentalWarrior = new GameCharacter([
             'race' => 'warrior',
@@ -204,8 +204,8 @@ class GameCharacterTest extends TestCase
             'dexterity' => 6,
             'vitality' => 3,
         ]);
-        $mentalWarrior->setRelation('equipment', new Collection());
-        $mentalWarrior->setRelation('learnedSkills', new Collection());
+        $mentalWarrior->setRelation('equipment', new Collection);
+        $mentalWarrior->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(15, $bodyWarrior->effectiveAttack());
         $this->assertSame(7, $bodyWarrior->effectiveDefense());
@@ -237,8 +237,8 @@ class GameCharacterTest extends TestCase
             'dexterity' => 3,
             'vitality' => 4,
         ]);
-        $weaponarySura->setRelation('equipment', new Collection());
-        $weaponarySura->setRelation('learnedSkills', new Collection());
+        $weaponarySura->setRelation('equipment', new Collection);
+        $weaponarySura->setRelation('learnedSkills', new Collection);
 
         $blackMagicSura = new GameCharacter([
             'race' => 'sura',
@@ -255,8 +255,8 @@ class GameCharacterTest extends TestCase
             'dexterity' => 3,
             'vitality' => 4,
         ]);
-        $blackMagicSura->setRelation('equipment', new Collection());
-        $blackMagicSura->setRelation('learnedSkills', new Collection());
+        $blackMagicSura->setRelation('equipment', new Collection);
+        $blackMagicSura->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(13, $weaponarySura->effectiveAttack());
         $this->assertSame(9, $weaponarySura->effectiveDefense());
@@ -318,7 +318,7 @@ class GameCharacterTest extends TestCase
         ]);
 
         $character->setRelation('equipment', new Collection([$weapon, $armor]));
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(3, $character->effectiveVitality());
         $this->assertSame(1, $character->effectiveIntelligence());
@@ -355,8 +355,8 @@ class GameCharacterTest extends TestCase
             'dexterity' => 6,
         ]);
 
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(13, $character->effectiveAttack());
         $this->assertSame(7, $character->effectiveDefense());
@@ -401,7 +401,7 @@ class GameCharacterTest extends TestCase
                 ['bonus_type' => 'loot_rate', 'bonus_value' => 3],
             ]),
         ]));
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(11, $character->effectiveMagicAttack());
         $this->assertSame(7, $character->criticalChancePercent());
@@ -423,8 +423,8 @@ class GameCharacterTest extends TestCase
             'max_stamina' => 12,
         ]);
 
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         $this->assertSame(0, $character->effectiveVitality());
         $this->assertSame(0, $character->effectiveIntelligence());
@@ -451,8 +451,8 @@ class GameCharacterTest extends TestCase
             'last_active_at' => now()->subMinutes(15),
             'stamina_updated_at' => now()->subMinutes(15),
         ]);
-        $character->setRelation('equipment', new Collection());
-        $character->setRelation('learnedSkills', new Collection());
+        $character->setRelation('equipment', new Collection);
+        $character->setRelation('learnedSkills', new Collection);
 
         $preview = $character->staminaRecoveryState(now());
 

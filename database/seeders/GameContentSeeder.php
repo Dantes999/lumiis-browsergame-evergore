@@ -16,6 +16,8 @@ use App\Models\SmithRefineRate;
 use App\Support\Game\ItemBonusCatalog;
 use App\Support\Game\MetinClassCatalog;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class GameContentSeeder extends Seeder
 {
@@ -2795,7 +2797,7 @@ class GameContentSeeder extends Seeder
         );
     }
 
-    private function seedItemBonusDefinitions(\Illuminate\Support\Carbon $timestamp): void
+    private function seedItemBonusDefinitions(Carbon $timestamp): void
     {
         $bonusDefinitions = [];
 
@@ -3773,7 +3775,7 @@ class GameContentSeeder extends Seeder
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<string, int>  $locationIds
+     * @param  Collection<string, int>  $locationIds
      * @return list<array<string, int|string|null|bool>>
      */
     private function starterQuestLines($locationIds): array

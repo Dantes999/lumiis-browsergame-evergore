@@ -16,8 +16,8 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\CharacterSelectionController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameDashboardController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Public landing page for the project.

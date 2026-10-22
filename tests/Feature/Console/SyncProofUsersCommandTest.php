@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\User;
+use Database\Seeders\WorldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -13,7 +14,7 @@ class SyncProofUsersCommandTest extends TestCase
 
     public function test_sync_proof_users_command_creates_deterministic_accounts(): void
     {
-        $this->seed(\Database\Seeders\WorldSeeder::class);
+        $this->seed(WorldSeeder::class);
 
         $this->artisan('game:sync-proof-users')
             ->expectsOutput('Proof users synced: ui-proof@example.test, audit-admin@example.test')

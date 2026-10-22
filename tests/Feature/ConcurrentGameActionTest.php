@@ -254,7 +254,7 @@ class ConcurrentGameActionTest extends TestCase
     {
         $startAt = microtime(true) + 0.75;
         $scriptPath = base_path('tests/Fixtures/concurrency/process_game_action_worker.php');
-        $phpBinary = (new PhpExecutableFinder())->find(false) ?: PHP_BINARY;
+        $phpBinary = (new PhpExecutableFinder)->find(false) ?: PHP_BINARY;
         $processes = [];
         $inputFiles = [];
 
