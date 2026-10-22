@@ -56,6 +56,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | The player SPA is deployed independently from Laravel. Legacy Blade
+    | entry points redirect here so the old game UI cannot be used anymore.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5174'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Legacy Game UI
+    |--------------------------------------------------------------------------
+    |
+    | Only the automated UI proof gate still renders the old Blade game pages.
+    | Every real environment redirects them to the SPA.
+    |
+    */
+
+    'legacy_game_ui' => (bool) env('LEGACY_GAME_UI', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

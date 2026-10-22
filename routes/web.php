@@ -18,6 +18,7 @@ use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameDashboardController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\RedirectLegacyGameFrontend;
 use Illuminate\Support\Facades\Route;
 
 // Public landing page for the project.
@@ -34,17 +35,19 @@ Route::patch('/locale', [LocaleController::class, 'update'])->name('locale.updat
 
 // Normal player routes. Everything inside this group requires a signed-in account.
 Route::middleware(['auth', 'no-store'])->group(function () {
-    Route::get('/characters', [CharacterSelectionController::class, 'index'])->name('characters.index');
+    Route::get('/characters', [CharacterSelectionController::class, 'index'])
+        ->middleware(RedirectLegacyGameFrontend::class)
+        ->name('characters.index');
     Route::post('/characters', [CharacterSelectionController::class, 'store'])->name('characters.store');
     Route::patch('/characters/{character}', [CharacterSelectionController::class, 'update'])->name('characters.update');
     Route::delete('/characters/{character}', [CharacterSelectionController::class, 'destroy'])->name('characters.destroy');
     Route::post('/characters/{character}/select', [CharacterSelectionController::class, 'select'])->name('characters.select');
 
     Route::get('/dashboard', GameDashboardController::class)
-        ->middleware('throttle:dashboard-views')
+        ->middleware(['throttle:dashboard-views', RedirectLegacyGameFrontend::class])
         ->name('dashboard');
     Route::get('/game', GameDashboardController::class)
-        ->middleware('throttle:dashboard-views')
+        ->middleware(['throttle:dashboard-views', RedirectLegacyGameFrontend::class])
         ->name('game.dashboard');
 
     // All in-game button clicks and form submits funnel through a single action endpoint.

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# The release gate still captures the legacy Blade UI as a visual regression
+# baseline. Real environments redirect those routes to the Vue SPA.
+export LEGACY_GAME_UI=true
+
 HOST="${UI_GATE_HOST:-127.0.0.1}"
 START_PORT="${UI_GATE_PORT:-8000}"
 PORT="${START_PORT}"

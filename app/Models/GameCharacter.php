@@ -691,7 +691,7 @@ class GameCharacter extends Model
             ];
         }
 
-        $elapsedSeconds = max(0, $resolvedBaseTimestamp->diffInSeconds($resolvedMoment, false));
+        $elapsedSeconds = (int) max(0, $resolvedBaseTimestamp->diffInSeconds($resolvedMoment, false));
         $recoveryTicks = intdiv($elapsedSeconds, $resolvedIntervalSeconds);
         $recoverablePoints = $recoveryTicks * $resolvedPointsPerTick;
         $recovered = min($clampedMaximum - $clampedCurrent, $recoverablePoints);
