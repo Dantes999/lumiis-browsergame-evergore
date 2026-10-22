@@ -35,6 +35,21 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Fight simulations are CPU-bound (iterations x rounds), so they get a much
+        // tighter budget than regular player traffic. Keyed clients are limited per
+        // key and per source IP so one leaked key cannot exhaust a shared host.
+        RateLimiter::for('simulation-requests', function (Request $request): array {
+            $apiKey = trim((string) $request->header('X-Simulation-Key', ''));
+            $clientKey = $apiKey !== ''
+                ? 'key:'.hash('sha256', $apiKey)
+                : 'ip:'.$request->ip();
+
+            return [
+                Limit::perMinute(15)->by('simulation-requests:'.$clientKey),
+                Limit::perMinute(30)->by('simulation-requests:ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('dashboard-views', function (Request $request): array {
             $accountKey = $request->user()?->getAuthIdentifier() ?? $request->ip();
 

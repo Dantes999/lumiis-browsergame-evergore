@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\GameBattle;
 use App\Models\GameCharacter;
 use Database\Seeders\WorldSeeder;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class SimulationApiTest extends TestCase
@@ -88,6 +91,67 @@ class SimulationApiTest extends TestCase
             ])->assertStatus(503)
                 ->assertJsonPath('message', 'Simulation API key is not configured.');
         });
+    }
+
+    public function test_simulation_api_stays_disabled_in_local_unless_explicitly_enabled(): void
+    {
+        $this->runInEnvironment('local', function (): void {
+            config()->set('game_simulator.enabled', false);
+            config()->set('game_simulator.key', null);
+
+            $this->postJson('/api/simulations/characters/normal', [
+                'name' => 'LocalHiddenBot',
+            ])->assertNotFound()
+                ->assertJsonPath('message', 'Simulation API is not enabled.');
+        });
+    }
+
+    public function test_enabled_local_simulation_api_requires_a_key(): void
+    {
+        $this->runInEnvironment('local', function (): void {
+            config()->set('game_simulator.enabled', true);
+            config()->set('game_simulator.key', null);
+
+            $this->postJson('/api/simulations/characters/normal', [
+                'name' => 'LocalOpenBot',
+            ])->assertStatus(503)
+                ->assertJsonPath('message', 'Simulation API key is not configured.');
+        });
+    }
+
+    public function test_enabled_local_simulation_api_accepts_the_configured_key(): void
+    {
+        $this->runInEnvironment('local', function (): void {
+            config()->set('game_simulator.enabled', true);
+            config()->set('game_simulator.key', 'local-simulation-key');
+
+            $this->withHeader('X-Simulation-Key', 'local-simulation-key')
+                ->postJson('/api/simulations/characters/normal', [
+                    'name' => 'LocalKeyedBot',
+                ])->assertCreated()
+                ->assertJsonPath('character.name', 'LocalKeyedBot');
+        });
+    }
+
+    public function test_simulation_routes_are_rate_limited(): void
+    {
+        RateLimiter::for('simulation-requests', function (Request $request): array {
+            return [
+                Limit::perMinute(2)->by('test-simulation-requests:'.$request->ip()),
+            ];
+        });
+
+        $this->postJson('/api/simulations/characters/normal', [
+            'name' => 'RateLimitOne',
+        ])->assertCreated();
+
+        $this->postJson('/api/simulations/characters/normal', [
+            'name' => 'RateLimitTwo',
+        ])->assertCreated();
+
+        $this->postJson('/api/simulations/characters/normal', [
+            'name' => 'RateLimitThree',
+        ])->assertTooManyRequests();
     }
 
     public function test_simulation_fight_api_can_run_ephemeral_auto_balance_checks(): void

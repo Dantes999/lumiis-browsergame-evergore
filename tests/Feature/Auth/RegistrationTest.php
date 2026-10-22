@@ -131,8 +131,8 @@ class RegistrationTest extends TestCase
         $response
             ->assertOk()
             ->assertDontSee('name="faction"', false)
-            ->assertSee('Betritt Lumiis')
-            ->assertSee('Wähle deine Kampfrasse');
+            ->assertSee('name="race"', false)
+            ->assertSee('metin2-race-card', false);
     }
 
     public function test_registration_rejects_duplicate_character_names(): void

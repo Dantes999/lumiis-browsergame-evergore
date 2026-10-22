@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GameActionLog extends Model
 {
     use HasFactory;
+    use MassPrunable;
 
     protected $fillable = [
         'game_character_id',
@@ -33,6 +36,17 @@ class GameActionLog extends Model
             'outcome' => 'array',
             'processed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Replay and audit windows only need a bounded history. Old rows are removed
+     * by the nightly `model:prune` scheduled task.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<=', now()->subDays(30));
     }
 
     public function character(): BelongsTo

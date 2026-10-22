@@ -10,7 +10,10 @@ class EnsureSimulationApiAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $trustedEnvironment = app()->environment(['local', 'testing']);
+        // Only the automated test environment bypasses the explicit switch and key.
+        // A public server misconfigured as APP_ENV=local therefore no longer exposes
+        // the CPU-heavy simulation endpoints.
+        $trustedEnvironment = app()->environment('testing');
         $enabled = $trustedEnvironment || (bool) config('game_simulator.enabled', false);
 
         if (! $enabled) {

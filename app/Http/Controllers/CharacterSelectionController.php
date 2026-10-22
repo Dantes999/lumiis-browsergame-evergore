@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GameBattle;
 use App\Models\GameCharacter;
+use App\Models\User;
 use App\Services\Game\ActiveCharacterResolver;
 use App\Services\Game\CharacterProvisioningService;
 use App\Support\Game\MetinClassCatalog;
@@ -11,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CharacterSelectionController extends Controller
@@ -51,17 +53,17 @@ class CharacterSelectionController extends Controller
             'new_race' => ['required', Rule::in(array_keys(MetinClassCatalog::races()))],
         ]);
 
-        if ($request->user()->characters()->count() >= $characterProvisioningService->maxCharactersPerAccount()) {
-            return back()
-                ->withErrors([
-                    'new_character_name' => __('Each account can only hold :count characters.', ['count' => $characterProvisioningService->maxCharactersPerAccount()]),
-                ], 'createCharacter')
-                ->withInput();
-        }
-
         $character = DB::transaction(function () use ($request, $characterProvisioningService): GameCharacter {
+            $user = User::query()->whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+
+            if ($user->characters()->count() >= $characterProvisioningService->maxCharactersPerAccount()) {
+                throw ValidationException::withMessages([
+                    'new_character_name' => __('Each account can only hold :count characters.', ['count' => $characterProvisioningService->maxCharactersPerAccount()]),
+                ])->errorBag('createCharacter');
+            }
+
             return $characterProvisioningService->create(
-                $request->user(),
+                $user,
                 $request->string('new_character_name')->trim()->value(),
                 $request->string('new_race')->value(),
             );

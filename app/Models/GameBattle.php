@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GameBattle extends Model
 {
     use HasFactory;
+    use MassPrunable;
 
     protected $fillable = [
         'game_character_id',
@@ -39,6 +42,20 @@ class GameBattle extends Model
             'started_at' => 'datetime',
             'resolved_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Ongoing fights are never pruned because they are live state. Only battles
+     * that were resolved more than 30 days ago are eligible.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()
+            ->where('status', '!=', 'ongoing')
+            ->whereNotNull('resolved_at')
+            ->where('resolved_at', '<=', now()->subDays(30));
     }
 
     public function character(): BelongsTo
