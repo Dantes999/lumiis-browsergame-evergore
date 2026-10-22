@@ -135,6 +135,24 @@ RUN_BUILD=0 bash scripts/deploy-production.sh
 
 `WorldSeeder` is safe during deploys because the world content uses idempotent `upsert` calls.
 
+## 5b. Build the SPA
+
+The player UI is served from `public/play` on the same domain.
+
+```bash
+bash scripts/build-frontend.sh
+```
+
+Set this in the production `.env`:
+
+```env
+FRONTEND_URL=https://alpha.example.com/play
+LEGACY_GAME_UI=false
+```
+
+The deploy script builds it automatically (`RUN_FRONTEND_BUILD=1`). Use
+`RUN_FRONTEND_BUILD=0` if you want to ship prebuilt `public/play` assets instead.
+
 ## 6. Nginx and TLS
 
 Issue the first certificate before enabling the final HTTPS config:

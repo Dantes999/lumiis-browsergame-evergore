@@ -30,6 +30,16 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Built SPA entry point. In development the SPA runs on Vite (FRONTEND_URL).
+// In production `scripts/build-frontend.sh` copies the build into public/play.
+Route::get('/play/{any?}', function () {
+    $index = public_path('play/index.html');
+
+    abort_unless(is_file($index), 404, 'Frontend build missing. Run scripts/build-frontend.sh.');
+
+    return response()->file($index);
+})->where('any', '.*')->name('spa');
+
 // Public endpoint to set a session locale for guests.
 Route::patch('/locale', [LocaleController::class, 'update'])->name('locale.update');
 

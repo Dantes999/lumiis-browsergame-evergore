@@ -32,12 +32,19 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Build SPA
+        run: bash scripts/build-frontend.sh
+
       - name: Prepare application environment
         run: |
           cp .env.example .env
           touch database/database.sqlite
           {
             echo "APP_URL=http://127.0.0.1:8000"
+            echo "FRONTEND_URL=http://127.0.0.1:8000/play"
             echo "DB_DATABASE=${GITHUB_WORKSPACE}/database/database.sqlite"
             echo "SESSION_DRIVER=file"
             echo "CACHE_STORE=file"
@@ -57,5 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ui-proof-screenshots
-          path: screenshots/ui-proof-*
+          path: |
+            screenshots/ui-proof-*
+            screenshots/spa-smoke-*
           if-no-files-found: warn

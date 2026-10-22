@@ -7,6 +7,7 @@ COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
 NODE_BIN="${NODE_BIN:-node}"
 RUN_BUILD="${RUN_BUILD:-1}"
+RUN_FRONTEND_BUILD="${RUN_FRONTEND_BUILD:-1}"
 RUN_SEED="${RUN_SEED:-1}"
 RUN_STORAGE_LINK="${RUN_STORAGE_LINK:-1}"
 QUEUE_SERVICE="${QUEUE_SERVICE:-lumiis-queue.service}"
@@ -74,6 +75,10 @@ if [ "${RUN_BUILD}" = "1" ]; then
     require_supported_node
     "${NPM_BIN}" ci
     "${NPM_BIN}" run build
+fi
+
+if [ "${RUN_FRONTEND_BUILD}" = "1" ]; then
+    VITE_BASE_PATH=/play/ bash scripts/build-frontend.sh
 fi
 
 "${PHP_BIN}" artisan migrate --force

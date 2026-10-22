@@ -73,3 +73,13 @@ npm run build
 ```
 
 Das Ergebnis liegt unter `frontend/dist`.
+
+Für die Auslieferung über Laravel:
+
+```bash
+bash scripts/build-frontend.sh
+```
+
+Das baut die SPA mit `VITE_BASE_PATH=/play/` und kopiert sie nach `public/play`.
+Danach ist sie unter `http://127.0.0.1:8000/play` erreichbar. Produktion nutzt
+`FRONTEND_URL=https://deine-domain/play`.

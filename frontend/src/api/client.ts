@@ -1,5 +1,8 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
+const BACKEND_URL = (
+    import.meta.env.VITE_BACKEND_URL
+    ?? (import.meta.env.PROD ? window.location.origin : 'http://127.0.0.1:8000')
+).replace(/\/$/, '');
 
 export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 export const LOGIN_URL = `${BACKEND_URL}/login`;

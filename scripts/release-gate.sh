@@ -81,3 +81,9 @@ if ! start_server; then
 fi
 
 UI_BASE_URL="${BASE_URL}" npm run ui:screenshots
+
+if [ -f "public/play/index.html" ]; then
+    APP_URL="${BASE_URL}" SPA_URL="${BASE_URL}/play" npm run ui:spa-smoke
+else
+    echo "Skipping SPA smoke test: public/play/index.html is not built."
+fi

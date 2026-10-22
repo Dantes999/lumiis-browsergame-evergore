@@ -35,6 +35,35 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // JSON API counterparts for the SPA. Reads are cheaper than writes, so they
+        // get a wider budget while every state-changing action stays tight.
+        RateLimiter::for('game-api-state', function (Request $request): array {
+            $accountKey = $request->user()?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(120)->by('game-api-state:account:'.$accountKey),
+                Limit::perMinute(240)->by('game-api-state:ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('game-api-reads', function (Request $request): array {
+            $accountKey = $request->user()?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(120)->by('game-api-reads:account:'.$accountKey),
+                Limit::perMinute(240)->by('game-api-reads:ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('game-api-writes', function (Request $request): array {
+            $accountKey = $request->user()?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(20)->by('game-api-writes:account:'.$accountKey),
+                Limit::perMinute(60)->by('game-api-writes:ip:'.$request->ip()),
+            ];
+        });
+
         // Fight simulations are CPU-bound (iterations x rounds), so they get a much
         // tighter budget than regular player traffic. Keyed clients are limited per
         // key and per source IP so one leaked key cannot exhaust a shared host.

@@ -25,18 +25,35 @@ Route::middleware(['simulation-api', 'throttle:simulation-requests'])
 Route::middleware(['web', 'auth'])
     ->prefix('v1')
     ->group(function (): void {
-        Route::get('/state', [GameController::class, 'state'])->name('api.game.state');
+        Route::get('/state', [GameController::class, 'state'])
+            ->middleware('throttle:game-api-state')
+            ->name('api.game.state');
 
-        Route::get('/characters', [GameController::class, 'charactersIndex'])->name('api.characters.index');
-        Route::post('/characters', [GameController::class, 'storeCharacter'])->name('api.characters.store');
-        Route::patch('/characters/{character}', [GameController::class, 'updateCharacter'])->name('api.characters.update');
-        Route::delete('/characters/{character}', [GameController::class, 'destroyCharacter'])->name('api.characters.destroy');
-        Route::post('/characters/{character}/select', [GameController::class, 'selectCharacter'])->name('api.characters.select');
+        Route::get('/characters', [GameController::class, 'charactersIndex'])
+            ->middleware('throttle:game-api-reads')
+            ->name('api.characters.index');
+        Route::post('/characters', [GameController::class, 'storeCharacter'])
+            ->middleware('throttle:game-api-writes')
+            ->name('api.characters.store');
+        Route::patch('/characters/{character}', [GameController::class, 'updateCharacter'])
+            ->middleware('throttle:game-api-writes')
+            ->name('api.characters.update');
+        Route::delete('/characters/{character}', [GameController::class, 'destroyCharacter'])
+            ->middleware('throttle:game-api-writes')
+            ->name('api.characters.destroy');
+        Route::post('/characters/{character}/select', [GameController::class, 'selectCharacter'])
+            ->middleware('throttle:game-api-writes')
+            ->name('api.characters.select');
 
-        Route::get('/regions/{slug}', [GameController::class, 'region'])->name('api.regions.show');
-        Route::get('/cities/{slug}', [GameController::class, 'city'])->name('api.cities.show');
+        Route::get('/regions/{slug}', [GameController::class, 'region'])
+            ->middleware('throttle:game-api-reads')
+            ->name('api.regions.show');
+        Route::get('/cities/{slug}', [GameController::class, 'city'])
+            ->middleware('throttle:game-api-reads')
+            ->name('api.cities.show');
 
         Route::post('/actions/{action}', [GameController::class, 'action'])
             ->whereIn('action', GameActionType::values())
+            ->middleware('throttle:game-api-writes')
             ->name('api.actions.store');
     });

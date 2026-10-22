@@ -29,3 +29,6 @@ Thumbs.db
 # Generated screenshots
 /screenshots
 /storage/screenshots
+
+# Built SPA assets
+/public/play
