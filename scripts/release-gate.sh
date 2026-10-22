@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The release gate still captures the legacy Blade UI as a visual regression
-# baseline. Real environments redirect those routes to the Vue SPA.
-export LEGACY_GAME_UI=true
-
 HOST="${UI_GATE_HOST:-127.0.0.1}"
 START_PORT="${UI_GATE_PORT:-8000}"
 PORT="${START_PORT}"
@@ -70,6 +66,11 @@ start_server() {
 
     return 1
 }
+
+# The release gate still captures the legacy Blade UI as a visual regression
+# baseline. Only the server process needs the override; tests must run with the
+# real SPA redirect behavior.
+export LEGACY_GAME_UI=true
 
 if ! start_server; then
     echo "Laravel server did not become ready between ports ${START_PORT} and ${PORT_MAX}." >&2
